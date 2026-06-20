@@ -76,26 +76,11 @@ throw err;
 
 ## Schema Reference (Core Tables)
 
-### `sessions`
-
-```sql
-id UUID PRIMARY KEY DEFAULT gen_random_uuid()
-session_token VARCHAR(64) UNIQUE NOT NULL
-csrf_token VARCHAR(64) NOT NULL
-ip_address INET NOT NULL
-user_agent TEXT
-created_at TIMESTAMP DEFAULT NOW()
-last_activity TIMESTAMP DEFAULT NOW()
-expires_at TIMESTAMP NOT NULL
-
-INDEXES: idx_session_token, idx_expires_at
-```
-
 ### `contacts`
 
 ```sql
 id UUID PRIMARY KEY
-session_id UUID REFERENCES sessions(id) ON DELETE CASCADE
+user_id UUID NOT NULL -- Supabase Auth User ID
 name VARCHAR(50) NOT NULL
 phone_number_encrypted TEXT NOT NULL -- AES-256 encrypted
 phone_number_hash VARCHAR(64) UNIQUE -- SHA-256 for deduplication
@@ -106,14 +91,14 @@ otp_expires_at TIMESTAMP
 created_at TIMESTAMP DEFAULT NOW()
 deleted_at TIMESTAMP -- soft delete
 
-INDEXES: idx_contacts_session_id, idx_contacts_phone_hash
+INDEXES: idx_contacts_user_id, idx_contacts_phone_hash
 ```
 
 ### `trips`
 
 ```sql
 id UUID PRIMARY KEY
-session_id UUID REFERENCES sessions(id) ON DELETE CASCADE
+user_id UUID NOT NULL -- Supabase Auth User ID
 share_token VARCHAR(32) UNIQUE NOT NULL
 share_link_expires_at TIMESTAMP
 share_link_revoked BOOLEAN DEFAULT FALSE
@@ -133,7 +118,7 @@ ended_at TIMESTAMP
 expires_at TIMESTAMP NOT NULL -- 30-day auto-delete
 created_at / updated_at TIMESTAMP
 
-INDEXES: idx_trips_session_id, idx_trips_share_token, idx_trips_status, idx_trips_expires_at
+INDEXES: idx_trips_user_id, idx_trips_share_token, idx_trips_status, idx_trips_expires_at
 ```
 
 ### `trip_locations`
@@ -171,14 +156,14 @@ INDEXES: idx_emergency_alerts_trip_id, idx_emergency_alerts_triggered_at
 
 ```sql
 id BIGSERIAL PRIMARY KEY
-session_id UUID REFERENCES sessions(id) ON DELETE SET NULL
+user_id UUID -- Supabase Auth User ID
 event_type VARCHAR(50) NOT NULL
 event_data JSONB
 ip_address INET
 user_agent TEXT
 created_at TIMESTAMP DEFAULT NOW()
 
-INDEXES: idx_audit_logs_session_id, idx_audit_logs_event_type, idx_audit_logs_created_at
+INDEXES: idx_audit_logs_user_id, idx_audit_logs_event_type, idx_audit_logs_created_at
 ```
 
 ### `encryption_keys`
@@ -207,7 +192,7 @@ INDEXES: idx_encryption_keys_key_version, idx_encryption_keys_active
 - [ ] Add indexes for every foreign key and any column used in WHERE clauses
 - [ ] UUID primary keys: `DEFAULT gen_random_uuid()` — never auto-increment for user-facing IDs
 - [ ] Soft-delete columns: `deleted_at TIMESTAMP` (nullable) — not a `deleted BOOLEAN`
-- [ ] Auto-expiry columns: `expires_at TIMESTAMP NOT NULL` on trips, sessions
+- [ ] Auto-expiry columns: `expires_at TIMESTAMP NOT NULL` on trips
 
 -----
 
@@ -236,9 +221,6 @@ Set up these scheduled jobs alongside migrations when adding expiry columns:
 ```ts
 // Delete expired trips (runs daily at 2 AM WAT)
 DELETE FROM trips WHERE expires_at < NOW();
-
-// Delete expired sessions (runs daily at 3 AM WAT)
-DELETE FROM sessions WHERE expires_at < NOW();
 
 // Hard delete soft-deleted contacts after 7 days
 DELETE FROM contacts WHERE deleted_at < NOW() - INTERVAL '7 days';

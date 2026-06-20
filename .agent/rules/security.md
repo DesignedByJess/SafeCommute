@@ -13,28 +13,26 @@ trigger: always_on
 1. **User control** — users can delete any data, anytime, without contacting support
 1. **Transparent practices** — audit every sensitive operation
 
-## Authentication & Sessions
-- Sessions managed **server-side** with Redis (Upstash)
-- Session cookie: `HttpOnly`, `Secure`, `SameSite=Strict`
-- **Never store session token in localStorage or sessionStorage**
-- Session expires after **30 days of inactivity**
-- Session rotated after password change or any security-sensitive action
-- Session metadata logged: IP, user-agent, creation time, last activity
+## Authentication & Supabase Auth JWT
+- Authentication is managed via **Supabase Auth**. No custom database sessions, Redis caches, or custom session tables are used.
+- Supabase Auth JWT (access token and refresh token) must be stored in **HTTP-only, Secure, SameSite=Strict cookies** — **never in localStorage or sessionStorage**.
+- JWT validation and token refreshing are handled securely on the server-side via cookies.
+- Authentication metadata is logged where applicable (IP, user-agent, creation time).
 
 ```js
-// Cookie config (Express)
-res.cookie('session', token, {
-httpOnly: true,
-secure: true,
-sameSite: 'strict',
-maxAge: 30 * 24 * 60 * 60 * 1000
+// JWT Cookie Config (Express - setting cookies on successful auth)
+res.cookie('sb-access-token', token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'strict',
+  maxAge: 60 * 60 * 1000 // short-lived access token duration
 });
 ```
 
 ## CSRF Protection
 - Use `csurf` middleware on **all state-changing operations** (POST, PUT, PATCH, DELETE)
 - Embed CSRF token in every form and API request
-- Token generated per session, validated server-side
+- CSRF token stored in cookie, validated server-side
 - Never trust CSRF tokens sent via URL query params
 
 ## Encryption
@@ -45,7 +43,6 @@ maxAge: 30 * 24 * 60 * 60 * 1000
 |License plates |Envelope encryption: AES-256-GCM data key (per-trip) + RSA-2048 master key (KMS)|
 |Phone numbers (contacts)|AES-256 encrypted column |
 |Phone deduplication |SHA-256 hash (separate column) |
-|Session tokens |bcrypt (hashing) |
 
 ### Data in Transit
 - **TLS 1.3 only** for all HTTPS and WSS connections
@@ -77,12 +74,12 @@ Coordinates: lat ∈ [-90, 90], lng ∈ [-180, 180]
 |-----------------|---------------------------|
 |Login attempts |5 per 15 min per IP |
 |OTP requests |3 per hour per phone number|
-|Trip creation |10 per hour per session |
+|Trip creation |10 per hour per user |
 |Location updates |1 per 10 seconds per trip |
 |Share link views |10 per minute per IP |
-|Emergency alerts |3 per 24 hours per session |
+|Emergency alerts |3 per 24 hours per user |
 
-Use `express-rate-limit` + Redis store (Upstash) for distributed rate limiting.
+Use `express-rate-limit` (with in-memory store) or Supabase rate-limiting controls.
 
 ## Share Links
 - Share token: **32-char cryptographically random string** — not the trip UUID
@@ -117,19 +114,19 @@ Permissions-Policy: geolocation=(self)
 - Confirmation modal required before sending — accidental tap prevention
 - SMS verification code required to confirm (prevents mis-taps)
 - Triggers **audit log** with IP, device, GPS accuracy, timestamp
-- **Rate limited**: 3 per 24 hours per session
+- **Rate limited**: 3 per 24 hours per user
 - 2-minute **retraction window** with reason logging
 - Tracked: 3+ false alarms → account review flag
 
 ## Audit Logging
-Log **all sensitive operations** to `audit_logs` table:
-- `login`, `logout`, `session_created`
+Log **all sensitive operations** to `audit_logs` table (logging `user_id` instead of `session_id`):
+- `login`, `logout`
 - `trip_created`, `trip_ended`, `emergency_triggered`
 - `contact_added`, `contact_deleted`
 - `plate_decrypted`, `data_exported`, `account_deleted`
 - `share_link_accessed`, `share_link_revoked`
 
-Log fields: `session_id`, `event_type`, `event_data` (JSONB), `ip_address`, `user_agent`, `created_at`
+Log fields: `user_id` (UUID), `event_type`, `event_data` (JSONB), `ip_address`, `user_agent`, `created_at`
 
 ## Data Retention & Deletion
 |Data |Retention |Deletion |
@@ -139,7 +136,6 @@ Log fields: `session_id`, `event_type`, `event_data` (JSONB), `ip_address`, `use
 |Location breadcrumbs |Trip duration only|Immediate on trip end |
 |Contacts (soft-deleted)|7 days |Hard delete after 7d |
 |Deleted trip backups |48 hours |Purged from backups within 48h |
-|Session data |30 days inactivity|Auto-expire |
 |Audit logs |30 days |Encrypted, auto-purge |
 
 ## NDPA 2023 Compliance

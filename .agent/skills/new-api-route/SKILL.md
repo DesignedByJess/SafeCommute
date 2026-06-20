@@ -40,7 +40,7 @@ authenticate, // on all protected routes
 rateLimit(config), // apply relevant limit (see below)
 validate(mySchema),// Zod schema validation
 async (req, res) => {
-const result = await myService.doThing(req.session.id, req.body);
+const result = await myService.doThing(req.user.id, req.body);
 res.status({statusCode}).json({ success: true, data: result });
 }
 );
@@ -88,8 +88,8 @@ Never put `authenticate` before `validateCsrf`. Never put `validate` before `rat
 // Import from /backend/src/middleware/rate-limit.ts
 rateLimitLogin // 5 per 15 min per IP
 rateLimitOtp // 3 per hour per phone
-rateLimitTrips // 10 per hour per session
-rateLimitEmergency // 3 per 24 hours per session
+rateLimitTrips // 10 per hour per user
+rateLimitEmergency // 3 per 24 hours per user
 rateLimitShareView // 10 per minute per IP
 rateLimitLocation // 1 per 10 seconds per trip (Socket.io, not REST)
 ```
@@ -151,7 +151,7 @@ contactId: z.string().uuid(),
 
 ```ts
 // Log at the end of handler, before returning response
-await auditLog(req.session.id, 'event_type', {
+await auditLog(req.user.id, 'event_type', {
 // Include relevant non-sensitive context
 tripId: result.id,
 plan: req.body.plan,

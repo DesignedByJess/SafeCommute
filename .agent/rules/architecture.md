@@ -27,7 +27,7 @@ SafeCommute is a **Progressive Web App (PWA)** for public transport passenger sa
 |Runtime |Node.js 18+ + Express |
 |Database |PostgreSQL 14+ (encryption at rest enabled) |
 |Real-time |Socket.io (WSS) |
-|Caching / Sessions|Upstash Redis |
+|Authentication |Supabase Auth |
 |OCR (primary) |Google Vision API (server-side) |
 |Notifications |WhatsApp Business API → Africa’s Talking → Twilio (failover chain)|
 |Key Management |AWS KMS or Google Cloud KMS |
@@ -38,20 +38,18 @@ SafeCommute is a **Progressive Web App (PWA)** for public transport passenger sa
 |----------------|-----------------------------------------------------|
 |Frontend hosting|Vercel |
 |Backend hosting |Railway or Render |
-|Database |Supabase or Neon (PostgreSQL) |
-|Redis |Upstash |
+|Database + Auth |Supabase or Neon (PostgreSQL) |
 |CDN + DDoS |Cloudflare |
 |Monitoring |Winston → Elasticsearch, Grafana, Sentry, UptimeRobot|
 
 ## Database Schema (Core Tables)
 ```
-sessions — session_token, csrf_token, ip_address, user_agent, expires_at
-contacts — phone_number_encrypted (AES-256), phone_number_hash (SHA-256), otp_code, verified
-trips — share_token (32-char UUID), vehicle_plate_encrypted, vehicle_plate_data_key_encrypted,
+contacts — user_id (UUID), phone_number_encrypted (AES-256), phone_number_hash (SHA-256), otp_code, verified
+trips — user_id (UUID), share_token (32-char UUID), vehicle_plate_encrypted, vehicle_plate_data_key_encrypted,
 origin_lat/lng, destination_lat/lng, contact_id, safety_notes (JSONB), status, expires_at
 trip_locations — lat, lng, accuracy, recorded_at (deleted immediately on trip end)
 emergency_alerts — lat, lng, ip_address, triggered_at, retracted_at, verified
-audit_logs — session_id, event_type, event_data, ip_address, created_at
+audit_logs — user_id (UUID), event_type, event_data, ip_address, created_at
 encryption_keys — key_version, master_key_encrypted, active
 ```
 **Always use UUIDs as primary keys.** Never expose sequential integer IDs in APIs.
@@ -64,7 +62,7 @@ encryption_keys — key_version, master_key_encrypted, active
 
 ### WebSocket (WSS)
 - Socket.io over WSS only — reject plain WS connections at the server level
-- Authenticate with session token on connection handshake
+- Authenticate with Supabase Auth JWT on connection handshake
 - Location updates signed with HMAC to prevent tampering
 - Rate limit: **1 location update per 10 seconds per trip**
 - Emit events: `location:update`, `trip:ended`, `emergency:triggered`
@@ -89,7 +87,7 @@ Always attempt WhatsApp first. Log delivery status for each channel. Emergency a
 - **No sequential IDs in public URLs** — use `share_token` (32-char random), not `trip.id`
 - **Share links expire 2 hours after trip ends** — enforced at DB and API level
 - **Location breadcrumbs deleted immediately when trip ends** — no async delay
-- **Session stored in HTTP-only, Secure, SameSite=Strict cookie** — never localStorage
+- **Supabase Auth JWT stored in HTTP-only, Secure, SameSite=Strict cookie** — never localStorage
 - **All sensitive data encrypted** — license plates use envelope encryption (per-trip data key + master key)
 - **30-day data retention** for trips; 90-day for emergency trips (legal); immediate deletion for location breadcrumbs
 - **PWA offline mode** — Service Worker caches UI assets; queue location updates on disconnect, sync on reconnect

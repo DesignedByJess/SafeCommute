@@ -41,7 +41,7 @@ export type CreateTripInput = z.infer<typeof createTripSchema>;
 ```ts
 // Pure business logic — no req/res, no Express imports
 export class TripService {
-async createTrip(sessionId: string, input: CreateTripInput): Promise<Trip> {
+async createTrip(userId: string, input: CreateTripInput): Promise<Trip> {
 // 1. Encrypt sensitive data before writing to DB
 // 2. Generate share_token with randomBytes(16).toString('hex')
 // 3. Write to DB via Sequelize model
@@ -81,7 +81,7 @@ authenticate,
 rateLimitTrips,
 validate(createTripSchema),
 async (req, res) => {
-const trip = await tripService.createTrip(req.session.id, req.body);
+const trip = await tripService.createTrip(req.user.id, req.body);
 res.status(201).json({ success: true, data: trip });
 }
 );
@@ -129,9 +129,9 @@ it('logs trip_created to audit_logs', async () => { ... });
 ## SafeCommute Rate Limits (Reference)
 
 ```
-Trip creation: 10/hour/session → rateLimitTrips
+Trip creation: 10/hour/user → rateLimitTrips
 OTP requests: 3/hour/phone → rateLimitOtp
-Emergency alerts: 3/24hours/session → rateLimitEmergency
+Emergency alerts: 3/24hours/user → rateLimitEmergency
 Location updates: 1/10seconds/trip → enforced in Socket.io handler
 Share link views: 10/minute/IP → rateLimitShareView
 Login attempts: 5/15min/IP → rateLimitLogin

@@ -53,7 +53,7 @@ import { randomBytes } from 'crypto';
 
 interface InitializePaymentInput {
 plan: 'premium_monthly' | 'premium_yearly' | 'family_yearly';
-sessionId: string;
+userId: string;
 userEmail: string; // collected during onboarding
 userName: string;
 }
@@ -65,11 +65,11 @@ family_yearly: { amount: 15000, currency: 'NGN', duration: '1 year' },
 };
 
 export async function initializePayment(input: InitializePaymentInput) {
-const { plan, sessionId, userEmail, userName } = input;
+const { plan, userId, userEmail, userName } = input;
 const config = PLAN_CONFIG[plan];
 
 // Generate idempotent transaction ref
-const txRef = `SC-${sessionId.slice(0, 8)}-${randomBytes(4).toString('hex')}`;
+const txRef = `SC-${userId.slice(0, 8)}-${randomBytes(4).toString('hex')}`;
 
 const payload = {
 tx_ref: txRef,
@@ -86,7 +86,7 @@ description: `${plan.replace(/_/g, ' ')} subscription`,
 logo: `${process.env.APP_URL}/logo.png`,
 },
 meta: {
-session_id: sessionId,
+user_id: userId,
 plan,
 },
 };
@@ -107,10 +107,10 @@ throw new AppError('Payment initialization failed', 502, 'PAYMENT_INIT_FAILED');
 }
 
 // Store pending transaction in DB for webhook reconciliation
-await PendingPayment.create({ txRef, sessionId, plan, amount: config.amount });
+await PendingPayment.create({ txRef, userId, plan, amount: config.amount });
 
 // Log to audit_logs
-await auditLog(sessionId, 'payment_initiated', { txRef, plan });
+await auditLog(userId, 'payment_initiated', { txRef, plan });
 
 return { paymentLink: data.data.link, txRef };
 }
@@ -138,8 +138,8 @@ return res.redirect('/payment/failed');
 }
 
 // Activate subscription
-await subscriptionService.activate(req.session.id, verification.plan);
-await auditLog(req.session.id, 'payment_completed', { txRef: tx_ref });
+await subscriptionService.activate(req.user.id, verification.plan);
+await auditLog(req.user.id, 'payment_completed', { txRef: tx_ref });
 
 res.redirect('/payment/success');
 });
@@ -200,9 +200,9 @@ await auditLog(null, 'payment_amount_mismatch', { tx_ref, amount });
 return res.status(200).json({ received: true });
 }
 
-await subscriptionService.activate(pending.sessionId, pending.plan);
+await subscriptionService.activate(pending.userId, pending.plan);
 await pending.destroy();
-await auditLog(pending.sessionId, 'payment_webhook_confirmed', { tx_ref });
+await auditLog(pending.userId, 'payment_webhook_confirmed', { tx_ref });
 }
 
 // Always return 200 to Flutterwave — even on ignored events
@@ -236,9 +236,9 @@ setLoading(false);
 ## Subscription State (DB)
 
 ```ts
-// Add to sessions table or create subscriptions table
+// Add to users table or create subscriptions table
 interface Subscription {
-sessionId: string;
+userId: string;
 plan: 'premium_monthly' | 'premium_yearly' | 'family_yearly';
 status: 'active' | 'expired' | 'cancelled';
 startsAt: Date;

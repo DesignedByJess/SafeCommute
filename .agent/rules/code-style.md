@@ -32,7 +32,7 @@ trigger: always_on
 ```ts
 // Variables and functions — camelCase
 const shareToken = generateShareToken();
-function startTrip(sessionId: string): Promise<Trip> {}
+function startTrip(userId: string): Promise<Trip> {}
 
 // Components — PascalCase
 function TripSummaryCard({ trip }: TripSummaryCardProps) {}
@@ -110,7 +110,7 @@ const safeNote = DOMPurify.sanitize(userNote);
 ```ts
 // Route handlers: thin — delegate to service layer
 router.post('/trips', validateCsrf, authenticate, async (req, res) => {
-const result = await tripService.createTrip(req.session.id, req.body);
+const result = await tripService.createTrip(req.user.id, req.body);
 res.status(201).json({ success: true, data: result });
 });
 
@@ -188,7 +188,7 @@ const maskedPlate = plate.replace(/^.{5}/, '**-');
 
 ```
 feat(trip): add license plate OCR with server-side fallback
-fix(auth): rotate session after OTP verification
+fix(auth): link contact after OTP verification
 security(contacts): encrypt phone numbers at rest
 chore(deps): update express-rate-limit to v7
 ```
@@ -230,8 +230,8 @@ security/csrf-middleware
 ```env
 # Always accessed via a typed config module — never process.env directly in business logic
 DATABASE_URL=
-REDIS_URL=
-SESSION_SECRET=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
 CSRF_SECRET=
 HMAC_SECRET=
 KMS_KEY_ARN=

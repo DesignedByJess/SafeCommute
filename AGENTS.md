@@ -101,9 +101,9 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 
 **Frontend:** React 18, Vite, TailwindCSS, React Context, Google Maps JS API, Socket.io-client (WSS), Tesseract.js, DOMPurify, LocalForage, Lucide React
 
-**Backend:** Node.js 18+, Express, PostgreSQL 14+, Sequelize ORM, Upstash Redis, Socket.io (WSS), Google Vision API, WhatsApp Business API → Africa’s Talking → Twilio
+**Backend:** Node.js 18+, Express, PostgreSQL 14+, Sequelize ORM, Supabase Auth, Socket.io (WSS), Google Vision API, WhatsApp Business API → Africa’s Talking → Twilio
 
-**Infrastructure:** Vercel (frontend), Railway/Render (backend), Supabase/Neon (DB), Upstash (Redis), Cloudflare (CDN + DDoS), AWS KMS / Google Cloud KMS
+**Infrastructure:** Vercel (frontend), Railway/Render (backend), Supabase/Neon (DB), Cloudflare (CDN + DDoS), AWS KMS / Google Cloud KMS
 
 **Payment:** Flutterwave (NGN, primary) — see `skills/Flutterwave-integration.md`
 
@@ -119,7 +119,7 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 
 - **No plain WS** — WebSocket connections are WSS only, always
 - **No sequential IDs in public URLs** — use `share_token` (32-char random hex), never `trip.id`
-- **No session data in localStorage** — HTTP-only, Secure, SameSite=Strict cookies only
+- **No auth JWT in localStorage** — Supabase Auth JWT (access/refresh tokens) must be stored in HTTP-only, Secure, SameSite=Strict cookies only
 - **No raw SQL** — Sequelize parameterized queries only
 - **No Math.random() for tokens** — use `crypto.randomBytes()`
 - **No secrets in source code** — all keys via environment variables
@@ -155,12 +155,11 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 ## Database Schema (Key Tables)
 
 ```
-sessions — session_token (64-char), csrf_token, ip_address, expires_at
-contacts — phone_number_encrypted (AES-256), phone_number_hash (SHA-256), verified, deleted_at (soft delete)
-trips — share_token (32-char random), vehicle_plate_encrypted (envelope), status, expires_at
+contacts — user_id (UUID), phone_number_encrypted (AES-256), phone_number_hash (SHA-256), verified, deleted_at (soft delete)
+trips — user_id (UUID), share_token (32-char random), vehicle_plate_encrypted (envelope), status, expires_at
 trip_locations — lat, lng, accuracy (deleted immediately on trip end — no expires_at)
 emergency_alerts — lat, lng, ip_address, triggered_at, retracted_at, verified
-audit_logs — session_id, event_type, event_data (JSONB), ip_address
+audit_logs — user_id (UUID), event_type, event_data (JSONB), ip_address
 encryption_keys — key_version, master_key_encrypted, active
 ```
 
@@ -173,17 +172,17 @@ All primary keys are UUIDs. All timestamps are UTC. All coordinates are `DECIMAL
 - Base path: `/api/v1/`
 - Response shape: `{ success: boolean, data?: T, error?: string, code?: string }`
 - Status codes: 200 (ok), 201 (created), 204 (no content), 400 (bad input), 401 (unauth), 403 (forbidden), 404 (not found), 410 (share link expired), 429 (rate limited), 500 (server error)
-- Middleware order: `helmet → cors → cookieParser → csrfProtection → rateLimit → authenticate → validate → handler`
+- Middleware order: `helmet → cors → cookieParser → csrfProtection → rateLimit → authenticate (verify Supabase JWT from cookie) → validate → handler`
 
 ### Rate Limits
 
 ```
-Login: 5 / 15 min / IP
+Login: 5 / 15 min / IP (handled by Supabase or server fallback)
 OTP requests: 3 / hour / phone
-Trip creation: 10 / hour / session
+Trip creation: 10 / hour / user
 Location updates: 1 / 10 sec / trip (Socket.io)
 Share link views: 10 / min / IP
-Emergency alerts: 3 / 24 hours / session
+Emergency alerts: 3 / 24 hours / user
 ```
 
 -----
@@ -215,10 +214,10 @@ Currency: NGN. Payment gateway: Flutterwave. See `skills/Flutterwave-integration
 
 ## Audit Logging (Required Events)
 
-Any task that touches these flows must write to `audit_logs`:
+Any task that touches these flows must write to `audit_logs` (logging `user_id` instead of `session_id`):
 
 ```
-Authentication: login, logout, session_created, otp_requested, otp_verified
+Authentication: login, logout, otp_requested, otp_verified
 Trips: trip_created, trip_ended, emergency_triggered, emergency_retracted
 Contacts: contact_added, contact_deleted
 Data: plate_decrypted, data_exported, account_deleted
@@ -279,7 +278,8 @@ When completing a task, an agent should:
 
 ## What Bad Output Looks Like (Reject These)
 
-- Storing session token in `localStorage`
+- Storing Supabase Auth JWT or session tokens in `localStorage`
+- Using custom session tables/Redis instead of Supabase Auth
 - Using `Math.random()` for share tokens or OTP codes
 - Returning full (unmasked) plate numbers or phone numbers in API responses
 - Using plain WS instead of WSS for Socket.io
