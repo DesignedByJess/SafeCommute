@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EncryptionKey = void 0;
 const sequelize_1 = require("sequelize");
-const index_1 = __importDefault(require("./index"));
+const sequelize_2 = __importDefault(require("../database/sequelize"));
 class EncryptionKey extends sequelize_1.Model {
     id;
     key_version;
@@ -45,7 +45,7 @@ EncryptionKey.init({
         allowNull: true,
     },
 }, {
-    sequelize: index_1.default,
+    sequelize: sequelize_2.default,
     tableName: 'encryption_keys',
     timestamps: false,
 });

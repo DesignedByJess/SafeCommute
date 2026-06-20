@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Subscription = void 0;
 const sequelize_1 = require("sequelize");
-const index_1 = __importDefault(require("./index"));
+const sequelize_2 = __importDefault(require("../database/sequelize"));
 class Subscription extends sequelize_1.Model {
     id;
     user_id;
@@ -28,5 +28,5 @@ Subscription.init({
     tx_ref: { type: sequelize_1.DataTypes.STRING(64), allowNull: false },
     created_at: { type: sequelize_1.DataTypes.DATE, defaultValue: sequelize_1.DataTypes.NOW, allowNull: false },
     updated_at: { type: sequelize_1.DataTypes.DATE, defaultValue: sequelize_1.DataTypes.NOW, allowNull: false },
-}, { sequelize: index_1.default, tableName: 'subscriptions', timestamps: false });
+}, { sequelize: sequelize_2.default, tableName: 'subscriptions', timestamps: false });
 exports.default = Subscription;

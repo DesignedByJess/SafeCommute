@@ -4,13 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Subscription = exports.PendingPayment = exports.AuditLog = exports.EncryptionKey = exports.EmergencyAlert = exports.TripLocation = exports.Trip = exports.Contact = exports.sequelize = void 0;
-const sequelize_1 = require("sequelize");
-require('dotenv').config();
-const env = process.env.NODE_ENV || 'development';
-const config = require('../database/config.js')[env];
-exports.sequelize = config.use_env_variable
-    ? new sequelize_1.Sequelize(process.env[config.use_env_variable], config)
-    : new sequelize_1.Sequelize(config.database, config.username, config.password, config);
+const sequelize_1 = __importDefault(require("../database/sequelize"));
+exports.sequelize = sequelize_1.default;
 const contact_model_1 = __importDefault(require("./contact.model"));
 exports.Contact = contact_model_1.default;
 const trip_model_1 = __importDefault(require("./trip.model"));
@@ -33,4 +28,4 @@ trip_model_1.default.hasMany(trip_location_model_1.default, { foreignKey: 'trip_
 trip_location_model_1.default.belongsTo(trip_model_1.default, { foreignKey: 'trip_id', as: 'trip' });
 trip_model_1.default.hasMany(emergency_alert_model_1.default, { foreignKey: 'trip_id', as: 'emergencyAlerts' });
 emergency_alert_model_1.default.belongsTo(trip_model_1.default, { foreignKey: 'trip_id', as: 'trip' });
-exports.default = exports.sequelize;
+exports.default = sequelize_1.default;

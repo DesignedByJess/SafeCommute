@@ -1,21 +1,27 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const { login, loading } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    setError('')
+    try {
+      await login(email, password)
       navigate('/')
-    }, 500)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Sign in failed. Please try again.'
+      setError(message)
+    }
   }
 
   return (
@@ -26,7 +32,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900">SafeCommute</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="rounded-xl p-6 space-y-4">
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
           <Input
             label="Email"
             type="email"
@@ -35,10 +46,24 @@ export default function LoginPage() {
             placeholder="you@example.com"
             required
           />
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+          />
           <Button type="submit" loading={loading} className="w-full">
             Sign In
           </Button>
         </form>
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-[#0891B2] hover:text-[#0E7490] font-medium">
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   )

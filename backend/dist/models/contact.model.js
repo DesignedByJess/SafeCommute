@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Contact = void 0;
 const sequelize_1 = require("sequelize");
-const index_1 = __importDefault(require("./index"));
+const sequelize_2 = __importDefault(require("../database/sequelize"));
 class Contact extends sequelize_1.Model {
     id;
     user_id;
@@ -75,7 +75,7 @@ Contact.init({
         allowNull: true,
     },
 }, {
-    sequelize: index_1.default,
+    sequelize: sequelize_2.default,
     tableName: 'contacts',
     timestamps: false,
     paranoid: true,

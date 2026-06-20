@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import AppLayout from './components/AppLayout'
 import LoginPage from './features/auth/LoginPage'
+import SignupPage from './features/auth/SignupPage'
 import DashboardPage from './features/dashboard/DashboardPage'
 import ContactsPage from './features/contacts/ContactsPage'
 import NewTripPage from './features/trip/NewTripPage'
@@ -29,6 +30,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
       <Route path="/share/:share_token" element={<ShareTrackingPage />} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/" element={<DashboardPage />} />

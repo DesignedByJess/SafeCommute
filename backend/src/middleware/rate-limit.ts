@@ -39,3 +39,11 @@ export const emergencyLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, error: 'Emergency alert limit reached (3 per 24 hours)', code: 'RATE_LIMITED' },
 });
+
+export const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many signup attempts, try again later', code: 'RATE_LIMITED' },
+});
