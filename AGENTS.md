@@ -54,19 +54,20 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 │ └── database/
 │ └── migrations/ # Sequelize migrations
 │
+└── .agent/ # Agent configuration
 ├── rules/ # Agent rules context files
-│ ├── Architecture.md
-│ ├── Security.md
-│ ├── Code-style.md
-│ └── Design-system.md
+│ ├── architecture.md
+│ ├── security.md
+│ ├── code-style.md
+│ └── design-system.md
 │
 └── skills/ # Agent skill context files
-├── Api-route-scaffolder.md
-├── Component-builder.md
-├── Db-migration-runner.md
-├── Flutterwave-integration.md
-├── New-api-route.md
-└── New-component.md
+├── api-route-scaffolder/
+├── component-builder/
+├── db-migration-runner/
+├── flutterwave-integration/
+├── new-api-route/
+└── new-component/
 ```
 
 -----
@@ -75,10 +76,10 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 
 |File |Read When |
 |------------------------|---------------------------------------------------------|
-|`rules/Architecture.md` |Any backend, infrastructure, or real-time task |
-|`rules/Security.md` |Any task touching auth, encryption, data storage, or APIs|
-|`rules/Code-style.md` |Every task — always |
-|`rules/Design-system.md`|Any frontend or UI task |
+|`.agent/rules/architecture.md` |Any backend, infrastructure, or real-time task |
+|`.agent/rules/security.md` |Any task touching auth, encryption, data storage, or APIs|
+|`.agent/rules/code-style.md` |Every task — always |
+|`.agent/rules/design-system.md`|Any frontend or UI task |
 
 **Do not skip rule files.** They encode decisions that are not negotiable.
 
@@ -88,12 +89,12 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 
 |File |Use When |
 |-----------------------------------|------------------------------------------------------------------------|
-|`skills/Api-route-scaffolder.md` |Scaffolding a full REST resource (router + service + validation + tests)|
-|`skills/Component-builder.md` |Building a complete feature screen or multi-component UI |
-|`skills/Db-migration-runner.md` |Writing any database migration |
-|`skills/Flutterwave-integration.md`|Any payment, subscription, or webhook task |
-|`skills/New-api-route.md` |Adding a single API endpoint quickly |
-|`skills/New-component.md` |Creating a single focused React component |
+|`.agent/skills/api-route-scaffolder/` |Scaffolding a full REST resource (router + service + validation + tests)|
+|`.agent/skills/component-builder/` |Building a complete feature screen or multi-component UI |
+|`.agent/skills/db-migration-runner/` |Writing any database migration |
+|`.agent/skills/flutterwave-integration/`|Any payment, subscription, or webhook task |
+|`.agent/skills/new-api-route/` |Adding a single API endpoint quickly |
+|`.agent/skills/new-component/` |Creating a single focused React component |
 
 -----
 
@@ -105,7 +106,7 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 
 **Infrastructure:** Vercel (frontend), Railway/Render (backend), Supabase/Neon (DB), Cloudflare (CDN + DDoS), AWS KMS / Google Cloud KMS
 
-**Payment:** Flutterwave (NGN, primary) — see `skills/Flutterwave-integration.md`
+**Payment:** Flutterwave (NGN, primary) — see `.agent/skills/flutterwave-integration/`
 
 **Security:** helmet, csurf, express-rate-limit, bcrypt, Node.js crypto, Snyk
 
@@ -137,7 +138,7 @@ This is a **safety-critical product**. Bugs in authentication, encryption, notif
 ### Frontend
 
 - **Tailwind only** — no inline styles, no CSS modules, no styled-components
-- **No hardcoded hex colors** — use only the tokens defined in `rules/Design-system.md`
+- **No hardcoded hex colors** — use only the tokens defined in **Design Tokens** section below
 - **Red (`#DC2626`) is for emergency actions only** — never use for errors, delete buttons, or warnings
 - **DOMPurify on all user-generated content** before rendering
 - **Masked display always** — phone numbers as `+234***5678`, plates as `**-FK`
@@ -208,7 +209,7 @@ Premium Individual — Yearly: ₦10,000
 Family Plan — Yearly: ₦15,000 (up to 5 members)
 ```
 
-Currency: NGN. Payment gateway: Flutterwave. See `skills/Flutterwave-integration.md`.
+Currency: NGN. Payment gateway: Flutterwave. See `.agent/skills/flutterwave-integration/`.
 
 -----
 

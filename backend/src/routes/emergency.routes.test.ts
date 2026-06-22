@@ -35,6 +35,12 @@ jest.mock('winston', () => {
   };
 });
 
+jest.mock('../services/encryption.service', () => ({
+  EncryptionService: {
+    decryptPhone: jest.fn().mockReturnValue('+2348012345678'),
+  },
+}));
+
 jest.mock('../services/notifications/notification.service', () => ({
   NotificationService: jest.fn().mockImplementation(() => ({
     sendTripStarted: jest.fn().mockResolvedValue(undefined),

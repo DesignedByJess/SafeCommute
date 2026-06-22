@@ -1,5 +1,22 @@
 @import 'tailwindcss';
 
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-reveal,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #F9FAFB inset !important;
+  box-shadow: 0 0 0 1000px #F9FAFB inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #111827 !important;
+}
+
 :root {
   --color-primary: #0891B2;
   --color-primary-dark: #0E7490;

@@ -1,10 +1,12 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Timer, MapPin } from 'lucide-react'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { api } from '../../services/api'
 import { useTrip } from '../../hooks/useTrip'
+import { useTripSocket } from '../../hooks/useTripSocket'
 import { sanitize } from '../../utils/sanitize'
 import { maskPlate } from '../../utils/format'
 
@@ -25,8 +27,11 @@ export default function ActiveTripPage() {
   const [ending, setEnding] = useState(false)
   const [emergencySending, setEmergencySending] = useState(false)
   const [showEmergencyModal, setShowEmergencyModal] = useState(false)
+  const [elapsed, setElapsed] = useState('')
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const navigate = useNavigate()
   const { clearActiveTrip } = useTrip()
+  const { connected, sendLocation } = useTripSocket()
 
   const fetchTrip = useCallback(async () => {
     try {
@@ -46,6 +51,27 @@ export default function ActiveTripPage() {
     fetchTrip()
   }, [fetchTrip])
 
+  useEffect(() => {
+    if (!trip?.started_at) return
+    const start = new Date(trip.started_at).getTime()
+
+    timerRef.current = setInterval(() => {
+      const diff = Date.now() - start
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setElapsed(
+        h > 0
+          ? `${h}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`
+          : `${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`,
+      )
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [trip?.started_at])
+
   const handleEndTrip = async () => {
     if (!trip) return
     setEnding(true)
@@ -62,7 +88,7 @@ export default function ActiveTripPage() {
     if (!trip) return
     setEmergencySending(true)
     try {
-      await api.post(`/trips/${trip.id}/emergency`, { lat: 6.5244, lng: 3.3792 })
+      await api.post(`/emergency/${trip.id}/trigger`, { lat: 6.5244, lng: 3.3792 })
       clearActiveTrip()
       navigate('/')
     } finally {
@@ -81,27 +107,43 @@ export default function ActiveTripPage() {
       </div>
 
       <Card>
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm text-gray-500">Destination</p>
-            <p className="font-semibold text-gray-900">{sanitize(trip.destination_address)}</p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Timer className="w-5 h-5 text-[#0891B2]" />
+              <span className="text-lg font-semibold text-gray-900 tabular-nums">{elapsed || '00m 00s'}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`} />
+              <span className="text-xs text-gray-500">{connected ? 'Live' : 'Connecting...'}</span>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500">Contact</p>
-            <p className="font-semibold text-gray-900">{sanitize(trip.contact_name)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Vehicle Plate</p>
-            <p className="font-semibold text-gray-900">{maskPlate(trip.vehicle_plate)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Status</p>
-            <span
-              className="inline-block mt-0.5 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full"
-              aria-live="polite"
-            >
-              {trip.status}
-            </span>
+          <div className="border-t border-gray-100 pt-3 space-y-3">
+            <div>
+              <p className="text-sm text-gray-500">Destination</p>
+              <p className="font-semibold text-gray-900">{sanitize(trip.destination_address)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Contact</p>
+              <p className="font-semibold text-gray-900">{sanitize(trip.contact_name)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Vehicle Plate</p>
+              <p className="font-semibold text-gray-900">{maskPlate(trip.vehicle_plate)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Share Link</p>
+              <p className="font-mono text-xs text-gray-500 truncate">safecommute.app/share/{trip.share_token}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Status</p>
+              <span
+                className="inline-block mt-0.5 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full"
+                aria-live="polite"
+              >
+                {trip.status}
+              </span>
+            </div>
           </div>
         </div>
       </Card>

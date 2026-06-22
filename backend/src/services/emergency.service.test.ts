@@ -1,3 +1,5 @@
+process.env.PHONE_KEY = '0123456789abcdef0123456789abcdef';
+
 jest.mock('../models', () => ({
   Trip: {
     findOne: jest.fn(),
@@ -38,8 +40,11 @@ jest.mock('./notifications/notification.service', () => ({
 }));
 
 import { EmergencyService } from './emergency.service';
+import { EncryptionService } from './encryption.service';
 import { Trip, EmergencyAlert } from '../models';
 import { NotificationService } from './notifications/notification.service';
+
+const testEncryptedPhone = EncryptionService.encryptPhone('+2348012345678');
 
 const TripFindOne = Trip.findOne as jest.Mock;
 const AlertFindOne = EmergencyAlert.findOne as jest.Mock;
@@ -79,7 +84,7 @@ describe('EmergencyService', () => {
         user_id: userId,
         status: 'active',
         contact_name: 'Alice',
-        contact_phone_encrypted: 'enc123',
+        contact_phone_encrypted: testEncryptedPhone,
         share_token: 'token123',
         save: jest.fn().mockResolvedValue(undefined),
       };
@@ -115,7 +120,7 @@ describe('EmergencyService', () => {
         user_id: userId,
         status: 'active',
         contact_name: 'Alice',
-        contact_phone_encrypted: 'enc123',
+        contact_phone_encrypted: testEncryptedPhone,
         share_token: 'token123',
         save: jest.fn().mockResolvedValue(undefined),
       };
@@ -127,7 +132,7 @@ describe('EmergencyService', () => {
       const mockInstance = (NotificationService as jest.Mock).mock.results[0].value;
       expect(mockInstance.sendEmergencyAlert).toHaveBeenCalledWith({
         contactName: 'Alice',
-        contactPhone: 'enc123',
+        contactPhone: '+2348012345678',
         shareToken: 'token123',
         lat: 6.5,
         lng: 3.3,

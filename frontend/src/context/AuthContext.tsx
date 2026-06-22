@@ -11,16 +11,23 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
+  onboardingComplete: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
+  completeOnboarding: () => void
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
 
+const ONBOARDING_KEY = 'safecommute_onboarding_complete'
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
+  const [onboardingComplete, setOnboardingComplete] = useState(() => {
+    return localStorage.getItem(ONBOARDING_KEY) === 'true'
+  })
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true)
@@ -37,6 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/auth/signup', { name, email, password })
       setUser(res.data.data.user)
+      localStorage.removeItem(ONBOARDING_KEY)
+      setOnboardingComplete(false)
     } finally {
       setLoading(false)
     }
@@ -46,8 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  const completeOnboarding = useCallback(() => {
+    localStorage.setItem(ONBOARDING_KEY, 'true')
+    setOnboardingComplete(true)
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, onboardingComplete, login, signup, logout, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   )

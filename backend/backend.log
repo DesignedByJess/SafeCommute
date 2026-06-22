@@ -1,0 +1,16 @@
+
+> safecommute-backend@1.0.0 dev
+> ts-node-dev --respawn --transpile-only src/app.ts
+
+[INFO] 11:26:29 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[32minfo[39m: SafeCommute backend running on port 3000 {"timestamp":"2026-06-22T10:26:33.499Z"}
+Executing (default): DELETE FROM "trips" WHERE "expires_at" < '2026-06-22 10:26:33.493 +00:00'
+Executing (default): DELETE FROM "contacts" WHERE "deleted_at" < '2026-06-15 10:26:35.847 +00:00'
+Executing (default): DELETE FROM "audit_logs" WHERE "created_at" < '2026-05-23 10:26:35.993 +00:00'
+(sequelize) Warning: Model "AuditLog" is declaring public class fields for attribute(s): "id", "user_id", "event_type", "event_data", "ip_address", "user_agent", "created_at".
+These class fields are shadowing Sequelize's attribute getters & setters.
+See https://sequelize.org/main/manual/model-basics.html#caveat-with-public-class-fields
+Executing (default): INSERT INTO "audit_logs" ("id","user_id","event_type","event_data","ip_address","user_agent","created_at") VALUES (DEFAULT,$1,$2,$3,$4,$5,$6) RETURNING "id","user_id","event_type","event_data","ip_address","user_agent","created_at";
+[32minfo[39m: Audit Event: signup {"eventData":{"email":"jessicapinaowei@gmail.com","name":"Jessica Pinaowei"},"ipAddress":"::1","timestamp":"2026-06-22T11:03:26.401Z","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0","userId":"8bd1b470-b9ce-4b45-91f8-9d99a03507d8"}
+Executing (default): SELECT "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at" FROM "trips" AS "Trip" WHERE "Trip"."user_id" = '8bd1b470-b9ce-4b45-91f8-9d99a03507d8' AND "Trip"."status" = 'active' LIMIT 1;
+Executing (default): SELECT "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at" FROM "trips" AS "Trip" WHERE "Trip"."user_id" = '8bd1b470-b9ce-4b45-91f8-9d99a03507d8' AND "Trip"."status" = 'active' LIMIT 1;

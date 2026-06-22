@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { login, loading } = useAuth()
+  const { login, loading, onboardingComplete } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setError('')
     try {
       await login(email, password)
-      navigate('/')
+      navigate(onboardingComplete ? '/' : '/onboarding', { replace: true })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Sign in failed. Please try again.'
       setError(message)
@@ -52,6 +52,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
+            showPasswordToggle
             required
           />
           <Button type="submit" loading={loading} className="w-full">

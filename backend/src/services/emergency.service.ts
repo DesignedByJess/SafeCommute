@@ -1,5 +1,6 @@
 import { Trip, EmergencyAlert } from '../models';
 import { auditLog } from './audit.service';
+import { EncryptionService } from './encryption.service';
 import { AppError } from '../utils/errors';
 import { NotificationService } from './notifications/notification.service';
 
@@ -45,9 +46,11 @@ export class EmergencyService {
       lng: input.lng,
     });
 
+    const contactPhone = EncryptionService.decryptPhone(trip.contact_phone_encrypted);
+
     await this.notificationService.sendEmergencyAlert({
       contactName: trip.contact_name,
-      contactPhone: trip.contact_phone_encrypted,
+      contactPhone,
       shareToken: trip.share_token,
       lat: input.lat,
       lng: input.lng,

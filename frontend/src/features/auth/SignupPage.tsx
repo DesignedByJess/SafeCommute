@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
@@ -25,7 +25,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const { signup, loading } = useAuth()
-  const navigate = useNavigate()
 
   const unmet = useMemo(
     () => requirements.filter((r) => !r.test(password)),
@@ -50,7 +49,6 @@ export default function SignupPage() {
 
     try {
       await signup(name, email, password)
-      navigate('/')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Signup failed. Please try again.'
       setError(message)
@@ -94,6 +92,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              showPasswordToggle
               required
             />
             {password && unmet.length > 0 && (
@@ -112,6 +111,7 @@ export default function SignupPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Repeat your password"
+            showPasswordToggle
             required
           />
           <Button type="submit" loading={loading} disabled={!allMet} className="w-full">
