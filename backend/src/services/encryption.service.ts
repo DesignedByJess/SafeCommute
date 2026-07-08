@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 
-// Ensure required environment variables exist
-const MASTER_KEY = process.env.MASTER_KEY || 'default-master-key-must-be-32-chars-long!'; // 32 bytes for AES-256
-const PHONE_KEY = process.env.PHONE_KEY || 'default-phone-key-must-be-32-chars-long!';   // 32 bytes for AES-256
+// Derive 32-byte keys for AES-256 from environment variables using SHA-256
+const MASTER_KEY = crypto.createHash('sha256').update(process.env.MASTER_KEY || 'default-master-key').digest();
+const PHONE_KEY = crypto.createHash('sha256').update(process.env.PHONE_KEY || 'default-phone-key').digest();
 
 export class EncryptionService {
   /**
@@ -10,7 +10,7 @@ export class EncryptionService {
    */
   static encryptPhone(phone: string): string {
     const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(PHONE_KEY, 'utf-8'), iv);
+    const cipher = crypto.createCipheriv('aes-256-gcm', PHONE_KEY, iv);
     
     let encrypted = cipher.update(phone, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -34,7 +34,7 @@ export class EncryptionService {
       const authTag = Buffer.from(parts[1], 'hex');
       const encryptedText = Buffer.from(parts[2], 'hex');
       
-      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(PHONE_KEY, 'utf-8'), iv);
+      const decipher = crypto.createDecipheriv('aes-256-gcm', PHONE_KEY, iv);
       decipher.setAuthTag(authTag);
       
       let decrypted = decipher.update(encryptedText, undefined, 'utf8');
@@ -76,7 +76,7 @@ export class EncryptionService {
 
     // 3. Encrypt data key with MASTER_KEY (AES-256-CBC)
     const dataKeyIv = crypto.randomBytes(16);
-    const dataKeyCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(MASTER_KEY, 'utf-8'), dataKeyIv);
+    const dataKeyCipher = crypto.createCipheriv('aes-256-cbc', MASTER_KEY, dataKeyIv);
     let encryptedDataKey = dataKeyCipher.update(dataKey, undefined, 'hex');
     encryptedDataKey += dataKeyCipher.final('hex');
     const formattedDataKey = `${dataKeyIv.toString('hex')}:${encryptedDataKey}`;
@@ -100,7 +100,7 @@ export class EncryptionService {
       const dataKeyIv = Buffer.from(dataKeyParts[0], 'hex');
       const dataKeyEncrypted = Buffer.from(dataKeyParts[1], 'hex');
       
-      const dataKeyDecipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(MASTER_KEY, 'utf-8'), dataKeyIv);
+      const dataKeyDecipher = crypto.createDecipheriv('aes-256-cbc', MASTER_KEY, dataKeyIv);
       let decryptedDataKey = dataKeyDecipher.update(dataKeyEncrypted);
       decryptedDataKey = Buffer.concat([decryptedDataKey, dataKeyDecipher.final()]);
 

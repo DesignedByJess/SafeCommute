@@ -14,3 +14,111 @@ Executing (default): INSERT INTO "audit_logs" ("id","user_id","event_type","even
 [32minfo[39m: Audit Event: signup {"eventData":{"email":"jessicapinaowei@gmail.com","name":"Jessica Pinaowei"},"ipAddress":"::1","timestamp":"2026-06-22T11:03:26.401Z","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0","userId":"8bd1b470-b9ce-4b45-91f8-9d99a03507d8"}
 Executing (default): SELECT "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at" FROM "trips" AS "Trip" WHERE "Trip"."user_id" = '8bd1b470-b9ce-4b45-91f8-9d99a03507d8' AND "Trip"."status" = 'active' LIMIT 1;
 Executing (default): SELECT "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at" FROM "trips" AS "Trip" WHERE "Trip"."user_id" = '8bd1b470-b9ce-4b45-91f8-9d99a03507d8' AND "Trip"."status" = 'active' LIMIT 1;
+Executing (default): INSERT INTO "audit_logs" ("id","user_id","event_type","event_data","ip_address","user_agent","created_at") VALUES (DEFAULT,$1,$2,$3,$4,$5,$6) RETURNING "id","user_id","event_type","event_data","ip_address","user_agent","created_at";
+[32minfo[39m: Audit Event: signup {"eventData":{"email":"testfix_1782128101573@example.com","name":"Test User"},"ipAddress":"::1","timestamp":"2026-06-22T11:35:04.659Z","userAgent":"node","userId":"28c3934d-b768-4ac8-89c4-47499b6ada20"}
+Executing (default): SELECT "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at" FROM "trips" AS "Trip" WHERE "Trip"."user_id" = '28c3934d-b768-4ac8-89c4-47499b6ada20' AND "Trip"."status" = 'active' LIMIT 1;
+Executing (default): SELECT "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at" FROM "trips" AS "Trip" WHERE "Trip"."user_id" = '8bd1b470-b9ce-4b45-91f8-9d99a03507d8' AND "Trip"."status" = 'active' LIMIT 1;
+Executing (default): SELECT "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at" FROM "trips" AS "Trip" WHERE "Trip"."user_id" = '8bd1b470-b9ce-4b45-91f8-9d99a03507d8' AND "Trip"."status" = 'active' LIMIT 1;
+[INFO] 13:02:21 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\middleware\authenticate.ts has been modified
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:2009:16)
+    at listenInCluster (node:net:2066:12)
+    at Server.listen (node:net:2171:7)
+    at Object.<anonymous> (C:\Users\Peter\Desktop\SafeCommute\backend\src\app.ts:73:12)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1854:14)
+    at Module._compile (C:\Users\Peter\Desktop\SafeCommute\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:69:33)
+    at node:internal/modules/cjs/loader:1985:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:114:20)
+    at require.extensions.<computed> (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:71:20)
+[ERROR] 13:02:32 Error: listen EADDRINUSE: address already in use :::3000
+[INFO] 22:59:34 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\services\encryption.service.ts has been modified
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:2009:16)
+    at listenInCluster (node:net:2066:12)
+    at Server.listen (node:net:2171:7)
+    at Object.<anonymous> (C:\Users\Peter\Desktop\SafeCommute\backend\src\app.ts:73:12)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1854:14)
+    at Module._compile (C:\Users\Peter\Desktop\SafeCommute\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:69:33)
+    at node:internal/modules/cjs/loader:1985:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:114:20)
+    at require.extensions.<computed> (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:71:20)
+[ERROR] 22:59:42 Error: listen EADDRINUSE: address already in use :::3000
+[INFO] 22:59:56 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\services\encryption.service.ts has been modified
+[32minfo[39m: SafeCommute backend running on port 3000 {"timestamp":"2026-06-22T22:00:04.294Z"}
+Executing (default): DELETE FROM "trips" WHERE "expires_at" < '2026-06-22 22:00:04.276 +00:00'
+Executing (default): DELETE FROM "contacts" WHERE "deleted_at" < '2026-06-15 22:00:07.491 +00:00'
+Executing (default): DELETE FROM "audit_logs" WHERE "created_at" < '2026-05-23 22:00:07.646 +00:00'
+[INFO] 23:00:13 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\services\encryption.service.ts has been modified
+[32minfo[39m: SafeCommute backend running on port 3000 {"timestamp":"2026-06-22T22:00:20.510Z"}
+Executing (default): DELETE FROM "trips" WHERE "expires_at" < '2026-06-22 22:00:20.500 +00:00'
+Executing (default): DELETE FROM "contacts" WHERE "deleted_at" < '2026-06-15 22:00:23.197 +00:00'
+Executing (default): DELETE FROM "audit_logs" WHERE "created_at" < '2026-05-23 22:00:23.339 +00:00'
+[INFO] 23:00:38 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\services\encryption.service.ts has been modified
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:2009:16)
+    at listenInCluster (node:net:2066:12)
+    at Server.listen (node:net:2171:7)
+    at Object.<anonymous> (C:\Users\Peter\Desktop\SafeCommute\backend\src\app.ts:73:12)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1854:14)
+    at Module._compile (C:\Users\Peter\Desktop\SafeCommute\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:69:33)
+    at node:internal/modules/cjs/loader:1985:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:114:20)
+    at require.extensions.<computed> (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:71:20)
+[ERROR] 23:00:45 Error: listen EADDRINUSE: address already in use :::3000
+[INFO] 23:00:51 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\services\encryption.service.ts has been modified
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:2009:16)
+    at listenInCluster (node:net:2066:12)
+    at Server.listen (node:net:2171:7)
+    at Object.<anonymous> (C:\Users\Peter\Desktop\SafeCommute\backend\src\app.ts:73:12)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1854:14)
+    at Module._compile (C:\Users\Peter\Desktop\SafeCommute\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:69:33)
+    at node:internal/modules/cjs/loader:1985:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:114:20)
+    at require.extensions.<computed> (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:71:20)
+[ERROR] 23:00:58 Error: listen EADDRINUSE: address already in use :::3000
+[INFO] 23:54:25 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\utils\sanitize.ts has been modified
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:2009:16)
+    at listenInCluster (node:net:2066:12)
+    at Server.listen (node:net:2171:7)
+    at Object.<anonymous> (C:\Users\Peter\Desktop\SafeCommute\backend\src\app.ts:73:12)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1854:14)
+    at Module._compile (C:\Users\Peter\Desktop\SafeCommute\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:69:33)
+    at node:internal/modules/cjs/loader:1985:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:114:20)
+    at require.extensions.<computed> (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:71:20)
+[ERROR] 23:54:38 Error: listen EADDRINUSE: address already in use :::3000
+[INFO] 23:54:40 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\routes\contacts.routes.ts has been modified
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:2009:16)
+    at listenInCluster (node:net:2066:12)
+    at Server.listen (node:net:2171:7)
+    at Object.<anonymous> (C:\Users\Peter\Desktop\SafeCommute\backend\src\app.ts:73:12)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1854:14)
+    at Module._compile (C:\Users\Peter\Desktop\SafeCommute\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:69:33)
+    at node:internal/modules/cjs/loader:1985:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:114:20)
+    at require.extensions.<computed> (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:71:20)
+[ERROR] 23:54:48 Error: listen EADDRINUSE: address already in use :::3000
+[INFO] 02:01:45 Restarting: C:\Users\Peter\Desktop\SafeCommute\backend\src\routes\index.ts has been modified
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:2009:16)
+    at listenInCluster (node:net:2066:12)
+    at Server.listen (node:net:2171:7)
+    at Object.<anonymous> (C:\Users\Peter\Desktop\SafeCommute\backend\src\app.ts:73:12)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1854:14)
+    at Module._compile (C:\Users\Peter\Desktop\SafeCommute\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:69:33)
+    at node:internal/modules/cjs/loader:1985:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:114:20)
+    at require.extensions.<computed> (C:\Users\Peter\AppData\Local\Temp\ts-node-dev-hook-886496601093705.js:71:20)
+[ERROR] 02:01:53 Error: listen EADDRINUSE: address already in use :::3000
+
+C:\Users\Peter\Desktop\SafeCommute\backend>

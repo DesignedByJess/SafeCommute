@@ -17,6 +17,17 @@ input:-webkit-autofill:active {
   caret-color: #111827 !important;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+button:active {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
 :root {
   --color-primary: #0891B2;
   --color-primary-dark: #0E7490;
@@ -34,6 +45,16 @@ input:-webkit-autofill:active {
 body {
   font-family: 'Inter', sans-serif;
   min-height: 100dvh;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes scanPulse {
+  0%, 100% { opacity: 0.2; transform: translateY(-6px); }
+  50% { opacity: 0.7; transform: translateY(6px); }
 }
 
 @theme {

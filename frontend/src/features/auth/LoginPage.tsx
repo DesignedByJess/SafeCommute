@@ -4,6 +4,7 @@ import { Shield } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { useAuth } from '../../hooks/useAuth'
+import type { AxiosError } from 'axios'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -19,7 +20,10 @@ export default function LoginPage() {
       await login(email, password)
       navigate(onboardingComplete ? '/' : '/onboarding', { replace: true })
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Sign in failed. Please try again.'
+      const axiosErr = err as AxiosError<{ error?: string; code?: string }>
+      const message = axiosErr?.response?.data?.error
+        ?? (err instanceof Error ? err.message : null)
+        ?? 'Sign in failed. Please try again.'
       setError(message)
     }
   }
@@ -46,18 +50,28 @@ export default function LoginPage() {
             placeholder="you@example.com"
             required
           />
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            showPasswordToggle
-            required
-          />
-          <Button type="submit" loading={loading} className="w-full">
-            Sign In
-          </Button>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
+              <Link to="/forgot-password" className="text-sm text-[#0891B2] hover:text-[#0E7490] font-medium">
+                Forgot password?
+              </Link>
+            </div>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              showPasswordToggle
+              required
+            />
+          </div>
+          <div className="pt-4">
+            <Button type="submit" loading={loading} className="w-full">
+              Sign In
+            </Button>
+          </div>
         </form>
         <p className="text-center text-sm text-gray-500 mt-6">
           Don't have an account?{' '}

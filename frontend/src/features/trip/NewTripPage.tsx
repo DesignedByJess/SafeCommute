@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Scan, MapPin, User, Shield } from 'lucide-react'
-import { Card } from '../../components/Card'
+import { ArrowRight, MapPin, Plus, X } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { api } from '../../services/api'
+import { LicensePlateCaptureScreen } from './LicensePlateCaptureScreen'
 
 type Step = 'destination' | 'vehicle' | 'contact' | 'notes'
 
@@ -25,7 +25,6 @@ export default function NewTripPage() {
   const [noteInput, setNoteInput] = useState('')
 
   const stepIndex = stepLabels.indexOf(step)
-  const progress = ((stepIndex + 1) / stepLabels.length) * 100
   const isLast = stepIndex === stepLabels.length - 1
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,80 +97,54 @@ export default function NewTripPage() {
     }
   }, [form, navigate])
 
-  const steps: Record<Step, { title: string; subtitle: string; icon: typeof MapPin }> = {
-    destination: { title: 'Where are you going?', subtitle: 'Enter your destination address', icon: MapPin },
-    vehicle: { title: 'Vehicle Details', subtitle: 'Enter the license plate number', icon: Scan },
-    contact: { title: 'Notify Contact', subtitle: 'Who should track this trip?', icon: User },
-    notes: { title: 'Safety Notes', subtitle: 'Add any helpful details (optional)', icon: Shield },
+  const steps: Record<Step, { title: string; subtitle: string }> = {
+    destination: { title: 'Where are you going?', subtitle: 'Enter your destination address' },
+    vehicle: { title: 'Vehicle Details', subtitle: 'Enter the license plate number' },
+    contact: { title: 'Notify Contact', subtitle: 'Who should track this trip?' },
+    notes: { title: 'Safety Notes', subtitle: 'Add any helpful details (optional)' },
+  }
+
+  if (step === 'vehicle') {
+    return (
+      <LicensePlateCaptureScreen
+        onBack={handleBack}
+        onConfirm={(plate) => {
+          setForm((prev) => ({ ...prev, vehicle_plate: plate }))
+          setStep('contact')
+        }}
+      />
+    )
   }
 
   const current = steps[step]
-  const Icon = current.icon
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleBack}
-          className="p-2 text-gray-500 hover:text-gray-700 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{current.title}</h1>
-          <p className="text-sm text-gray-500">{current.subtitle}</p>
-        </div>
+    <div className="min-h-[calc(100vh-6rem)] flex flex-col px-6 py-6 max-w-md mx-auto w-full">
+      <div className="mb-6 text-center">
+        <h1 className="text-xl font-bold text-gray-900">{current.title}</h1>
+        <p className="text-sm text-gray-500">{current.subtitle}</p>
       </div>
 
-      <div className="w-full bg-gray-200 rounded-full h-1.5">
-        <div className="bg-[#0891B2] h-1.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
-      </div>
-
-      {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-          {error}
-        </div>
-      )}
-
-      <Card>
-        <form onSubmit={(e) => { e.preventDefault(); handleNext() }} className="space-y-4">
+      <form onSubmit={(e) => { e.preventDefault(); handleNext() }} className="space-y-5 flex-1 flex flex-col">
           {step === 'destination' && (
-            <>
-              <div className="flex items-center justify-center w-12 h-12 bg-[#E0F2FE] rounded-full mb-2">
-                <Icon className="w-6 h-6 text-[#0891B2]" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Destination</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                <input
+                  value={form.destination_address}
+                  onChange={handleChange('destination_address')}
+                  placeholder="Search address or area"
+                  autoFocus
+                  className="block w-full rounded-lg border border-[#CBD4DB] pl-10 pr-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px]"
+                />
               </div>
-              <Input
-                label="Destination Address"
-                value={form.destination_address}
-                onChange={handleChange('destination_address')}
-                placeholder="e.g. 123 Awolowo Road, Ikeja"
-                required
-                autoFocus
-              />
-            </>
-          )}
-
-          {step === 'vehicle' && (
-            <>
-              <div className="flex items-center justify-center w-12 h-12 bg-[#E0F2FE] rounded-full mb-2">
-                <Icon className="w-6 h-6 text-[#0891B2]" />
-              </div>
-              <Input
-                label="Vehicle Plate Number"
-                value={form.vehicle_plate}
-                onChange={handleChange('vehicle_plate')}
-                placeholder="e.g. KTU-456-XZ"
-                required
-                autoFocus
-              />
-            </>
+              {error && <p className="text-sm text-red-600 mt-1.5">{error}</p>}
+            </div>
           )}
 
           {step === 'contact' && (
-            <>
-              <div className="flex items-center justify-center w-12 h-12 bg-[#E0F2FE] rounded-full mb-2">
-                <Icon className="w-6 h-6 text-[#0891B2]" />
-              </div>
+            <div className="space-y-4">
               <Input
                 label="Contact Name"
                 value={form.contact_name}
@@ -181,21 +154,19 @@ export default function NewTripPage() {
                 autoFocus
               />
               <Input
-                label="Contact Phone"
+                label="Phone Number"
                 type="tel"
                 value={form.contact_phone}
                 onChange={handleChange('contact_phone')}
-                placeholder="+2348012345678"
+                placeholder="+234 800 000 0000"
                 required
               />
-            </>
+              {error && <p className="text-sm text-red-600 mt-1.5">{error}</p>}
+            </div>
           )}
 
           {step === 'notes' && (
-            <>
-              <div className="flex items-center justify-center w-12 h-12 bg-[#E0F2FE] rounded-full mb-2">
-                <Icon className="w-6 h-6 text-[#0891B2]" />
-              </div>
+            <div className="space-y-4">
               <p className="text-sm text-gray-600">
                 Add details your contact should know (driver description, route landmarks, etc.)
               </p>
@@ -207,41 +178,43 @@ export default function NewTripPage() {
                   className="flex-1"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNote() } }}
                 />
-                <Button type="button" variant="secondary" onClick={addNote} className="shrink-0">
-                  Add
+                <Button type="button" variant="secondary" onClick={addNote} className="shrink-0 min-w-[44px] px-3">
+                  <Plus className="w-5 h-5" />
                 </Button>
               </div>
               {form.safety_notes.length > 0 && (
-                <ul className="space-y-1.5">
+                <div className="flex flex-wrap gap-2">
                   {form.safety_notes.map((note, i) => (
-                    <li key={i} className="flex items-center justify-between text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
-                      <span>{note}</span>
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 rounded-full px-4 py-2 text-sm"
+                    >
+                      {note}
                       <button
                         type="button"
                         onClick={() => removeNote(i)}
-                        className="text-gray-400 hover:text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-gray-400 hover:text-gray-600"
                       >
-                        ✕
+                        <X className="w-4 h-4" />
                       </button>
-                    </li>
+                    </span>
                   ))}
-                </ul>
+                </div>
               )}
-            </>
+            </div>
           )}
 
-          <Button type="submit" loading={loading} className="w-full">
+          <Button type="submit" loading={loading} className="w-full rounded-2xl py-4 text-base font-semibold min-h-14">
             {isLast ? 'Start Trip' : 'Continue'}
-            {!isLast && <ArrowRight className="w-4 h-4 ml-2" />}
+            {!isLast && <ArrowRight className="w-5 h-5 ml-2" />}
           </Button>
-        </form>
-      </Card>
+      </form>
 
-      <div className="flex justify-center gap-1.5">
+      <div className="flex justify-center gap-2 pt-8">
         {stepLabels.map((s, i) => (
           <span
             key={s}
-            className={`w-2 h-2 rounded-full ${
+            className={`w-2.5 h-2.5 rounded-full transition-colors ${
               i <= stepIndex ? 'bg-[#0891B2]' : 'bg-gray-300'
             }`}
           />

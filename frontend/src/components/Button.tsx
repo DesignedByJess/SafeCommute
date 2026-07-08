@@ -16,7 +16,7 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const base = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]'
+  const base = 'inline-flex items-center justify-center font-medium rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] active:outline-none active:scale-[0.97]'
 
   const variants: Record<string, string> = {
     primary: 'bg-[#0891B2] text-white hover:bg-[#0E7490] focus:ring-[#0891B2]',

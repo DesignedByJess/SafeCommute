@@ -29,7 +29,7 @@ router.post('/', validate(createContactSchema), async (req: Request, res: Respon
     sendCreated(res, {
       id: contact.id,
       name: contact.name,
-      phone_number_encrypted: maskPhone(contact.phone_number_encrypted),
+      phone_number_encrypted: maskPhone(contact.get('phone_number_encrypted') as string),
       relationship: contact.relationship,
       verified: contact.verified,
       created_at: contact.created_at,

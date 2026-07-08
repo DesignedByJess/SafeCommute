@@ -1,5 +1,5 @@
-export function maskPhone(phone: string): string {
-  if (phone.length < 7) return phone;
+export function maskPhone(phone: string | null | undefined): string {
+  if (!phone || phone.length < 7) return phone || '';
   const prefix = phone.slice(0, 5);
   const suffix = phone.slice(-4);
   return `${prefix}***${suffix}`;

@@ -10,6 +10,10 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use(async (config) => {
+  const url = config.url ?? ''
+  if (url.includes('/auth/')) {
+    return config
+  }
   try {
     const csrfResp = await axios.get(`${BASE_URL}/csrf-token`, { withCredentials: true, timeout: 5000 })
     const token = csrfResp.data?.data?.csrfToken

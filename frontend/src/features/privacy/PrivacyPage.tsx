@@ -1,5 +1,6 @@
 import { Shield, Lock, Clock, Database } from 'lucide-react'
 import { Card } from '../../components/Card'
+import { BottomNav } from '../../components/BottomNav'
 
 const policies = [
   {
@@ -26,13 +27,13 @@ const policies = [
 
 export default function PrivacyPage() {
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Privacy & Security</h1>
-        <p className="text-sm text-gray-500 mt-1">How we protect your data</p>
+    <div className="min-h-screen bg-white flex flex-col pb-20">
+      <div className="px-6 pt-6 pb-4">
+        <h1 className="text-2xl font-bold text-[#1a2b4a]">Privacy & Security</h1>
+        <p className="text-base text-gray-500 mt-1">How we protect your data</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex-1 px-6 space-y-3">
         {policies.map((item) => (
           <Card key={item.title}>
             <div className="flex gap-3">
@@ -44,14 +45,16 @@ export default function PrivacyPage() {
             </div>
           </Card>
         ))}
+
+        <Card className="bg-[#E0F2FE] border-[#0891B2]/20">
+          <p className="text-sm text-gray-700">
+            SafeCommute is compliant with the Nigeria Data Protection Act (NDPA) 2023.
+            For privacy concerns, contact <span className="font-medium">privacy@safecommute.app</span>.
+          </p>
+        </Card>
       </div>
 
-      <Card className="bg-[#E0F2FE] border-[#0891B2]/20">
-        <p className="text-sm text-gray-700">
-          SafeCommute is compliant with the Nigeria Data Protection Act (NDPA) 2023.
-          For privacy concerns, contact <span className="font-medium">privacy@safecommute.app</span>.
-        </p>
-      </Card>
+      <BottomNav />
     </div>
   )
 }

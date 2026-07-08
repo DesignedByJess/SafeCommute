@@ -1,31 +1,50 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, UserPlus, MapPin, ArrowLeft, Check, Phone, ChevronRight } from 'lucide-react'
+import { Shield, UserPlus, MapPin, ArrowLeft, Check, Phone, ChevronRight, ChevronDown } from 'lucide-react'
 import { Button } from '../../components/Button'
-import { Input } from '../../components/Input'
 import { useAuth } from '../../hooks/useAuth'
 import { api } from '../../services/api'
 
+const RELATIONSHIPS = ['Sister', 'Brother', 'Parent', 'Spouse', 'Friend', 'Other'] as const
+
 interface StepProps {
-  onNext: () => void
+  onNext?: () => void
   onSkip: () => void
   onBack?: () => void
   isFirst: boolean
   isLast: boolean
+  stepIndex: number
+}
+
+function Dots({ active, total = 3 }: { active: number; total?: number }) {
+  return (
+    <div className="flex justify-center items-center gap-2">
+      {Array.from({ length: total }, (_, i) => {
+        if (i < active) {
+          return (
+            <div key={i} className="w-2.5 h-2.5 rounded-full bg-[#0891B2] flex items-center justify-center">
+              <Check className="w-2 h-2 text-white" strokeWidth={4} />
+            </div>
+          )
+        }
+        if (i === active) {
+          return <div key={i} className="w-3 h-3 rounded-full bg-[#0891B2]" />
+        }
+        return <div key={i} className="w-2.5 h-2.5 rounded-full border border-gray-300 bg-transparent" />
+      })}
+    </div>
+  )
 }
 
 function Step1Welcome({ onNext, onSkip }: StepProps) {
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <button onClick={onSkip} className="absolute top-6 right-6 text-xs text-gray-400 hover:text-gray-600 z-10">
-        Skip
-      </button>
-      <div className="flex-1 flex flex-col justify-center px-6">
-        <div className="flex items-center justify-center">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="flex items-center justify-center pt-4">
           <img
             src="/illustrations/welcome-screen-illustration.png"
             alt="Woman on phone boarding a keke — your safety, our priority"
-            className="w-full max-w-sm h-auto object-contain"
+            className="w-full max-w-[280px] h-auto object-contain"
           />
         </div>
         <div className="pt-6">
@@ -35,127 +54,202 @@ function Step1Welcome({ onNext, onSkip }: StepProps) {
           <p className="text-base text-gray-500 text-center mb-2 leading-relaxed">
             Your safety companion for every journey
           </p>
-          <div className="flex justify-center gap-2 mt-10 mb-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#0891B2]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-            <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
+          <Dots active={0} />
+          <div className="flex justify-center mt-6 mb-4">
+            <Button onClick={onNext} size="lg" className="rounded-2xl py-3 px-[5.5rem] text-base font-semibold min-h-[48px]">
+              Get Started <ChevronRight className="w-5 h-5 ml-1" />
+            </Button>
           </div>
-          <Button onClick={onNext} size="lg" className="w-full rounded-2xl py-4 text-base font-semibold min-h-14">
-            Get Started <ChevronRight className="w-5 h-5 ml-1" />
-          </Button>
+          <div className="flex justify-center mt-2">
+            <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
+              Skip
+            </button>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
+function formatPhoneDisplay(digits: string): string {
+  const parts: string[] = []
+  if (digits.length > 0) parts.push(digits.slice(0, 3))
+  if (digits.length > 3) parts.push(digits.slice(3, 6))
+  if (digits.length > 6) parts.push(digits.slice(6, 10))
+  return parts.join(' ')
+}
+
 function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phoneDigits, setPhoneDigits] = useState('')
+  const [relationship, setRelationship] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [phoneTouched, setPhoneTouched] = useState(false)
+
+  const fullPhone = `+234${phoneDigits}`
+  const phoneValid = phoneDigits.length === 10 && /^[0-9]{10}$/.test(phoneDigits)
+  const formValid = name.trim().length > 0 && phoneValid && relationship.length > 0
+
+  const phoneError = phoneTouched && phoneDigits.length > 0 && !phoneValid
+    ? 'Enter a valid 10-digit number'
+    : ''
 
   const handleSave = async () => {
-    if (!name.trim() || !phone.trim()) return
+    if (!formValid) return
     setSaving(true)
     setError('')
+
     try {
-      await api.post('/contacts', { name: name.trim(), phone_number: phone.trim() })
+      await api.post('/contacts', {
+        name: name.trim(),
+        phone: fullPhone,
+        relationship,
+      })
       setSaved(true)
-    } catch {
-      setError('Could not save contact. You can skip this step and add them later.')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } }
+      setError(axiosErr?.response?.data?.error || 'Could not save contact')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <div className="flex items-center justify-between px-6 pt-6 pb-2">
-        <button onClick={onBack} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600">
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-        <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600">
-          Skip
-        </button>
-      </div>
-      <div className="flex-1 flex flex-col justify-center px-6">
-        <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 rounded-2xl bg-[#E0F2FE] flex items-center justify-center">
-            <UserPlus className="w-10 h-10 text-[#0891B2]" />
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className={`transition-all duration-500 ${saved ? 'opacity-0 pointer-events-none max-h-0 overflow-hidden mb-0' : ''}`}>
+          <div className="flex mb-4">
+            <button onClick={onBack} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
           </div>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
-          Add a Trusted Contact
-        </h1>
-        <p className="text-base text-gray-500 text-center mb-8 leading-relaxed">
-          Add someone who will receive your trip links and live location when you start a journey.
-        </p>
-        {saved ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-full bg-[#DCFCE7] flex items-center justify-center mx-auto mb-4">
-              <Check className="w-8 h-8 text-[#16A34A]" />
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 rounded-2xl bg-[#E0F2FE] flex items-center justify-center">
+              <UserPlus className="w-10 h-10 text-[#0891B2]" />
             </div>
-            <p className="text-lg font-semibold text-gray-900 mb-1">Contact Added</p>
-            <p className="text-sm text-gray-500">We'll send them a verification code shortly.</p>
           </div>
-        ) : (
-          <div className="space-y-5">
+          <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
+            Add a Trusted Contact
+          </h1>
+          <p className="text-base text-gray-500 text-center mb-6 leading-relaxed">
+            Add someone who will receive your trip links and live location when you start a journey.
+          </p>
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
+              <label htmlFor="contact-name" className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
               <input
+                id="contact-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Chioma Okafor"
-                className="block w-full rounded-xl border border-gray-300 bg-gray-100 px-4 py-3 text-base placeholder:text-gray-500 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#BAE6FD] focus:bg-white transition-colors"
+                spellCheck={false}
+                autoComplete="name"
+                className="block w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-[#CBD4DB]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone number</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+234 800 000 0000"
-                className="block w-full rounded-xl border border-gray-300 bg-gray-100 px-4 py-3 text-base placeholder:text-gray-500 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#BAE6FD] focus:bg-white transition-colors"
-              />
+              <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-1.5">Phone number</label>
+              <div className="flex">
+                <span className="inline-flex items-center rounded-l-lg border border-r-0 border-[#CBD4DB] bg-gray-100 px-3 py-2.5 text-sm text-gray-700 font-medium min-h-[44px]">
+                  +234
+                </span>
+                <input
+                  id="contact-phone"
+                  type="tel"
+                  value={formatPhoneDisplay(phoneDigits)}
+                  onChange={(e) => setPhoneDigits(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  onBlur={() => setPhoneTouched(true)}
+                  placeholder="800 000 0000"
+                  autoComplete="tel"
+                  className="block w-full rounded-r-lg border px-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-[#CBD4DB]"
+                  aria-describedby={phoneError ? 'phone-error' : undefined}
+                />
+              </div>
+              {phoneError && <p id="phone-error" className="text-sm text-red-600 mt-1">{phoneError}</p>}
+            </div>
+            <div>
+              <label htmlFor="contact-relationship" className="block text-sm font-medium text-gray-700 mb-1.5">Relationship</label>
+              <div className="relative">
+                <select
+                  id="contact-relationship"
+                  value={relationship}
+                  onChange={(e) => setRelationship(e.target.value)}
+                  className={`block w-full rounded-lg border border-[#CBD4DB] px-3 py-2.5 text-sm shadow-sm transition-colors text-gray-700 appearance-none focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white min-h-[44px] ${
+                    relationship ? 'bg-gray-50' : 'bg-gray-100'
+                  }`}
+                >
+                  <option value="" disabled>Select relationship</option>
+                  {RELATIONSHIPS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
           </div>
+        </div>
+
+        {saved && (
+          <div className="text-center py-4 animate-in">
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 rounded-2xl bg-[#DCFCE7] flex items-center justify-center transition-all duration-500 scale-110">
+                <Check className="w-10 h-10 text-[#16A34A] transition-all duration-500 scale-110" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
+              Contact Added Successfully
+            </h1>
+            <p className="text-base text-gray-500 text-center mb-6 leading-relaxed">
+              {name.trim()} — +234***{phoneDigits.slice(-4)}
+            </p>
+          </div>
         )}
-      </div>
-      <div className="px-6 pb-8">
-        <div className="flex justify-center gap-2 mb-4">
-          <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#0891B2]" />
-          <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
+
+        <div className="flex justify-center items-center mt-8 mb-4">
+          <Dots active={saved ? 2 : 1} />
         </div>
         {saved ? (
-          <Button onClick={onNext} size="lg" className="w-full rounded-2xl py-4 text-base font-semibold min-h-14">
-            Next <ChevronRight className="w-5 h-5 ml-1" />
-          </Button>
+          <div className="space-y-2">
+            <Button onClick={onNext} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
+              Continue
+            </Button>
+            <div className="flex justify-center">
+              <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                Skip
+              </button>
+            </div>
+          </div>
         ) : (
-          <Button
-            onClick={handleSave}
-            loading={saving}
-            disabled={!name.trim() || !phone.trim()}
-            size="lg"
-            className="w-full rounded-2xl py-4 text-base font-semibold min-h-14"
-          >
-            Save Contact
-          </Button>
+          <div className="space-y-2">
+            <Button
+              onClick={handleSave}
+              loading={saving}
+              disabled={!formValid}
+              size="lg"
+              className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]"
+            >
+              Save Contact
+            </Button>
+            <div className="flex justify-center">
+              <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                Skip
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-function Step3Location({ onSkip, onBack }: StepProps) {
+function Step3Location({ onBack }: StepProps) {
   const [permissionStatus, setPermissionStatus] = useState<'idle' | 'granted' | 'denied' | 'loading'>('idle')
   const { completeOnboarding } = useAuth()
   const navigate = useNavigate()
+  const granted = permissionStatus === 'granted'
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -179,31 +273,31 @@ function Step3Location({ onSkip, onBack }: StepProps) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <div className="flex items-center justify-between px-6 pt-6 pb-2">
-        <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 min-h-[44px]">
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-        <button onClick={handleDone} className="text-sm text-gray-500 hover:text-gray-700 font-medium min-h-[44px]">
-          Skip
-        </button>
-      </div>
-      <div className="flex-1 flex flex-col justify-center px-6">
-        <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 rounded-2xl bg-[#E0F2FE] flex items-center justify-center">
-            <MapPin className="w-10 h-10 text-[#0891B2]" />
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="flex mb-4">
+          <button onClick={onBack} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
+        <div className={`flex justify-center mb-6 transition-all duration-500 ${granted ? 'scale-110' : ''}`}>
+          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500 ${granted ? 'bg-[#DCFCE7] scale-110' : 'bg-[#E0F2FE]'}`}>
+            {granted ? (
+              <Check className="w-10 h-10 text-[#16A34A] transition-all duration-500 scale-110" />
+            ) : (
+              <MapPin className="w-10 h-10 text-[#0891B2]" />
+            )}
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 text-center mb-3">
-          Location Access
+        <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight transition-all duration-500">
+          {granted ? 'Location Access Granted' : 'Location Access'}
         </h1>
-        <p className="text-base text-gray-500 text-center mb-8 leading-relaxed">
-          SafeCommute uses your location to share real-time updates with your trusted contacts while a trip is active. Your location is never stored after a trip ends.
+        <p className={`text-base text-gray-500 text-center leading-relaxed transition-all duration-500 ${granted ? 'mb-2' : 'mb-6'}`}>
+          {granted ? 'SafeCommute will only track you during active trips' : "Your location is never stored — shared live only while travelling."}
         </p>
-        <div className="space-y-3 mb-8">
+        <div className={`space-y-3 mb-6 transition-all duration-500 ${granted ? 'opacity-0 pointer-events-none max-h-0 overflow-hidden mb-0' : ''}`}>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
               <MapPin className="w-5 h-5 text-[#0891B2]" />
             </div>
             <p className="text-sm text-gray-700 leading-relaxed pt-2">
@@ -211,7 +305,7 @@ function Step3Location({ onSkip, onBack }: StepProps) {
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
               <Shield className="w-5 h-5 text-[#0891B2]" />
             </div>
             <p className="text-sm text-gray-700 leading-relaxed pt-2">
@@ -219,7 +313,7 @@ function Step3Location({ onSkip, onBack }: StepProps) {
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
               <Phone className="w-5 h-5 text-[#0891B2]" />
             </div>
             <p className="text-sm text-gray-700 leading-relaxed pt-2">
@@ -227,26 +321,13 @@ function Step3Location({ onSkip, onBack }: StepProps) {
             </p>
           </div>
         </div>
-        {permissionStatus === 'granted' && (
-          <div className="flex items-center justify-center gap-2 text-[#16A34A] mb-4">
-            <Check className="w-5 h-5" />
-            <span className="text-sm font-medium">Location access granted</span>
-          </div>
-        )}
         {permissionStatus === 'denied' && (
           <p className="text-sm text-amber-600 text-center mb-4">
             Location access was denied. You can enable it later in your device settings.
           </p>
         )}
-      </div>
-      <div className="px-6 pb-8 space-y-4">
-        <div className="flex justify-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-          <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#0891B2]" />
-        </div>
-        {permissionStatus === 'granted' ? (
-          <Button onClick={handleDone} size="lg" className="w-full rounded-2xl py-4 text-base font-semibold">
+        {granted ? (
+          <Button onClick={handleDone} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
             Go to Dashboard
           </Button>
         ) : (
@@ -254,11 +335,19 @@ function Step3Location({ onSkip, onBack }: StepProps) {
             onClick={permissionStatus === 'idle' ? requestLocation : handleDone}
             loading={permissionStatus === 'loading'}
             size="lg"
-            className="w-full rounded-2xl py-4 text-base font-semibold"
+            className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]"
           >
             {permissionStatus === 'idle' ? 'Enable Location' : 'Continue'}
           </Button>
         )}
+        <div className="flex justify-center items-center mt-4 mb-2">
+          <Dots active={granted ? 3 : 2} />
+        </div>
+        <div className="flex justify-center">
+          <button onClick={handleDone} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
+            Skip
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -273,6 +362,7 @@ export default function OnboardingPage() {
   const shared = {
     isFirst: step === 0,
     isLast: step === 2,
+    stepIndex: step,
   }
 
   return (

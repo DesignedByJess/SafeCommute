@@ -112,6 +112,39 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
   }
 });
 
+router.post('/forgot-password', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return next(new AppError('Email is required', 400, 'VALIDATION_ERROR'));
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${env.SUPABASE_URL}/auth/v1/recover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+        },
+        body: JSON.stringify({ email }),
+      });
+    } catch (fetchErr) {
+      logger.error('Supabase unreachable during password reset', { error: fetchErr });
+      return next(new AppError('Authentication service is unavailable. Please try again later.', 503, 'AUTH_SERVICE_UNAVAILABLE'));
+    }
+
+    if (!response.ok) {
+      const data = await response.json();
+      return next(new AppError(data.msg || 'Failed to send reset email', 400, 'RESET_FAILED'));
+    }
+
+    sendSuccess(res, { message: 'Reset link sent' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;

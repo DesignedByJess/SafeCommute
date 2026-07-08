@@ -1,4 +1,4 @@
-import { createContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import { api } from '../services/api'
 
 interface User {
@@ -11,6 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
+  initialLoading: boolean
   onboardingComplete: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
@@ -25,9 +26,30 @@ const ONBOARDING_KEY = 'safecommute_onboarding_complete'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [onboardingComplete, setOnboardingComplete] = useState(() => {
     return localStorage.getItem(ONBOARDING_KEY) === 'true'
   })
+
+  useEffect(() => {
+    let cancelled = false
+    api.get('/auth/me').then((res) => {
+      if (!cancelled && res.data?.data?.user) {
+        setUser(res.data.data.user)
+      }
+    }).catch(() => {
+      /* no valid session */
+    }).finally(() => {
+      if (!cancelled) setInitialLoading(false)
+    })
+
+    const handleUnauthorized = () => setUser(null)
+    window.addEventListener('auth:unauthorized', handleUnauthorized)
+    return () => {
+      cancelled = true
+      window.removeEventListener('auth:unauthorized', handleUnauthorized)
+    }
+  }, [])
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true)
@@ -61,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, onboardingComplete, login, signup, logout, completeOnboarding }}>
+    <AuthContext.Provider value={{ user, loading, initialLoading, onboardingComplete, login, signup, logout, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   )
