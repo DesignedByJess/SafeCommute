@@ -72,18 +72,24 @@ export class TripService {
   }
 
   async getActiveTrip(userId: string) {
-    return Trip.findOne({
+    const trip = await Trip.findOne({
       where: { user_id: userId, status: 'active' },
+      raw: true,
     });
+    return trip && trip.id ? trip : null;
   }
 
   async getTrip(userId: string, tripId: string) {
-    const trip = await Trip.findOne({ where: { id: tripId, user_id: userId } });
-    if (!trip) throw new AppError('Trip not found', 404, 'NOT_FOUND');
+    const trip = await Trip.findOne({
+      where: { id: tripId, user_id: userId },
+      raw: true,
+    });
+    if (!trip || !trip.id) throw new AppError('Trip not found', 404, 'NOT_FOUND');
 
     const latestLocation = await TripLocation.findOne({
       where: { trip_id: trip.id },
       order: [['recorded_at', 'DESC']],
+      raw: true,
     });
 
     return { trip, latestLocation };

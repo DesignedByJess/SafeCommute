@@ -40,10 +40,10 @@ export function Input({ label, error: externalError, liveError, showPasswordTogg
         <input
           {...props}
           id={inputId}
-          className={`block w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] ${
+          className={`block w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] ${
             showPasswordToggle ? 'pr-10' : ''
           } ${
-            displayError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-[#CBD4DB]'
+            displayError ? 'border-red-500 focus:border-red-500' : 'border-[#CBD4DB]'
           } ${className}`}
           type={showPasswordToggle ? (showPassword ? 'text' : 'password') : type}
           style={

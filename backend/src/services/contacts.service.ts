@@ -3,6 +3,7 @@ import { Contact } from '../models/contact.model';
 import { EncryptionService } from './encryption.service';
 import { auditLog } from './audit.service';
 import { AppError } from '../utils/errors';
+import { env } from '../utils/config';
 
 export class ContactService {
   async listContacts(userId: string) {
@@ -28,6 +29,14 @@ export class ContactService {
     const otp = crypto.randomInt(100000, 999999).toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
+    // DEV-ONLY: surfaces OTP in console/UI for testing without a live SMS
+    // provider. Must never render or log in production (gated by
+    // NODE_ENV). Real SMS delivery still attempted via smsService in all
+    // environments.
+    if (env.NODE_ENV !== 'production') {
+      console.log(`[DEV] OTP for ${input.phone}: ${otp}`);
+    }
+
     const contact = await Contact.create({
       user_id: userId,
       name: input.name,
@@ -41,7 +50,10 @@ export class ContactService {
 
     await auditLog(userId, 'contact_added', { contactId: contact.id });
 
-    return contact;
+    return {
+      ...contact.toJSON(),
+      ...(env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+    };
   }
 
   async verifyOtp(userId: string, contactId: string, otp: string) {

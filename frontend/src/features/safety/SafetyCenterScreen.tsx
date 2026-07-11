@@ -70,8 +70,8 @@ export function SafetyCenterScreen({
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pb-20">
-      <div className="px-6 pt-6 pb-4">
+    <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+      <div className="px-6 pt-14 pb-4">
         <h1 className="text-2xl font-bold text-[#1a2b4a]">Safety Center</h1>
       </div>
 

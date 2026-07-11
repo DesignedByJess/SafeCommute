@@ -52,7 +52,7 @@ export function BottomNav() {
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
                   isActive
-                    ? 'bg-[#0e8a9c] -mt-3 shadow-md shadow-[#0e8a9c]/30'
+                    ? 'bg-[#0891B2] -mt-3 shadow-md shadow-[#0891B2]/30'
                     : 'bg-transparent'
                 }`}
               >

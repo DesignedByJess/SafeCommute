@@ -15,6 +15,7 @@ import ProfilePage from './features/profile/ProfilePage'
 import ShareTrackingPage from './features/share/ShareTrackingPage'
 import OnboardingPage from './features/auth/OnboardingPage'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
+import OTPPage from './features/auth/OTPPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initialLoading, onboardingComplete } = useAuth()
@@ -52,10 +53,11 @@ export default function App() {
       <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
       <Route path="/safety" element={<ProtectedRoute><SafetyCenterPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/trip/new" element={<ProtectedRoute><NewTripPage /></ProtectedRoute>} />
+      <Route path="/trip/active" element={<ProtectedRoute><ActiveTripPage /></ProtectedRoute>} />
+      <Route path="/contacts/:contactId/verify-otp" element={<ProtectedRoute><OTPPage /></ProtectedRoute>} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/contacts" element={<ContactsPage />} />
-        <Route path="/trip/new" element={<NewTripPage />} />
-        <Route path="/trip/active" element={<ActiveTripPage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

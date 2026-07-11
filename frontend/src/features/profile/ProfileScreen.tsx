@@ -43,7 +43,7 @@ export function ProfileScreen({
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-24">
-      <div className="bg-white rounded-b-3xl px-6 pt-6 pb-8">
+      <div className="bg-white rounded-b-3xl px-6 pt-14 pb-8">
         <div className="flex justify-end mb-4">
           <button
             className="w-9 h-9 rounded-full border border-gray-300 bg-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
@@ -135,9 +135,7 @@ export function ProfileScreen({
           onClick={() => setShowSignOutConfirm(true)}
           className="flex items-center gap-3 px-4 py-3.5 min-h-[52px] transition-colors hover:bg-red-50 rounded-xl w-full"
         >
-          <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-            <LogOut className="w-4 h-4 text-[#DC2626]" />
-          </div>
+          <LogOut className="w-5 h-5 text-[#DC2626] shrink-0" />
           <span className="text-sm font-medium text-[#DC2626]">Logout</span>
         </button>
       </div>

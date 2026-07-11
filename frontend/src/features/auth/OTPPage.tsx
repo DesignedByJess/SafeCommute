@@ -1,16 +1,22 @@
 import { useState, useRef } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
-import { Shield, ArrowLeft } from 'lucide-react'
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom'
+import { Shield, ArrowLeft, X } from 'lucide-react'
 import { Button } from '../../components/Button'
-import { Input } from '../../components/Input'
 import { api } from '../../services/api'
+
+interface LocationState {
+  devOtp?: string
+}
 
 export default function OTPPage() {
   const { contactId } = useParams<{ contactId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const locationState = location.state as LocationState | null
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showDevBanner, setShowDevBanner] = useState(true)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const handleChange = (index: number, value: string) => {
@@ -70,6 +76,27 @@ export default function OTPPage() {
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
+            </div>
+          )}
+
+          {import.meta.env.DEV && locationState?.devOtp && showDevBanner && (
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-mono font-bold text-amber-800 text-xs uppercase tracking-wider bg-amber-100 px-1.5 py-0.5 rounded">
+                  DEV MODE
+                </span>
+                <span className="text-amber-900">
+                  OTP code is <code className="font-mono font-bold text-amber-950">{locationState.devOtp}</code>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDevBanner(false)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-amber-500 hover:text-amber-700"
+                aria-label="Dismiss dev banner"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           )}
 

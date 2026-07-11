@@ -1,4 +1,4 @@
-import { createContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { api } from '../services/api'
 
 interface User {
@@ -30,8 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [onboardingComplete, setOnboardingComplete] = useState(() => {
     return localStorage.getItem(ONBOARDING_KEY) === 'true'
   })
+  const authCheckStarted = useRef(false)
 
   useEffect(() => {
+    if (authCheckStarted.current) return
+    authCheckStarted.current = true
+
     let cancelled = false
     api.get('/auth/me').then((res) => {
       if (!cancelled && res.data?.data?.user) {

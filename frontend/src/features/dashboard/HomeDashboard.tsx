@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Bell, ShieldCheck, User, ChevronRight, LocateFixed } from 'lucide-react'
+import { MapPin, Bell, ShieldCheck, ChevronRight, LocateFixed } from 'lucide-react'
 import { BottomNav } from '../../components/BottomNav'
 
 interface RecentTrip {
@@ -11,7 +11,6 @@ interface RecentTrip {
 
 interface HomeDashboardProps {
   hasTrips?: boolean
-  userName?: string
   userLocation?: string
   recentTrips?: RecentTrip[]
   onStartTrip?: () => void
@@ -21,7 +20,6 @@ interface HomeDashboardProps {
 
 export function HomeDashboard({
   hasTrips = false,
-  userName = '',
   userLocation = 'Port-Harcourt, Rivers',
   recentTrips = [],
   onStartTrip,
@@ -51,22 +49,20 @@ export function HomeDashboard({
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pb-20">
-      <div className="px-6 pt-6 pb-8">
+    <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+      <div className="px-6 pt-14 pb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={handleProfile}
-              className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
+              className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
               aria-label="Profile settings"
             >
-              {userName ? (
-                <span className="text-lg font-bold text-[#1a2b4a]">
-                  {userName.charAt(0).toUpperCase()}
-                </span>
-              ) : (
-                <User className="w-6 h-6 text-gray-400" />
-              )}
+              <img
+                src="/illustrations/profile-avatar.jpg"
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             </button>
             <div className="flex items-center gap-1.5">
               <LocateFixed className="w-[18px] h-[18px] text-[#0e8a9c]" />
@@ -93,7 +89,7 @@ export function HomeDashboard({
       <div className="flex flex-col items-center px-6 pb-6">
         <button
           onClick={handleStartTrip}
-          className="w-[128px] h-[128px] rounded-full bg-[#0e8a9c] flex flex-col items-center justify-center shadow-lg shadow-[#0e8a9c]/30 hover:shadow-xl hover:shadow-[#0e8a9c]/40 active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#0e8a9c]/50"
+          className="w-[128px] h-[128px] rounded-full bg-[#0e8a9c] flex flex-col items-center justify-center shadow-md shadow-[#0e8a9c]/20 hover:shadow-lg hover:shadow-[#0e8a9c]/30 active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#0e8a9c]/50"
           aria-label="Start Trip"
         >
           <MapPin className="w-5 h-5 text-white mb-1" strokeWidth={1.5} />

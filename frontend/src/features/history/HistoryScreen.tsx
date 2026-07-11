@@ -79,8 +79,8 @@ export function HistoryScreen({
 
   if (trips.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex flex-col pb-20">
-        <div className="px-6 pt-6 pb-4">
+      <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+        <div className="px-6 pt-14 pb-4">
           <h1 className="text-2xl font-bold text-[#1a2b4a]">Trip History</h1>
         </div>
 
@@ -93,12 +93,12 @@ export function HistoryScreen({
             />
           </div>
           <h2 className="text-xl font-bold text-[#1a2b4a] mb-1">No trip history yet</h2>
-          <p className="text-sm text-gray-600 text-center mb-8 max-w-xs">
+          <p className="text-sm text-gray-600 text-center mb-[42px] max-w-xs">
             Trips you complete will show up here for 30 days
           </p>
           <button
             onClick={onStartTrip ?? (() => navigate('/trip/new'))}
-            className="w-full bg-[#0e8a9c] text-white font-bold text-base rounded-lg py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
+            className="w-full bg-[#0891B2] text-white font-bold text-base rounded-lg py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
           >
             Start a Trip
           </button>
@@ -110,10 +110,10 @@ export function HistoryScreen({
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pb-20">
-      <div className="px-6 pt-6 pb-3">
-        <h1 className="text-2xl font-bold text-[#1a2b4a]">Trip History</h1>
-      </div>
+      <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+        <div className="px-6 pt-14 pb-3">
+          <h1 className="text-2xl font-bold text-[#1a2b4a]">Trip History</h1>
+        </div>
 
       <div className="px-6 pb-4">
         <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { TripProvider } from './context/TripContext'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import App from './App'
 import './index.css'
 
@@ -11,7 +12,9 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <AuthProvider>
         <TripProvider>
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </TripProvider>
       </AuthProvider>
     </BrowserRouter>

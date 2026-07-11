@@ -46,15 +46,19 @@ export class EmergencyService {
       lng: input.lng,
     });
 
-    const contactPhone = EncryptionService.decryptPhone(trip.contact_phone_encrypted);
-
-    await this.notificationService.sendEmergencyAlert({
-      contactName: trip.contact_name,
-      contactPhone,
-      shareToken: trip.share_token,
-      lat: input.lat,
-      lng: input.lng,
-    });
+    // Notifications are best-effort — alert is already created
+    try {
+      const contactPhone = EncryptionService.decryptPhone(trip.contact_phone_encrypted);
+      await this.notificationService.sendEmergencyAlert({
+        contactName: trip.contact_name,
+        contactPhone,
+        shareToken: trip.share_token,
+        lat: input.lat,
+        lng: input.lng,
+      });
+    } catch {
+      /* notification delivery failure doesn't roll back the emergency alert */
+    }
 
     return alert;
   }

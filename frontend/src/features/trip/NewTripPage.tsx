@@ -1,17 +1,23 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, MapPin, Plus, X } from 'lucide-react'
-import { Button } from '../../components/Button'
+import { ChevronLeft, MapPin, ArrowRight } from 'lucide-react'
 import { Input } from '../../components/Input'
+import { Button } from '../../components/Button'
+import { StepProgress } from '../../components/StepProgress'
 import { api } from '../../services/api'
 import { LicensePlateCaptureScreen } from './LicensePlateCaptureScreen'
+import { SafetyConcernsScreen } from './SafetyConcernsScreen'
+import { TripSummaryScreen } from './TripSummaryScreen'
+import { TripSharedSuccessScreen } from './TripSharedSuccessScreen'
 
-type Step = 'destination' | 'vehicle' | 'contact' | 'notes'
+type Step = 'destination' | 'vehicle' | 'contact' | 'safety'
+type View = 'form' | 'summary' | 'success'
 
-const stepLabels: Step[] = ['destination', 'vehicle', 'contact', 'notes']
+const stepLabels: Step[] = ['destination', 'vehicle', 'contact', 'safety']
 
 export default function NewTripPage() {
   const navigate = useNavigate()
+  const [view, setView] = useState<View>('form')
   const [step, setStep] = useState<Step>('destination')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -20,30 +26,19 @@ export default function NewTripPage() {
     vehicle_plate: '',
     contact_name: '',
     contact_phone: '',
-    safety_notes: [] as string[],
+    safety_concerns: [] as string[],
+    safety_notes: '',
   })
-  const [noteInput, setNoteInput] = useState('')
+  const [successData, setSuccessData] = useState({
+    contactName: '',
+    contactPhone: '',
+  })
 
   const stepIndex = stepLabels.indexOf(step)
-  const isLast = stepIndex === stepLabels.length - 1
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
     setError('')
-  }
-
-  const addNote = () => {
-    const trimmed = noteInput.trim()
-    if (!trimmed) return
-    setForm((prev) => ({ ...prev, safety_notes: [...prev.safety_notes, trimmed] }))
-    setNoteInput('')
-  }
-
-  const removeNote = (index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      safety_notes: prev.safety_notes.filter((_, i) => i !== index),
-    }))
   }
 
   const handleNext = () => {
@@ -60,11 +55,7 @@ export default function NewTripPage() {
       return
     }
     setError('')
-    if (isLast) {
-      handleSubmit()
-    } else {
-      setStep(stepLabels[stepIndex + 1])
-    }
+    setStep(stepLabels[stepIndex + 1])
   }
 
   const handleBack = () => {
@@ -76,21 +67,35 @@ export default function NewTripPage() {
     }
   }
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (overrides?: Partial<typeof form>) => {
     setLoading(true)
     setError('')
+    const payload = { ...form, ...overrides }
+    const cleanPhone = payload.contact_phone.replace(/\D/g, '')
+    const normalizedPhone = cleanPhone.startsWith('234')
+      ? `+${cleanPhone}`
+      : `+234${cleanPhone.replace(/^0+/, '')}`
     try {
       await api.post('/trips', {
-        ...form,
-        safety_notes: form.safety_notes.length > 0 ? form.safety_notes : undefined,
+        ...payload,
+        contact_phone: normalizedPhone,
+        safety_concerns: payload.safety_concerns.length > 0 ? payload.safety_concerns : undefined,
+        safety_notes: payload.safety_notes || undefined,
         origin_lat: 6.5244,
         origin_lng: 3.3792,
         destination_lat: 6.6018,
         destination_lng: 3.3515,
       })
-      navigate('/')
+      setSuccessData({
+        contactName: payload.contact_name,
+        contactPhone: payload.contact_phone,
+      })
+      setView('success')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to start trip'
+      const axiosErr = err as { response?: { data?: { error?: string } } }
+      const message = axiosErr?.response?.data?.error
+        ?? (err instanceof Error ? err.message : null)
+        ?? 'Failed to start trip'
       setError(message)
     } finally {
       setLoading(false)
@@ -101,7 +106,38 @@ export default function NewTripPage() {
     destination: { title: 'Where are you going?', subtitle: 'Enter your destination address' },
     vehicle: { title: 'Vehicle Details', subtitle: 'Enter the license plate number' },
     contact: { title: 'Notify Contact', subtitle: 'Who should track this trip?' },
-    notes: { title: 'Safety Notes', subtitle: 'Add any helpful details (optional)' },
+    safety: { title: 'Any safety concerns?', subtitle: 'Tap any that apply' },
+  }
+
+  if (view === 'summary') {
+    return (
+      <TripSummaryScreen
+        destination={form.destination_address}
+        vehiclePlate={form.vehicle_plate}
+        contactName={form.contact_name}
+        safetyNotes={form.safety_concerns}
+        onBack={() => setView('form')}
+        onEditStep={(s) => {
+          setStep(stepLabels[s - 1])
+          setView('form')
+        }}
+        onShare={() => handleSubmit()}
+        loading={loading}
+        error={error}
+      />
+    )
+  }
+
+  if (view === 'success') {
+    return (
+      <TripSharedSuccessScreen
+        contactName={successData.contactName}
+        contactPhone={successData.contactPhone}
+        destination={form.destination_address}
+        vehiclePlate={form.vehicle_plate}
+        onViewLiveTrip={() => navigate('/trip/active')}
+      />
+    )
   }
 
   if (step === 'vehicle') {
@@ -116,16 +152,47 @@ export default function NewTripPage() {
     )
   }
 
+  if (step === 'safety') {
+    return (
+      <SafetyConcernsScreen
+        onBack={handleBack}
+        onContinue={(concerns, notes) => {
+          setForm((prev) => ({ ...prev, safety_concerns: concerns, safety_notes: notes }))
+          setView('summary')
+        }}
+        onSkip={() => {
+          setView('summary')
+        }}
+      />
+    )
+  }
+
   const current = steps[step]
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] flex flex-col px-6 py-6 max-w-md mx-auto w-full">
-      <div className="mb-6 text-center">
-        <h1 className="text-xl font-bold text-gray-900">{current.title}</h1>
-        <p className="text-sm text-gray-500">{current.subtitle}</p>
+    <div className="min-h-screen bg-[#F3F4F6] flex flex-col max-w-md mx-auto w-full">
+      <div className="px-6 pt-14 pb-4">
+        <div className="flex items-center mb-2">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg cursor-pointer"
+            aria-label="Go back"
+          >
+            <ChevronLeft className="w-6 h-6 text-[#1a2b4a]" />
+          </button>
+          <div className="flex-1 text-center mr-8">
+            <h1 className="text-[24px] font-bold text-[#1a2b4a]">{current.title}</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{current.subtitle}</p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); handleNext() }} className="space-y-5 flex-1 flex flex-col">
+      <div className="px-6">
+        <StepProgress currentStep={stepIndex} totalSteps={5} />
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); handleNext() }} className="space-y-5 flex flex-col px-6">
           {step === 'destination' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Destination</label>
@@ -136,7 +203,7 @@ export default function NewTripPage() {
                   onChange={handleChange('destination_address')}
                   placeholder="Search address or area"
                   autoFocus
-                  className="block w-full rounded-lg border border-[#CBD4DB] pl-10 pr-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px]"
+                  className="block w-full rounded-lg border border-[#CBD4DB] pl-10 pr-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px]"
                 />
               </div>
               {error && <p className="text-sm text-red-600 mt-1.5">{error}</p>}
@@ -165,61 +232,13 @@ export default function NewTripPage() {
             </div>
           )}
 
-          {step === 'notes' && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Add details your contact should know (driver description, route landmarks, etc.)
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  value={noteInput}
-                  onChange={(e) => setNoteInput(e.target.value)}
-                  placeholder="e.g. Blue danfo, driver is female"
-                  className="flex-1"
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNote() } }}
-                />
-                <Button type="button" variant="secondary" onClick={addNote} className="shrink-0 min-w-[44px] px-3">
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </div>
-              {form.safety_notes.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {form.safety_notes.map((note, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 rounded-full px-4 py-2 text-sm"
-                    >
-                      {note}
-                      <button
-                        type="button"
-                        onClick={() => removeNote(i)}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <Button type="submit" loading={loading} className="w-full rounded-2xl py-4 text-base font-semibold min-h-14">
-            {isLast ? 'Start Trip' : 'Continue'}
-            {!isLast && <ArrowRight className="w-5 h-5 ml-2" />}
-          </Button>
+          <div className="mt-[22px]">
+            <Button type="submit" loading={loading} className="w-full rounded-2xl py-4 text-base font-semibold min-h-14">
+              Continue <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </div>
       </form>
 
-      <div className="flex justify-center gap-2 pt-8">
-        {stepLabels.map((s, i) => (
-          <span
-            key={s}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              i <= stepIndex ? 'bg-[#0891B2]' : 'bg-gray-300'
-            }`}
-          />
-        ))}
-      </div>
     </div>
   )
 }

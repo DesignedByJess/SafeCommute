@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
-import { ChevronLeft, Check, CheckCircle } from 'lucide-react'
+import { ChevronLeft, CheckCircle } from 'lucide-react'
+import { StepProgress } from '../../components/StepProgress'
 
 const PLATE_REGEX = /^[A-Z]{3}-\d{3}-[A-Z]{2}$/
 
@@ -91,7 +92,7 @@ export function LicensePlateCaptureScreen({
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col relative overflow-hidden font-sans max-w-[390px] mx-auto border-x border-gray-100 shadow-xl pb-6">
+    <div className="min-h-screen bg-[#F3F4F6] flex flex-col relative font-sans max-w-md mx-auto w-full">
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(100%); }
@@ -103,57 +104,28 @@ export function LicensePlateCaptureScreen({
       `}</style>
 
       {/* Header */}
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-6 pt-14 pb-4">
         <div className="flex items-center mb-2">
           <button
             type="button"
             onClick={onBack}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c] rounded-lg cursor-pointer"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg cursor-pointer"
             aria-label="Go back"
           >
             <ChevronLeft className="w-6 h-6 text-[#1a2b4a]" />
           </button>
           <div className="flex-1 text-center mr-8">
-            <h1 className="text-[22px] font-bold text-[#1a2b4a]">
+            <h1 className="text-[24px] font-bold text-[#1a2b4a]">
               Scan License Plate
             </h1>
-            <p className="text-base text-gray-500 mt-0.5 font-normal">
+            <p className="text-sm text-gray-500 mt-0.5 font-normal">
               Position the plate within the frame
             </p>
           </div>
         </div>
       </div>
 
-      {/* Step Progress Indicator */}
-      <div className="px-6 pb-6">
-        <div className="flex items-center justify-center gap-0">
-          {[1, 2, 3, 4, 5].map((step, idx) => (
-            <div key={step} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                  step <= 2
-                    ? 'bg-[#1a2b4a] text-white'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
-              >
-                {step === 1 ? (
-                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                ) : (
-                  step
-                )}
-              </div>
-              {step < 5 && (
-                <div
-                  className={`w-6 h-[2px] transition-colors ${
-                    idx < 1 ? 'bg-[#1a2b4a]' : 'bg-gray-200'
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-        <p className="text-center text-sm text-gray-400 mt-2 font-normal">Step 2 of 5</p>
-      </div>
+      <StepProgress currentStep={1} totalSteps={5} />
 
       {/* Dynamic Main Body Content */}
       <div className="px-6 flex-1 flex flex-col justify-center">
@@ -161,11 +133,11 @@ export function LicensePlateCaptureScreen({
           switch (entryMode) {
             case 'scan':
               return (
-                <div className="flex-1 flex flex-col justify-center">
+                <div className="flex-1 flex flex-col justify-start pt-2">
                   <div
                     onClick={handleViewfinderTap}
-                    className={`relative aspect-[4/3] w-full rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm flex items-center justify-center ${
-                      !isScanning ? 'cursor-pointer' : 'cursor-default'
+                    className={`relative h-44 w-full rounded-2xl border border-gray-200 bg-transparent overflow-hidden flex items-center justify-center ${
+                       !isScanning ? 'cursor-pointer' : 'cursor-default'
                     }`}
                   >
                     <input
@@ -217,10 +189,9 @@ export function LicensePlateCaptureScreen({
               return (
                 <div className="flex-1 flex flex-col justify-center pb-8">
                   <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 mb-6">
-                    <p className="text-center text-base text-gray-700 mb-4 font-normal">
-                      <span>Could not read the plate automatically.</span>
-                      <br />
-                      <span>Please type it below.</span>
+                    <p className="text-center text-sm text-gray-600 mb-4 font-normal">
+                      Could not read the plate automatically.<br />
+                      Please type it below.
                     </p>
                     <div className="flex flex-col">
                       <label

@@ -7,6 +7,7 @@ import { createTripSchema, endTripSchema } from '../middleware/validate/trip.sch
 import { tripCreationLimiter } from '../middleware/rate-limit';
 import { NotFoundError } from '../utils/errors';
 import { maskPlate } from '../utils/sanitize';
+import { EncryptionService } from '../services/encryption.service';
 
 const router = Router();
 const tripService = new TripService();
@@ -66,12 +67,25 @@ router.get('/active', async (req: Request, res: Response, next: NextFunction) =>
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { trip, latestLocation } = await tripService.getTrip(req.user!.id, req.params.id);
+    let vehiclePlate: string | null = null;
+    if (trip.vehicle_plate_encrypted && trip.vehicle_plate_data_key_encrypted) {
+      try {
+        const decrypted = EncryptionService.decryptPlate(
+          trip.vehicle_plate_encrypted,
+          trip.vehicle_plate_data_key_encrypted,
+        );
+        vehiclePlate = decrypted;
+      } catch {
+        /* plate decryption failed — return null */
+      }
+    }
     sendSuccess(res, {
       id: trip.id, share_token: trip.share_token,
       origin_lat: trip.origin_lat, origin_lng: trip.origin_lng,
       origin_address: trip.origin_address,
       destination_lat: trip.destination_lat, destination_lng: trip.destination_lng,
       destination_address: trip.destination_address,
+        vehicle_plate: vehiclePlate ?? undefined,
       contact_name: trip.contact_name, safety_notes: trip.safety_notes,
       status: trip.status, started_at: trip.started_at,
       ended_at: trip.ended_at, expires_at: trip.expires_at,

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Check, Phone } from 'lucide-react'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
@@ -18,6 +19,7 @@ interface Contact {
 }
 
 export default function ContactsPage() {
+  const navigate = useNavigate()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [name, setName] = useState('')
@@ -40,12 +42,17 @@ export default function ContactsPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await api.post('/contacts', { name, phone, relationship: relationship || undefined })
+      const res = await api.post('/contacts', { name, phone, relationship: relationship || undefined })
       setShowAddModal(false)
       setName('')
       setPhone('')
       setRelationship('')
-      fetchContacts()
+      const newContact = res.data.data
+      if (newContact?.id) {
+        navigate(`/contacts/${newContact.id}/verify-otp`, {
+          state: { devOtp: newContact.devOtp },
+        })
+      }
     } catch {
       /* handle error */
     }
