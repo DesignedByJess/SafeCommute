@@ -7,13 +7,6 @@ exports.AuditLog = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class AuditLog extends sequelize_1.Model {
-    id;
-    user_id;
-    event_type;
-    event_data;
-    ip_address;
-    user_agent;
-    created_at;
 }
 exports.AuditLog = AuditLog;
 AuditLog.init({

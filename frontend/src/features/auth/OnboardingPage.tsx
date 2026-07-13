@@ -30,7 +30,7 @@ function Dots({ active, total = 3 }: { active: number; total?: number }) {
         if (i === active) {
           return <div key={i} className="w-3 h-3 rounded-full bg-[#0891B2]" />
         }
-        return <div key={i} className="w-2.5 h-2.5 rounded-full border border-gray-300 bg-transparent" />
+        return <div key={i} className="w-2.5 h-2.5 rounded-full border border-gray-400 bg-transparent" />
       })}
     </div>
   )
@@ -146,13 +146,13 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                 placeholder="e.g. Chioma Okafor"
                 spellCheck={false}
                 autoComplete="name"
-                className="block w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-[#CBD4DB]"
+                className="block w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-100 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-gray-300"
               />
             </div>
             <div>
               <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-1.5">Phone number</label>
               <div className="flex">
-                <span className="inline-flex items-center rounded-l-lg border border-r-0 border-[#CBD4DB] bg-gray-100 px-3 py-2.5 text-sm text-gray-700 font-medium min-h-[44px]">
+                <span className="inline-flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-100 px-3 py-2.5 text-sm text-gray-700 font-medium min-h-[44px]">
                   +234
                 </span>
                 <input
@@ -163,7 +163,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                   onBlur={() => setPhoneTouched(true)}
                   placeholder="800 000 0000"
                   autoComplete="tel"
-                  className="block w-full rounded-r-lg border px-3 py-2.5 text-sm bg-gray-100 shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-[#CBD4DB]"
+                  className="block w-full rounded-r-lg border px-3 py-2.5 text-sm bg-gray-100 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-gray-300"
                   aria-describedby={phoneError ? 'phone-error' : undefined}
                 />
               </div>
@@ -176,7 +176,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                   id="contact-relationship"
                   value={relationship}
                   onChange={(e) => setRelationship(e.target.value)}
-                  className={`block w-full rounded-lg border border-[#CBD4DB] px-3 py-2.5 text-sm shadow-sm transition-colors text-gray-700 appearance-none focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white min-h-[44px] ${
+                  className={`block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm transition-colors text-gray-700 appearance-none focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white min-h-[44px] ${
                     relationship ? 'bg-gray-50' : 'bg-gray-100'
                   }`}
                 >
@@ -196,7 +196,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
           <div className="text-center py-4 animate-in">
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 rounded-2xl bg-[#DCFCE7] flex items-center justify-center transition-all duration-500 scale-110">
-                <Check className="w-10 h-10 text-[#16A34A] transition-all duration-500 scale-110" />
+                <Check className="w-10 h-10 text-[#059669] transition-all duration-500 scale-110" />
               </div>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
@@ -283,7 +283,7 @@ function Step3Location({ onBack }: StepProps) {
         <div className={`flex justify-center mb-6 transition-all duration-500 ${granted ? 'scale-110' : ''}`}>
           <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500 ${granted ? 'bg-[#DCFCE7] scale-110' : 'bg-[#E0F2FE]'}`}>
             {granted ? (
-              <Check className="w-10 h-10 text-[#16A34A] transition-all duration-500 scale-110" />
+              <Check className="w-10 h-10 text-[#059669] transition-all duration-500 scale-110" />
             ) : (
               <MapPin className="w-10 h-10 text-[#0891B2]" />
             )}

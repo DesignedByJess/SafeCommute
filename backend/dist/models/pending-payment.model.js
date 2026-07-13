@@ -7,14 +7,6 @@ exports.PendingPayment = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class PendingPayment extends sequelize_1.Model {
-    id;
-    tx_ref;
-    user_id;
-    plan;
-    amount;
-    currency;
-    status;
-    created_at;
 }
 exports.PendingPayment = PendingPayment;
 PendingPayment.init({

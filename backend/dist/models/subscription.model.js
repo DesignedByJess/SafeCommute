@@ -7,15 +7,6 @@ exports.Subscription = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class Subscription extends sequelize_1.Model {
-    id;
-    user_id;
-    plan;
-    status;
-    starts_at;
-    expires_at;
-    tx_ref;
-    created_at;
-    updated_at;
 }
 exports.Subscription = Subscription;
 Subscription.init({

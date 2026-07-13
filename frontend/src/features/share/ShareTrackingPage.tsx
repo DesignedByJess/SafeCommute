@@ -45,7 +45,7 @@ export default function ShareTrackingPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
             <div className="h-6 bg-gray-200 rounded animate-pulse" />
             <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
             <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
@@ -81,7 +81,7 @@ export default function ShareTrackingPage() {
           <p className="text-sm text-gray-500 mt-1">Someone is sharing their journey with you</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
           {isPast ? (
             <div className="text-center py-6">
               <span className="inline-flex items-center gap-2 px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded-full">

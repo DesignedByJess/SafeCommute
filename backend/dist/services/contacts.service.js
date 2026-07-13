@@ -9,6 +9,7 @@ const contact_model_1 = require("../models/contact.model");
 const encryption_service_1 = require("./encryption.service");
 const audit_service_1 = require("./audit.service");
 const errors_1 = require("../utils/errors");
+const config_1 = require("../utils/config");
 class ContactService {
     async listContacts(userId) {
         return contact_model_1.Contact.findAll({
@@ -28,6 +29,13 @@ class ContactService {
         }
         const otp = crypto_1.default.randomInt(100000, 999999).toString();
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        // DEV-ONLY: surfaces OTP in console/UI for testing without a live SMS
+        // provider. Must never render or log in production (gated by
+        // NODE_ENV). Real SMS delivery still attempted via smsService in all
+        // environments.
+        if (config_1.env.NODE_ENV !== 'production') {
+            console.log(`[DEV] OTP for ${input.phone}: ${otp}`);
+        }
         const contact = await contact_model_1.Contact.create({
             user_id: userId,
             name: input.name,
@@ -39,7 +47,10 @@ class ContactService {
             otp_expires_at: otpExpiresAt,
         });
         await (0, audit_service_1.auditLog)(userId, 'contact_added', { contactId: contact.id });
-        return contact;
+        return {
+            ...contact.toJSON(),
+            ...(config_1.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+        };
     }
     async verifyOtp(userId, contactId, otp) {
         const contact = await contact_model_1.Contact.findOne({

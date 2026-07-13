@@ -38,7 +38,7 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-400 z-50">
       <div className="flex items-start justify-around px-4 pt-5 pb-2">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key
@@ -63,7 +63,7 @@ export function BottomNav() {
                 />
               </div>
               {isActive && (
-                <span className="text-xs font-bold text-[#1a2b4a]">
+                <span className="text-xs font-bold text-[#0F172A]">
                   {tab.label}
                 </span>
               )}

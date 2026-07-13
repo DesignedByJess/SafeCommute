@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.maskPhone = maskPhone;
 exports.maskPlate = maskPlate;
 function maskPhone(phone) {
-    if (phone.length < 7)
-        return phone;
+    if (!phone || phone.length < 7)
+        return phone || '';
     const prefix = phone.slice(0, 5);
     const suffix = phone.slice(-4);
     return `${prefix}***${suffix}`;

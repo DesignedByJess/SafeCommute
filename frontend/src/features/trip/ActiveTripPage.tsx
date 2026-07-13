@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ActiveTripScreen } from './ActiveTripScreen'
 import { api } from '../../services/api'
-import { useTrip } from '../../hooks/useTrip'
 
 interface TripDetails {
   id: string
@@ -16,13 +15,10 @@ interface TripDetails {
 
 export default function ActiveTripPage() {
   const [trip, setTrip] = useState<TripDetails | null>(null)
-  const [ending, setEnding] = useState(false)
-  const [emergencySending, setEmergencySending] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const fetchedRef = useRef(false)
   const navigate = useNavigate()
-  const { clearActiveTrip } = useTrip()
 
   const [eta, setEta] = useState('25 mins')
 
@@ -78,34 +74,6 @@ export default function ActiveTripPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [trip?.started_at])
 
-  const handleEndTrip = async () => {
-    if (!trip) return
-    setEnding(true)
-    try {
-      await api.patch(`/trips/${trip.id}/end`, { lat: 6.5244, lng: 3.3792 })
-      clearActiveTrip()
-      navigate('/', { replace: true })
-    } catch {
-      /* API error — stay on page, user can retry */
-    } finally {
-      setEnding(false)
-    }
-  }
-
-  const handleEmergency = async () => {
-    if (!trip) return
-    setEmergencySending(true)
-    try {
-      await api.post(`/emergency/${trip.id}/trigger`, { lat: 6.5244, lng: 3.3792 })
-      clearActiveTrip()
-      navigate('/', { replace: true })
-    } catch {
-      /* API error — stay on page, user can retry */
-    } finally {
-      setEmergencySending(false)
-    }
-  }
-
   if (pageLoading || !trip) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -119,15 +87,13 @@ export default function ActiveTripPage() {
 
   return (
     <ActiveTripScreen
+      tripId={trip.id}
       destination={trip.destination_address}
       destinationLat={trip.destination_lat}
       destinationLng={trip.destination_lng}
       vehiclePlate={trip.vehicle_plate}
       contactName={trip.contact_name}
       eta={eta}
-      onEndTrip={handleEndTrip}
-      onEmergency={handleEmergency}
-      loading={ending || emergencySending}
     />
   )
 }

@@ -1,4 +1,4 @@
-import { logger } from '../audit.service';
+import { logger } from '../../services/audit.service';
 import { env } from '../../utils/config';
 
 interface TripStartedPayload {
@@ -28,6 +28,28 @@ export class NotificationService {
     results.forEach((r, i) => {
       if (r.status === 'rejected') {
         logger.error(`Notification channel ${i} failed for trip start`, { error: r.reason });
+      }
+    });
+  }
+
+  async sendTripEnded(payload: {
+    contactName: string;
+    contactPhone: string;
+    userName: string;
+    destination: string;
+  }): Promise<void> {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const message = `${payload.userName} arrived safely at ${payload.destination} around ${timeStr}. — SafeCommute`;
+
+    const results = await Promise.allSettled([
+      this.sendWhatsApp(payload.contactPhone, message),
+      this.sendAfricaTalking(payload.contactPhone, message),
+    ]);
+
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        logger.error(`Notification channel ${i} failed for trip end`, { error: r.reason });
       }
     });
   }
@@ -72,7 +94,7 @@ export class NotificationService {
     logger.info(`[WhatsApp] Sent to ${phone}`);
   }
 
-  private async sendAfricaTalking(phone: string, message: string): Promise<void> {
+  async sendAfricaTalking(phone: string, message: string): Promise<void> {
     if (!env.AFRICA_TALKING_API_KEY) {
       throw new Error('AFRICA_TALKING_API_KEY not configured');
     }

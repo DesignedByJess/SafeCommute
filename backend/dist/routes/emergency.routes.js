@@ -10,13 +10,19 @@ const rate_limit_1 = require("../middleware/rate-limit");
 const router = (0, express_1.Router)();
 const emergencyService = new emergency_service_1.EmergencyService();
 router.use(authenticate_1.authenticate);
-router.post('/:tripId/trigger', rate_limit_1.emergencyLimiter, (0, validate_1.validate)(emergency_schema_1.triggerEmergencySchema), async (req, res, next) => {
+router.post('/:tripId/initiate', rate_limit_1.emergencyLimiter, (0, validate_1.validate)(emergency_schema_1.initiateEmergencySchema), async (req, res, next) => {
     try {
-        const alert = await emergencyService.triggerEmergency(req.user.id, req.params.tripId, req.body, { ip: req.ip || '', userAgent: req.headers['user-agent'] || '' });
-        (0, response_1.sendSuccess)(res, {
-            id: alert.id, trip_id: alert.trip_id,
-            lat: alert.lat, lng: alert.lng, triggered_at: alert.triggered_at,
-        }, 201);
+        const result = await emergencyService.initiateEmergency(req.user.id, req.params.tripId, req.body, { ip: req.ip || '', userAgent: req.headers['user-agent'] || '' });
+        (0, response_1.sendSuccess)(res, result);
+    }
+    catch (err) {
+        next(err);
+    }
+});
+router.post('/:tripId/verify', (0, validate_1.validate)(emergency_schema_1.verifyEmergencySchema), async (req, res, next) => {
+    try {
+        const alert = await emergencyService.verifyAndTrigger(req.user.id, req.params.tripId, req.body.code);
+        (0, response_1.sendSuccess)(res, alert, 201);
     }
     catch (err) {
         next(err);

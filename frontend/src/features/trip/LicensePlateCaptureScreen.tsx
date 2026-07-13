@@ -92,7 +92,7 @@ export function LicensePlateCaptureScreen({
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col relative font-sans max-w-md mx-auto w-full">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col relative font-sans max-w-md mx-auto w-full">
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(100%); }
@@ -112,10 +112,10 @@ export function LicensePlateCaptureScreen({
             className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg cursor-pointer"
             aria-label="Go back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#1a2b4a]" />
+            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
           </button>
           <div className="flex-1 text-center mr-8">
-            <h1 className="text-[24px] font-bold text-[#1a2b4a]">
+            <h1 className="text-[24px] font-bold text-[#0F172A]">
               Scan License Plate
             </h1>
             <p className="text-sm text-gray-500 mt-0.5 font-normal">
@@ -150,13 +150,13 @@ export function LicensePlateCaptureScreen({
                     />
 
                     {/* Outer corner-bracket guide */}
-                    <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-[#1a2b4a] rounded-tl-lg pointer-events-none" />
-                    <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-[#1a2b4a] rounded-tr-lg pointer-events-none" />
-                    <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-[#1a2b4a] rounded-bl-lg pointer-events-none" />
-                    <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-[#1a2b4a] rounded-br-lg pointer-events-none" />
+                    <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-[#0F172A] rounded-tl-lg pointer-events-none" />
+                    <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-[#0F172A] rounded-tr-lg pointer-events-none" />
+                    <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-[#0F172A] rounded-bl-lg pointer-events-none" />
+                    <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-[#0F172A] rounded-br-lg pointer-events-none" />
 
                     {/* Dashed inner rectangle */}
-                    <div className="absolute inset-[24px] border-2 border-dashed border-indigo-300 rounded-xl flex items-center justify-center pointer-events-none">
+                    <div className="absolute inset-[24px] border-2 border-dashed border-indigo-300 rounded-2xl flex items-center justify-center pointer-events-none">
                       {!isScanning && (
                         <span className="text-gray-400 font-medium text-base">
                           License plate area
@@ -165,7 +165,7 @@ export function LicensePlateCaptureScreen({
 
                       {isScanning && (
                         <div className="flex flex-col items-center gap-2">
-                          <div className="w-8 h-8 border-2 border-[#0e8a9c] border-t-transparent rounded-full animate-spin" />
+                          <div className="w-8 h-8 border-2 border-[#0891B2] border-t-transparent rounded-full animate-spin" />
                           <p className="text-sm text-gray-500 font-medium">Scanning...</p>
                         </div>
                       )}
@@ -177,7 +177,7 @@ export function LicensePlateCaptureScreen({
                     <button
                       type="button"
                       onClick={(): void => setEntryMode('manual')}
-                      className="underline text-[#1a2b4a] font-semibold hover:text-[#0e8a9c] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
+                      className="underline text-[#0F172A] font-semibold hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
                     >
                       Enter manually
                     </button>
@@ -196,7 +196,7 @@ export function LicensePlateCaptureScreen({
                     <div className="flex flex-col">
                       <label
                         htmlFor="manual-plate"
-                        className="block text-sm font-semibold text-[#1a2b4a] mb-1.5"
+                        className="block text-sm font-semibold text-[#0F172A] mb-1.5"
                       >
                         License Plate Number
                       </label>
@@ -211,7 +211,7 @@ export function LicensePlateCaptureScreen({
                         }}
                         placeholder="e.g. ABC-123-XY"
                         autoFocus
-                        className="block w-full text-center font-mono text-xl font-bold text-[#1a2b4a] tracking-[0.15em] bg-white border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#0e8a9c] focus:ring-2 focus:ring-[#BAE6FD] placeholder:text-gray-400 min-h-[56px] uppercase"
+                        className="block w-full text-center font-mono text-xl font-bold text-[#0F172A] tracking-[0.15em] bg-white border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#BAE6FD] placeholder:text-gray-400 min-h-[56px] uppercase"
                         aria-describedby={manualError ? 'plate-error' : undefined}
                       />
                       {manualError && (
@@ -222,27 +222,27 @@ export function LicensePlateCaptureScreen({
                     </div>
                   </div>
 
-                  <p className="text-center text-gray-500 mb-6 text-base">
+                  <button
+                    type="button"
+                    onClick={handleManualSubmit}
+                    disabled={!PLATE_REGEX.test(manualPlate.toUpperCase().trim())}
+                    className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-[#0E7490] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#0891B2] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Confirm Plate
+                  </button>
+
+                  <p className="text-center mt-3">
                     <button
                       type="button"
                       onClick={(): void => {
                         setEntryMode('scan')
                         setManualError('')
                       }}
-                      className="underline text-[#1a2b4a] font-semibold hover:text-[#0e8a9c] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
+                      className="underline text-[#0F172A] font-semibold hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
                     >
                       Back to camera
                     </button>
                   </p>
-
-                  <button
-                    type="button"
-                    onClick={handleManualSubmit}
-                    disabled={!PLATE_REGEX.test(manualPlate.toUpperCase().trim())}
-                    className="w-full bg-[#0e8a9c] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-[#0c7888] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#0e8a9c] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Confirm Plate
-                  </button>
                 </div>
               )
 
@@ -250,7 +250,7 @@ export function LicensePlateCaptureScreen({
               return (
                 <div className="flex-1 flex flex-col justify-center items-center py-8">
                   {/* Centered green circular badge with CheckCircle icon */}
-                  <div className="w-14 h-14 rounded-full bg-[#16A34A] flex items-center justify-center mb-3 shadow-sm">
+                  <div className="w-14 h-14 rounded-full bg-[#059669] flex items-center justify-center mb-3 shadow-sm">
                     <CheckCircle className="w-7 h-7 text-white" />
                   </div>
 
@@ -258,7 +258,7 @@ export function LicensePlateCaptureScreen({
                     Plate detected!
                   </p>
 
-                  <p className="text-2xl font-bold text-[#1a2b4a] tracking-[0.15em] font-mono mb-8">
+                  <p className="text-2xl font-bold text-[#0F172A] tracking-[0.15em] font-mono mb-8">
                     {plateDetected}
                   </p>
 
@@ -266,14 +266,14 @@ export function LicensePlateCaptureScreen({
                     <button
                       type="button"
                       onClick={handleRetake}
-                      className="flex-1 bg-white border border-gray-300 text-[#1a2b4a] font-semibold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-gray-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0891B2] cursor-pointer"
+                      className="flex-1 bg-white border border-gray-300 text-[#0F172A] font-semibold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-gray-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0891B2] cursor-pointer"
                     >
                       Retake
                     </button>
                     <button
                       type="button"
                       onClick={handleConfirm}
-                      className="flex-1 bg-[#0e8a9c] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-[#0c7888] active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c] cursor-pointer"
+                      className="flex-1 bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-[#0E7490] active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0891B2] cursor-pointer"
                     >
                       Confirm
                     </button>

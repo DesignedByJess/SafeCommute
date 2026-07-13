@@ -27,9 +27,9 @@ const policies = [
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
       <div className="px-6 pt-14 pb-4">
-        <h1 className="text-2xl font-bold text-[#1a2b4a]">Privacy & Security</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Privacy & Security</h1>
         <p className="text-base text-gray-500 mt-1">How we protect your data</p>
       </div>
 

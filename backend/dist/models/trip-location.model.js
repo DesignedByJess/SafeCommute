@@ -7,12 +7,6 @@ exports.TripLocation = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class TripLocation extends sequelize_1.Model {
-    id;
-    trip_id;
-    lat;
-    lng;
-    accuracy;
-    recorded_at;
 }
 exports.TripLocation = TripLocation;
 TripLocation.init({

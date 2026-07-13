@@ -16,7 +16,7 @@ const csrfProtection = require('csurf')({ cookie: { httpOnly: true, secure: proc
 const routes_1 = __importDefault(require("./routes"));
 const error_handler_1 = require("./middleware/error-handler");
 const audit_service_1 = require("./services/audit.service");
-const hmac_1 = require("./utils/hmac");
+const trip_socket_1 = require("./sockets/trip.socket");
 const data_retention_service_1 = require("./services/data-retention.service");
 const app = (0, express_1.default)();
 exports.app = app;
@@ -38,7 +38,12 @@ app.use((0, cors_1.default)({
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json({ limit: '10kb' }));
 app.use(express_1.default.urlencoded({ extended: true }));
-app.use(csrfProtection);
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/v1/auth/')) {
+        return next();
+    }
+    return csrfProtection(req, res, next);
+});
 app.get('/api/v1/csrf-token', (req, res) => {
     res.json({ success: true, data: { csrfToken: req.csrfToken() } });
 });
@@ -47,32 +52,7 @@ app.get('/health', (_req, res) => {
     res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
 });
 app.use(error_handler_1.errorHandler);
-io.on('connection', (socket) => {
-    audit_service_1.logger.info(`Socket connected: ${socket.id}`);
-    socket.on('join:trip', (tripId) => {
-        socket.join(`trip:${tripId}`);
-        audit_service_1.logger.info(`Socket ${socket.id} joined trip:${tripId}`);
-    });
-    socket.on('leave:trip', (tripId) => {
-        socket.leave(`trip:${tripId}`);
-        audit_service_1.logger.info(`Socket ${socket.id} left trip:${tripId}`);
-    });
-    socket.on('location:update', (data) => {
-        const payload = { tripId: data.tripId, lat: data.lat, lng: data.lng, accuracy: data.accuracy };
-        if (data.signature && !(0, hmac_1.verifySignature)(payload, data.signature)) {
-            audit_service_1.logger.warn(`Rejected unsigned location update from socket ${socket.id}`);
-            return;
-        }
-        socket.to(`trip:${data.tripId}`).emit('location:updated', {
-            lat: data.lat, lng: data.lng,
-            accuracy: data.accuracy,
-            recorded_at: new Date().toISOString(),
-        });
-    });
-    socket.on('disconnect', () => {
-        audit_service_1.logger.info(`Socket disconnected: ${socket.id}`);
-    });
-});
+(0, trip_socket_1.registerTripSocketHandlers)(io);
 const retentionService = new data_retention_service_1.DataRetentionService();
 const RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
 setInterval(() => {

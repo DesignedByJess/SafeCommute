@@ -7,29 +7,6 @@ exports.Trip = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class Trip extends sequelize_1.Model {
-    id;
-    user_id;
-    share_token;
-    share_link_expires_at;
-    share_link_revoked;
-    origin_lat;
-    origin_lng;
-    origin_address;
-    destination_lat;
-    destination_lng;
-    destination_address;
-    vehicle_plate_encrypted;
-    vehicle_plate_data_key_encrypted;
-    contact_id;
-    contact_name;
-    contact_phone_encrypted;
-    safety_notes;
-    status;
-    started_at;
-    ended_at;
-    expires_at;
-    created_at;
-    updated_at;
 }
 exports.Trip = Trip;
 Trip.init({

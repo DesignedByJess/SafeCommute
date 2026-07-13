@@ -34,7 +34,7 @@ export function TripSummaryScreen({
   ]
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col max-w-md mx-auto w-full">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col max-w-md mx-auto w-full">
       <div className="px-6 pt-14 pb-4">
         <div className="flex items-center mb-2">
           <button
@@ -43,10 +43,10 @@ export function TripSummaryScreen({
             className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg cursor-pointer"
             aria-label="Go back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#1a2b4a]" />
+            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
           </button>
           <div className="flex-1 text-center mr-8">
-            <h1 className="text-[24px] font-bold text-[#1a2b4a]">Ready to share?</h1>
+            <h1 className="text-[24px] font-bold text-[#0F172A]">Ready to share?</h1>
             <p className="text-sm text-gray-500 mt-0.5">Review your trip details before sharing</p>
           </div>
         </div>

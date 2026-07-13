@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Bell, ShieldCheck, ChevronRight, LocateFixed } from 'lucide-react'
+import { MapPin, Bell, Shield, ChevronRight, LocateFixed, ArrowRight, Clock } from 'lucide-react'
 import { BottomNav } from '../../components/BottomNav'
 
 interface RecentTrip {
   id: string
+  origin: string
   destination: string
   date: string
   maskedPlate: string
@@ -49,13 +50,13 @@ export function HomeDashboard({
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
       <div className="px-6 pt-14 pb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={handleProfile}
-              className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
+              className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
               aria-label="Profile settings"
             >
               <img
@@ -65,13 +66,13 @@ export function HomeDashboard({
               />
             </button>
             <div className="flex items-center gap-1.5">
-              <LocateFixed className="w-[18px] h-[18px] text-[#0e8a9c]" />
-              <h1 className="text-xl font-bold text-[#1a2b4a]">{userLocation}</h1>
+              <LocateFixed className="w-[18px] h-[18px] text-[#0891B2]" />
+              <h1 className="text-xl font-bold text-[#0F172A]">{userLocation}</h1>
             </div>
           </div>
           <button
             onClick={handleNotifications}
-            className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
+            className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5 text-gray-500" />
@@ -79,9 +80,10 @@ export function HomeDashboard({
         </div>
       </div>
 
-      <div className="px-6 pb-20">
-        <div className="w-[280px] mx-auto bg-gray-100 rounded-lg px-4 py-3 flex items-center justify-center gap-2">
-          <ShieldCheck className="w-6 h-6 text-[#16A34A]" strokeWidth={2.5} />
+      {/* Safety tagline */}
+      <div className="px-6 pb-20 flex justify-center">
+        <div className="bg-[#F3F4F6] rounded-2xl px-5 py-3.5 flex items-center gap-3">
+          <Shield className="w-6 h-6 text-[#059669] shrink-0" strokeWidth={2} />
           <p className="text-base font-medium text-gray-700 whitespace-nowrap">Your safety, our priority</p>
         </div>
       </div>
@@ -89,13 +91,13 @@ export function HomeDashboard({
       <div className="flex flex-col items-center px-6 pb-6">
         <button
           onClick={handleStartTrip}
-          className="w-[128px] h-[128px] rounded-full bg-[#0e8a9c] flex flex-col items-center justify-center shadow-md shadow-[#0e8a9c]/20 hover:shadow-lg hover:shadow-[#0e8a9c]/30 active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#0e8a9c]/50"
+          className="w-[128px] h-[128px] rounded-full bg-[#0891B2] flex flex-col items-center justify-center shadow-md shadow-[#0891B2]/20 hover:shadow-lg hover:shadow-[#0891B2]/30 active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#0891B2]/50"
           aria-label="Start Trip"
         >
           <MapPin className="w-5 h-5 text-white mb-1" strokeWidth={1.5} />
           <span className="text-base font-bold text-white">Start Trip</span>
         </button>
-        <p className="text-base font-medium text-[#1a2b4a] mt-4">
+        <p className="text-base font-medium text-[#0F172A] mt-4">
           Share your journey in seconds
         </p>
       </div>
@@ -103,29 +105,43 @@ export function HomeDashboard({
       <div className="mx-6 mt-8 border-t border-gray-300" />
 
       {hasTrips ? (
+        /* Recent Trips section */
         <div className="flex-1 px-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#1a2b4a]">Recent Trips</h2>
+            <h2 className="text-lg font-bold text-[#0F172A]">Recent Trips</h2>
             <button
               onClick={() => navigate('/history')}
-              className="text-sm font-medium text-[#0e8a9c] flex items-center gap-1 min-h-[44px]"
+              className="text-sm font-medium text-[#0891B2] flex items-center gap-1 min-h-[44px]"
             >
               View all <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="space-y-3">
-            {recentTrips.slice(0, 5).map((trip) => (
-              <div
-                key={trip.id}
-                className="flex items-center justify-between bg-gray-100 rounded-2xl px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-[#1a2b4a]">{trip.destination}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{trip.date}</p>
-                </div>
-                <span className="font-mono text-sm text-gray-500">{trip.maskedPlate}</span>
-              </div>
-            ))}
+          <div className="bg-white border border-[#F3EFEF] rounded-2xl">
+            {recentTrips.slice(0, 5).map((trip, i) => {
+              const isLast = i === Math.min(recentTrips.length, 5) - 1
+              return (
+                <button
+                  key={trip.id}
+                  onClick={() => navigate('/history')}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 text-left min-h-[44px] rounded-2xl transition-colors hover:bg-gray-50 ${
+                    !isLast ? 'border-b border-[#F3EFEF]' : ''
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-[#0F172A] truncate">
+                      {trip.origin}
+                      <ArrowRight className="inline w-3.5 h-3.5 mx-1.5 text-gray-400" />
+                      {trip.destination}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Clock className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-xs text-gray-500">{trip.date}</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 shrink-0 ml-2" />
+                </button>
+              )
+            })}
           </div>
         </div>
       ) : (
@@ -137,7 +153,7 @@ export function HomeDashboard({
               className="w-full max-w-[200px] h-auto object-contain mix-blend-multiply"
             />
           </div>
-          <h2 className="text-xl font-bold text-[#1a2b4a] mb-1">No trips yet</h2>
+          <h2 className="text-xl font-bold text-[#0F172A] mb-1">No trips yet</h2>
           <p className="text-sm text-gray-600 text-center">Your safe journeys will appear here</p>
         </div>
       )}

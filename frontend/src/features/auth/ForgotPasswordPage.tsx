@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
         <div className="w-full max-w-sm text-center">
           <div className="w-16 h-16 rounded-2xl bg-[#DCFCE7] flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-[#16A34A]" />
+            <Mail className="w-8 h-8 text-[#059669]" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
           <p className="text-sm text-gray-500 mb-8">
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
             Enter your email and we&apos;ll send you a reset link
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="rounded-xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-4">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}

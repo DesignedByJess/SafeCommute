@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/authenticate';
 import { validate } from '../middleware/validate';
 import { sendSuccess } from '../utils/response';
 import { EmergencyService } from '../services/emergency.service';
-import { triggerEmergencySchema, retractEmergencySchema } from '../middleware/validate/emergency.schema';
+import { initiateEmergencySchema, verifyEmergencySchema, retractEmergencySchema } from '../middleware/validate/emergency.schema';
 import { emergencyLimiter } from '../middleware/rate-limit';
 
 const router = Router();
@@ -11,16 +11,20 @@ const emergencyService = new EmergencyService();
 
 router.use(authenticate);
 
-router.post('/:tripId/trigger', emergencyLimiter, validate(triggerEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:tripId/initiate', emergencyLimiter, validate(initiateEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const alert = await emergencyService.triggerEmergency(
+    const result = await emergencyService.initiateEmergency(
       req.user!.id, req.params.tripId, req.body,
       { ip: req.ip || '', userAgent: req.headers['user-agent'] || '' },
     );
-    sendSuccess(res, {
-      id: alert.id, trip_id: alert.trip_id,
-      lat: alert.lat, lng: alert.lng, triggered_at: alert.triggered_at,
-    }, 201);
+    sendSuccess(res, result);
+  } catch (err) { next(err); }
+});
+
+router.post('/:tripId/verify', validate(verifyEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const alert = await emergencyService.verifyAndTrigger(req.user!.id, req.params.tripId, req.body.code);
+    sendSuccess(res, alert, 201);
   } catch (err) { next(err); }
 });
 

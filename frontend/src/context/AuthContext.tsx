@@ -1,4 +1,5 @@
 import { createContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
+import axios from 'axios'
 import { api } from '../services/api'
 
 interface User {
@@ -12,11 +13,13 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   initialLoading: boolean
+  authError: string | null
   onboardingComplete: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
   completeOnboarding: () => void
+  clearAuthError: () => void
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -27,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
   const [onboardingComplete, setOnboardingComplete] = useState(() => {
     return localStorage.getItem(ONBOARDING_KEY) === 'true'
   })
@@ -36,24 +40,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (authCheckStarted.current) return
     authCheckStarted.current = true
 
-    let cancelled = false
-    api.get('/auth/me').then((res) => {
-      if (!cancelled && res.data?.data?.user) {
-        setUser(res.data.data.user)
-      }
-    }).catch(() => {
-      /* no valid session */
-    }).finally(() => {
-      if (!cancelled) setInitialLoading(false)
-    })
+    const controller = new AbortController()
+
+    api.get('/auth/me', { signal: controller.signal })
+      .then((res) => {
+        if (res.data?.data?.user) {
+          setUser(res.data.data.user)
+        }
+      })
+      .catch((err) => {
+        if (axios.isCancel(err)) return
+        if (!err.response) {
+          setAuthError('Could not connect to the server')
+        } else if (err.response.status !== 401) {
+          setAuthError(`Server error (${err.response.status})`)
+        }
+      })
+      .finally(() => {
+        setInitialLoading(false)
+      })
 
     const handleUnauthorized = () => setUser(null)
     window.addEventListener('auth:unauthorized', handleUnauthorized)
     return () => {
-      cancelled = true
+      controller.abort()
       window.removeEventListener('auth:unauthorized', handleUnauthorized)
     }
   }, [])
+
+  const clearAuthError = useCallback(() => setAuthError(null), [])
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true)
@@ -87,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, initialLoading, onboardingComplete, login, signup, logout, completeOnboarding }}>
+    <AuthContext.Provider value={{ user, loading, initialLoading, authError, onboardingComplete, login, signup, logout, completeOnboarding, clearAuthError }}>
       {children}
     </AuthContext.Provider>
   )

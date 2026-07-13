@@ -63,7 +63,7 @@ export default function SignupPage() {
           <h1 className="text-2xl font-bold text-gray-900">SafeCommute</h1>
           <p className="text-sm text-gray-500 mt-1">Create your account</p>
         </div>
-        <form onSubmit={handleSubmit} className="rounded-xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-4">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}

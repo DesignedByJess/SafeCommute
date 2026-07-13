@@ -22,3 +22,24 @@ The share and start tracking button on the trip summary page is not working when
 Maybe change how the password requirement is show, maybe make it an inline text beside the password label text as "Minimum 8 characters, a number and symbol"
 The content of the trip success page is too down on the page.Bring it up a bit more
 change the copy of the send emergency alert of the send emergency modal
+Tell agent to put whatsapp integration in phase 2 of app development
+End trip button is not working
+The map is still zoomed out to show most of southwestern Nigeria rather than the immediate area around the two points
+when the user selects their destination, ensure that the selected destination is the one that is pinned on the map with their current location forming a trail to their destination.
+The polyline between the current location and the destination is not visible
+Use a location pin icon for the user's destination
+After sending an alert, i tried ending the trip but it was still not ending
+The OTP code input field requires the user to tap on each input field before entering a value, change this to allow for automatic focus on the next input field once a value is entered. Also since this is a mobile first app, make sure to
+i told you to make the ends of the dividers a bit rounded, why did you add a border color to the recent trip card on the homepage
+use this color for all the dividers, border color CBD4DB across all screens 
+The continue button on the trusted contact page is too far down on the page, move it up a bit
+Under "Shared With," the contact's phone number 
+should render in full and clearly legible (not truncated/masked with 
+asterisks as currently shown) — this is the user's own reference 
+info, it should never be masked here on the success confirmation page
+Remove the shadow or border line on the recent trip card in the homepage
+Use this color as the border line color for the cards that have a border line F3EFEF
+Add a 12px corner radius on all cards and what is the background color of the cards
+The back to camera button on the licence plate capture page should be below the confirm plate button
+Reduce the border color thickness on the selected contact on the trusted contact page
+Increase the corner radius of the cards in the following pages: homepage, trip summary, success confirmation, alert history, profile.

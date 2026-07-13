@@ -16,8 +16,8 @@ export default function AppLayout() {
 
   return (
     <div className="flex min-h-screen">
-      <nav className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
+      <nav className="w-64 bg-white border-r border-[#F3EFEF] flex flex-col">
+        <div className="p-4 border-b border-[#F3EFEF]">
           <h1 className="text-xl font-bold text-[#0891B2]">SafeCommute</h1>
         </div>
         <div className="flex-1 p-3 space-y-1">
@@ -37,7 +37,7 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </div>
-        <div className="p-3 border-t border-gray-200">
+        <div className="p-3 border-t border-[#F3EFEF]">
           <button
             onClick={logout}
             className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors min-h-[44px]"

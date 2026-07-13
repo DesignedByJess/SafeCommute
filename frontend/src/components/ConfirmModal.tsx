@@ -40,7 +40,7 @@ export function ConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -51,7 +51,7 @@ export function ConfirmModal({
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 min-h-[44px] min-w-[44px]"
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-400 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 min-h-[44px] min-w-[44px]"
           >
             {cancelLabel}
           </button>

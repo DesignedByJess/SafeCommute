@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
               An unexpected error occurred. Please try refreshing the page.
             </p>
             {import.meta.env.DEV && this.state.error && (
-              <pre className="text-xs text-left bg-[#F3F4F6] border border-[#D1D5DB] rounded-lg p-4 mb-6 overflow-auto max-h-40 text-[#DC2626]">
+              <pre className="text-xs text-left bg-[#FAFAFA] border border-[#D1D5DB] rounded-lg p-4 mb-6 overflow-auto max-h-40 text-[#DC2626]">
                 {this.state.error.message}
                 {'\n'}
                 {this.state.error.stack}
@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             <button
               onClick={() => window.location.reload()}
-              className="inline-flex items-center justify-center min-h-[44px] px-6 py-2 bg-[#0891B2] text-white font-semibold text-sm rounded-xl hover:bg-[#0E7490] transition-colors"
+              className="inline-flex items-center justify-center min-h-[44px] px-6 py-2 bg-[#0891B2] text-white font-semibold text-sm rounded-2xl hover:bg-[#0E7490] transition-colors"
             >
               Refresh Page
             </button>

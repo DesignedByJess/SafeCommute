@@ -16,6 +16,7 @@ interface Trip {
   destination: string
   date: string
   time: string
+  statusLabel: string
   duration: string
   maskedPlate: string
   status?: 'completed' | 'emergency' | 'cancelled'
@@ -27,6 +28,8 @@ interface HistoryScreenProps {
   onDeleteTrip?: (tripId: string) => void
   onExportTrip?: (tripId: string) => void
   onStartTrip?: () => void
+  deleteError?: string
+  onClearDeleteError?: () => void
 }
 
 export function HistoryScreen({
@@ -35,6 +38,8 @@ export function HistoryScreen({
   onDeleteTrip,
   onExportTrip,
   onStartTrip,
+  deleteError,
+  onClearDeleteError,
 }: HistoryScreenProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
@@ -79,9 +84,9 @@ export function HistoryScreen({
 
   if (trips.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
         <div className="px-6 pt-14 pb-4">
-          <h1 className="text-2xl font-bold text-[#1a2b4a]">Trip History</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Trip History</h1>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-16">
@@ -92,7 +97,7 @@ export function HistoryScreen({
               className="w-full max-w-[200px] h-auto object-contain mix-blend-multiply"
             />
           </div>
-          <h2 className="text-xl font-bold text-[#1a2b4a] mb-1">No trip history yet</h2>
+          <h2 className="text-xl font-bold text-[#0F172A] mb-1">No trip history yet</h2>
           <p className="text-sm text-gray-600 text-center mb-[42px] max-w-xs">
             Trips you complete will show up here for 30 days
           </p>
@@ -110,9 +115,9 @@ export function HistoryScreen({
   }
 
   return (
-      <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-20">
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
         <div className="px-6 pt-14 pb-3">
-          <h1 className="text-2xl font-bold text-[#1a2b4a]">Trip History</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Trip History</h1>
         </div>
 
       <div className="px-6 pb-4">
@@ -123,11 +128,11 @@ export function HistoryScreen({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search destinations..."
-              className="block w-full rounded-xl border border-gray-300 bg-gray-100 pl-9 pr-3 py-2.5 text-sm text-[#1a2b4a] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0e8a9c] focus:border-[#0e8a9c] focus:bg-white min-h-[44px]"
+              className="block w-full rounded-2xl border border-gray-300 bg-gray-100 pl-9 pr-3 py-2.5 text-sm text-[#0F172A] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white min-h-[44px]"
             />
           </div>
           <button
-            className="w-11 h-11 rounded-xl border border-gray-300 bg-gray-100 flex items-center justify-center flex-shrink-0 focus:outline-none focus:ring-1 focus:ring-[#0e8a9c]"
+            className="w-11 h-11 rounded-2xl border border-gray-300 bg-gray-100 flex items-center justify-center flex-shrink-0 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
             aria-label="Filter trips"
           >
             <SlidersHorizontal className="w-4 h-4 text-gray-500" />
@@ -155,20 +160,26 @@ export function HistoryScreen({
                   onClick={() => handleTripTap(trip.id)}
                   className="flex-1 text-left min-h-[44px]"
                 >
-                  <p className="text-base font-bold text-[#1a2b4a]">{trip.destination}</p>
+                  <p className="text-base font-bold text-[#0F172A]">{trip.destination}</p>
                   <p className="text-sm text-gray-500 mt-0.5">
                     {trip.date} &middot; {trip.time}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-400">{trip.duration}</span>
+                    <span className={`text-xs font-semibold ${
+                      trip.statusLabel === 'In progress'
+                        ? 'text-[#F86911]'
+                        : trip.statusLabel === 'Emergency'
+                        ? 'text-[#DC2626]'
+                        : 'text-[#059669]'
+                    }`}>
+                      {trip.statusLabel}
+                    </span>
+                    {trip.duration && (
+                      <span className="text-xs text-gray-400">&middot; {trip.duration}</span>
+                    )}
                     <span className="text-xs font-mono text-gray-400">
                       {maskPlate(trip.maskedPlate)}
                     </span>
-                    {isEmergency && (
-                      <span className="text-[11px] font-semibold text-[#DC2626] bg-red-100 px-2 py-0.5 rounded-full">
-                        Emergency
-                      </span>
-                    )}
                   </div>
                 </button>
 
@@ -178,7 +189,7 @@ export function HistoryScreen({
                       e.stopPropagation()
                       setOpenMenuId(openMenuId === trip.id ? null : trip.id)
                     }}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-[#0e8a9c]"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
                     aria-label="Trip options"
                   >
                     <MoreVertical className="w-4 h-4 text-gray-400" />
@@ -187,7 +198,7 @@ export function HistoryScreen({
                   {openMenuId === trip.id && (
                     <div
                       ref={menuRef}
-                      className="absolute right-0 top-10 z-10 w-44 bg-white rounded-xl shadow-lg border border-gray-200 py-1"
+                      className="absolute right-0 top-10 z-10 w-44 bg-white rounded-2xl shadow-lg border border-gray-200 py-1"
                     >
                       <button
                         onClick={() => {

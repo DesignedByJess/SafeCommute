@@ -1,20 +1,25 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MapPin, Car, Clock, ShieldAlert } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { useLocation } from '../../hooks/useLocation'
+import { useTrip } from '../../hooks/useTrip'
+import { useAuth } from '../../hooks/useAuth'
+import { api } from '../../services/api'
 
 interface ActiveTripScreenProps {
+  tripId: string
   destination: string
   destinationLat?: number
   destinationLng?: number
   vehiclePlate: string
   contactName: string
   eta?: string
-  onEndTrip: () => void
-  onEmergency: () => void
+  onEndTrip?: () => void
+  onEmergency?: () => void
   loading?: boolean
 }
 
@@ -22,7 +27,7 @@ const DESTINATION_ICON = L.divIcon({
   className: '',
   html: `<div style="position:relative;width:28px;height:36px;">
     <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 2C20 8 26 17 14 34C2 17 8 8 14 2Z" fill="#1a2b4a"/>
+      <path d="M14 2C20 8 26 17 14 34C2 17 8 8 14 2Z" fill="#0F172A"/>
       <circle cx="14" cy="14" r="5" fill="white"/>
     </svg>
   </div>`,
@@ -85,7 +90,7 @@ function RoutePolyline({
   return (
     <Polyline
       positions={positions}
-      pathOptions={{ color: '#1a2b4a', weight: 4, opacity: 0.85 }}
+      pathOptions={{ color: '#0F172A', weight: 4, opacity: 0.85 }}
     />
   )
 }
@@ -143,6 +148,7 @@ function TripMap({
 }
 
 export function ActiveTripScreen({
+  tripId,
   destination,
   destinationLat,
   destinationLng,
@@ -158,6 +164,38 @@ export function ActiveTripScreen({
   const [destCoords, setDestCoords] = useState<[number, number] | null>(null)
   const { coordinates: liveCoords, startWatching, stopWatching } = useLocation()
   const geocodedRef = useRef(false)
+  const navigate = useNavigate()
+  const { clearActiveTrip } = useTrip()
+  const { user } = useAuth()
+  const userName = user?.name ?? user?.email ?? 'A user'
+
+  const handleEndTrip = async () => {
+    try {
+      await api.patch(`/trips/${tripId}/end`, {
+        lat: 6.5244, lng: 3.3792,
+        userName,
+        destination,
+      })
+      clearActiveTrip()
+      navigate('/', { replace: true })
+    } catch {
+      /* error handled silently — user can retry */
+    }
+  }
+
+  const handleEmergency = async () => {
+    try {
+      const emLat = liveCoords?.lat ?? 6.5244
+      const emLng = liveCoords?.lng ?? 3.3792
+      await api.post(`/emergency/${tripId}/trigger`, {
+        lat: emLat, lng: emLng, userName, destination,
+      })
+      clearActiveTrip()
+      navigate('/', { replace: true })
+    } catch {
+      /* error handled silently */
+    }
+  }
 
   // Always geocode the destination name so the pin appears at the real
   // address rather than potentially stale stored coordinates (the trip
@@ -215,7 +253,7 @@ export function ActiveTripScreen({
   return (
     <div className="h-screen bg-gray-200 flex flex-col relative w-full max-w-full">
       {/* Map — fills entire parent, edge-to-edge */}
-      <div className="absolute inset-0 w-full">
+      <div className="absolute inset-0 w-full z-0">
         <TripMap
           destination={destination}
           destCoords={destCoords}
@@ -226,8 +264,8 @@ export function ActiveTripScreen({
       {/* Status header — center aligned, no card */}
       <div className="relative z-10 flex flex-col items-center pt-12">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#16A34A] animate-pulse" />
-          <h1 className="text-xl font-bold text-[#1a2b4a]">Trip in Progress</h1>
+          <span className="w-3 h-3 rounded-full bg-[#059669] animate-pulse" />
+          <h1 className="text-xl font-bold text-[#0F172A]">Trip in Progress</h1>
         </div>
         <p className="text-sm text-gray-600 mt-0.5">Live tracking is active</p>
       </div>
@@ -237,20 +275,20 @@ export function ActiveTripScreen({
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center divide-x divide-gray-300">
             <div className="flex flex-col items-center gap-1.5 py-4 flex-1 min-w-0 px-1">
-              <MapPin className="w-5 h-5 text-[#1a2b4a]" />
-              <span className="text-xs font-bold text-[#1a2b4a] text-center leading-tight truncate w-full px-1">
+              <MapPin className="w-5 h-5 text-[#0F172A]" />
+              <span className="text-xs font-bold text-[#0F172A] text-center leading-tight truncate w-full px-1">
                 {destination}
               </span>
             </div>
             <div className="flex flex-col items-center gap-1.5 py-4 flex-1 min-w-0 px-1">
-              <Car className="w-5 h-5 text-[#1a2b4a]" />
-              <span className="text-xs font-bold text-[#1a2b4a] font-mono text-center whitespace-nowrap px-1">
+              <Car className="w-5 h-5 text-[#0F172A]" />
+              <span className="text-xs font-bold text-[#0F172A] font-mono text-center whitespace-nowrap px-1">
                 {vehiclePlate}
               </span>
             </div>
             <div className="flex flex-col items-center gap-1.5 py-4 flex-1 min-w-0 px-1">
-              <Clock className="w-5 h-5 text-[#1a2b4a]" />
-              <span className="text-xs font-bold text-[#1a2b4a] text-center whitespace-nowrap px-1">{eta}</span>
+              <Clock className="w-5 h-5 text-[#0F172A]" />
+              <span className="text-xs font-bold text-[#0F172A] text-center whitespace-nowrap px-1">{eta}</span>
             </div>
           </div>
         </div>
@@ -267,7 +305,7 @@ export function ActiveTripScreen({
             type="button"
             onClick={() => setShowEndConfirm(true)}
             disabled={loading}
-            className="w-full bg-[#0e8a9c] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
+            className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
           >
             End Trip
           </button>
@@ -297,7 +335,7 @@ export function ActiveTripScreen({
         variant="default"
         onConfirm={() => {
           setShowEndConfirm(false)
-          onEndTrip()
+          handleEndTrip()
         }}
         onCancel={() => setShowEndConfirm(false)}
       />
@@ -312,7 +350,7 @@ export function ActiveTripScreen({
         variant="emergency"
         onConfirm={() => {
           setShowEmergencyConfirm(false)
-          onEmergency()
+          handleEmergency()
         }}
         onCancel={() => setShowEmergencyConfirm(false)}
       />

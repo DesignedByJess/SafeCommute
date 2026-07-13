@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import AppLayout from './components/AppLayout'
@@ -17,27 +18,80 @@ import OnboardingPage from './features/auth/OnboardingPage'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
 import OTPPage from './features/auth/OTPPage'
 
+function AuthGate({ isReady, children }: { isReady: boolean; children: React.ReactNode }) {
+  const { authError, clearAuthError } = useAuth()
+  const [timedOut, setTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (isReady) return
+    const id = setTimeout(() => setTimedOut(true), 10000)
+    return () => clearTimeout(id)
+  }, [isReady])
+
+  useEffect(() => {
+    if (isReady) setTimedOut(false)
+  }, [isReady])
+
+  if (isReady) return <>{children}</>
+
+  if (timedOut || authError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center p-8">
+          <p className="text-gray-700 mb-2 text-lg font-medium">
+            {authError || 'Taking longer than expected'}
+          </p>
+          <p className="text-gray-500 mb-6 text-sm">
+            Couldn't connect to the server. Please check your connection and try again.
+          </p>
+          <button
+            onClick={() => { clearAuthError(); window.location.reload() }}
+            className="px-6 py-3 rounded-lg font-medium transition-colors"
+            style={{ backgroundColor: '#0891B2', color: 'white' }}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-gray-500">Loading...</p>
+    </div>
+  )
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initialLoading, onboardingComplete } = useAuth()
-  if (initialLoading) return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-500">Loading...</p></div>
-  if (!user) return <Navigate to="/login" replace />
-  if (!onboardingComplete) return <Navigate to="/onboarding" replace />
-  return <>{children}</>
+  return (
+    <AuthGate isReady={!initialLoading}>
+      {!user ? <Navigate to="/login" replace /> :
+       !onboardingComplete ? <Navigate to="/onboarding" replace /> :
+       children}
+    </AuthGate>
+  )
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, initialLoading } = useAuth()
-  if (initialLoading) return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-500">Loading...</p></div>
-  if (user) return <Navigate to="/" replace />
-  return <>{children}</>
+  return (
+    <AuthGate isReady={!initialLoading}>
+      {user ? <Navigate to="/" replace /> : children}
+    </AuthGate>
+  )
 }
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, initialLoading, onboardingComplete } = useAuth()
-  if (initialLoading) return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-500">Loading...</p></div>
-  if (!user) return <Navigate to="/login" replace />
-  if (onboardingComplete) return <Navigate to="/" replace />
-  return <>{children}</>
+  return (
+    <AuthGate isReady={!initialLoading}>
+      {!user ? <Navigate to="/login" replace /> :
+       onboardingComplete ? <Navigate to="/" replace /> :
+       children}
+    </AuthGate>
+  )
 }
 
 export default function App() {

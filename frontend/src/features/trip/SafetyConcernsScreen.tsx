@@ -29,7 +29,7 @@ export function SafetyConcernsScreen({ onBack, onContinue, onSkip }: SafetyConce
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col max-w-md mx-auto w-full">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col max-w-md mx-auto w-full">
       <div className="px-6 pt-14 pb-4">
         <div className="flex items-center mb-2">
           <button
@@ -38,10 +38,10 @@ export function SafetyConcernsScreen({ onBack, onContinue, onSkip }: SafetyConce
             className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg cursor-pointer"
             aria-label="Go back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#1a2b4a]" />
+            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
           </button>
           <div className="flex-1 text-center mr-8">
-            <h1 className="text-[24px] font-bold text-[#1a2b4a]">Any safety concerns?</h1>
+            <h1 className="text-[24px] font-bold text-[#0F172A]">Any safety concerns?</h1>
             <p className="text-sm text-gray-500 mt-0.5">
               Tap any that apply &mdash; or skip if everything feels fine.
             </p>
@@ -61,8 +61,8 @@ export function SafetyConcernsScreen({ onBack, onContinue, onSkip }: SafetyConce
                 onClick={() => toggleConcern(concern)}
                 className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all min-h-[44px] focus:outline-none ${
                   selected
-                    ? 'bg-[#1a2b4a] text-white'
-                    : 'bg-white text-[#1a2b4a] border border-gray-300'
+                    ? 'bg-[#0F172A] text-white'
+                    : 'bg-white text-[#0F172A] border border-gray-400'
                 }`}
               >
                 <span>{concern}</span>
@@ -76,7 +76,7 @@ export function SafetyConcernsScreen({ onBack, onContinue, onSkip }: SafetyConce
       </div>
 
       <div className="px-6 pb-6">
-        <label className="block text-sm font-bold text-[#1a2b4a] mb-2">
+        <label className="block text-sm font-bold text-[#0F172A] mb-2">
           Additional notes (optional)
         </label>
         <textarea
@@ -84,7 +84,7 @@ export function SafetyConcernsScreen({ onBack, onContinue, onSkip }: SafetyConce
           onChange={(e) => setNotes(e.target.value)}
           placeholder="E.g. vehicle has no number, driver acting strange"
           rows={4}
-          className="block w-full rounded-xl border border-gray-300 px-4 py-3 text-sm bg-white shadow-sm placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#0891B2] focus:border-[#0891B2]"
+          className="block w-full rounded-2xl border border-gray-400 px-4 py-3 text-sm bg-white placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#0891B2] focus:border-[#0891B2]"
         />
       </div>
 

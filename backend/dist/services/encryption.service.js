@@ -5,16 +5,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EncryptionService = void 0;
 const crypto_1 = __importDefault(require("crypto"));
-// Ensure required environment variables exist
-const MASTER_KEY = process.env.MASTER_KEY || 'default-master-key-must-be-32-chars-long!'; // 32 bytes for AES-256
-const PHONE_KEY = process.env.PHONE_KEY || 'default-phone-key-must-be-32-chars-long!'; // 32 bytes for AES-256
+// Derive 32-byte keys for AES-256 from environment variables using SHA-256
+const MASTER_KEY = crypto_1.default.createHash('sha256').update(process.env.MASTER_KEY || 'default-master-key').digest();
+const PHONE_KEY = crypto_1.default.createHash('sha256').update(process.env.PHONE_KEY || 'default-phone-key').digest();
 class EncryptionService {
     /**
      * Encrypt a phone number using AES-256-GCM
      */
     static encryptPhone(phone) {
         const iv = crypto_1.default.randomBytes(12);
-        const cipher = crypto_1.default.createCipheriv('aes-256-gcm', Buffer.from(PHONE_KEY, 'utf-8'), iv);
+        const cipher = crypto_1.default.createCipheriv('aes-256-gcm', PHONE_KEY, iv);
         let encrypted = cipher.update(phone, 'utf8', 'hex');
         encrypted += cipher.final('hex');
         const authTag = cipher.getAuthTag().toString('hex');
@@ -33,7 +33,7 @@ class EncryptionService {
             const iv = Buffer.from(parts[0], 'hex');
             const authTag = Buffer.from(parts[1], 'hex');
             const encryptedText = Buffer.from(parts[2], 'hex');
-            const decipher = crypto_1.default.createDecipheriv('aes-256-gcm', Buffer.from(PHONE_KEY, 'utf-8'), iv);
+            const decipher = crypto_1.default.createDecipheriv('aes-256-gcm', PHONE_KEY, iv);
             decipher.setAuthTag(authTag);
             let decrypted = decipher.update(encryptedText, undefined, 'utf8');
             decrypted += decipher.final('utf8');
@@ -71,7 +71,7 @@ class EncryptionService {
         const formattedPlate = `${plateIv.toString('hex')}:${plateAuthTag}:${encryptedPlate}`;
         // 3. Encrypt data key with MASTER_KEY (AES-256-CBC)
         const dataKeyIv = crypto_1.default.randomBytes(16);
-        const dataKeyCipher = crypto_1.default.createCipheriv('aes-256-cbc', Buffer.from(MASTER_KEY, 'utf-8'), dataKeyIv);
+        const dataKeyCipher = crypto_1.default.createCipheriv('aes-256-cbc', MASTER_KEY, dataKeyIv);
         let encryptedDataKey = dataKeyCipher.update(dataKey, undefined, 'hex');
         encryptedDataKey += dataKeyCipher.final('hex');
         const formattedDataKey = `${dataKeyIv.toString('hex')}:${encryptedDataKey}`;
@@ -92,7 +92,7 @@ class EncryptionService {
             }
             const dataKeyIv = Buffer.from(dataKeyParts[0], 'hex');
             const dataKeyEncrypted = Buffer.from(dataKeyParts[1], 'hex');
-            const dataKeyDecipher = crypto_1.default.createDecipheriv('aes-256-cbc', Buffer.from(MASTER_KEY, 'utf-8'), dataKeyIv);
+            const dataKeyDecipher = crypto_1.default.createDecipheriv('aes-256-cbc', MASTER_KEY, dataKeyIv);
             let decryptedDataKey = dataKeyDecipher.update(dataKeyEncrypted);
             decryptedDataKey = Buffer.concat([decryptedDataKey, dataKeyDecipher.final()]);
             // 2. Decrypt license plate using decrypted data key (AES-256-GCM)

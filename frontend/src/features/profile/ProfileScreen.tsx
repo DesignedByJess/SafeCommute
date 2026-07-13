@@ -42,11 +42,11 @@ export function ProfileScreen({
   ]
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col pb-24">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-24">
       <div className="bg-white rounded-b-3xl px-6 pt-14 pb-8">
         <div className="flex justify-end mb-4">
           <button
-            className="w-9 h-9 rounded-full border border-gray-300 bg-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
+            className="w-9 h-9 rounded-full border border-gray-300 bg-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
             aria-label="Edit profile"
           >
             <Pencil className="w-4 h-4 text-gray-500" />
@@ -61,7 +61,7 @@ export function ProfileScreen({
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-[28px] font-bold text-[#1a2b4a]">{userName}</h1>
+          <h1 className="text-[28px] font-bold text-[#0F172A]">{userName}</h1>
           <p className="text-sm text-gray-500">{userLocation}</p>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function ProfileScreen({
             </p>
           </div>
           <button
-            className="shrink-0 flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full py-2 px-4 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-[#0e8a9c]"
+            className="shrink-0 flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full py-2 px-4 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
           >
             <span className="text-sm font-bold text-white">Upgrade</span>
             <ChevronRight className="w-4 h-4 text-white" />
@@ -96,8 +96,8 @@ export function ProfileScreen({
                   i < group1.length - 1 ? 'border-b border-gray-100' : ''
                 }`}
               >
-                <Icon className="w-5 h-5 text-[#1a2b4a] shrink-0" />
-                <span className="flex-1 text-left text-sm font-medium text-[#1a2b4a]">
+                <Icon className="w-5 h-5 text-[#0F172A] shrink-0" />
+                <span className="flex-1 text-left text-sm font-medium text-[#0F172A]">
                   {item.label}
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
@@ -119,8 +119,8 @@ export function ProfileScreen({
                   i < group2.length - 1 ? 'border-b border-gray-100' : ''
                 }`}
               >
-                <Icon className="w-5 h-5 text-[#1a2b4a] shrink-0" />
-                <span className="flex-1 text-left text-sm font-medium text-[#1a2b4a]">
+                <Icon className="w-5 h-5 text-[#0F172A] shrink-0" />
+                <span className="flex-1 text-left text-sm font-medium text-[#0F172A]">
                   {item.label}
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
@@ -133,7 +133,7 @@ export function ProfileScreen({
       <div className="px-6 mt-2">
         <button
           onClick={() => setShowSignOutConfirm(true)}
-          className="flex items-center gap-3 px-4 py-3.5 min-h-[52px] transition-colors hover:bg-red-50 rounded-xl w-full"
+          className="flex items-center gap-3 px-4 py-3.5 min-h-[52px] transition-colors hover:bg-red-50 rounded-2xl w-full"
         >
           <LogOut className="w-5 h-5 text-[#DC2626] shrink-0" />
           <span className="text-sm font-medium text-[#DC2626]">Logout</span>

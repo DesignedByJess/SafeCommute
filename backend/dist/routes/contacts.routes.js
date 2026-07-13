@@ -26,15 +26,19 @@ router.get('/', async (req, res, next) => {
 });
 router.post('/', (0, validate_1.validate)(contact_schema_1.createContactSchema), async (req, res, next) => {
     try {
-        const contact = await contactService.addContact(req.user.id, req.body);
-        (0, response_1.sendCreated)(res, {
-            id: contact.id,
-            name: contact.name,
-            phone_number_encrypted: (0, sanitize_1.maskPhone)(contact.phone_number_encrypted),
-            relationship: contact.relationship,
-            verified: contact.verified,
-            created_at: contact.created_at,
-        });
+        const result = await contactService.addContact(req.user.id, req.body);
+        const payload = {
+            id: result.id,
+            name: result.name,
+            phone_number_encrypted: (0, sanitize_1.maskPhone)(result.phone_number_encrypted),
+            relationship: result.relationship,
+            verified: result.verified,
+            created_at: result.created_at,
+        };
+        if (result.devOtp) {
+            payload.devOtp = result.devOtp;
+        }
+        (0, response_1.sendCreated)(res, payload);
     }
     catch (err) {
         next(err);

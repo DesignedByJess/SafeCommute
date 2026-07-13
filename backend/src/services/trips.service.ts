@@ -1,8 +1,8 @@
 import crypto from 'crypto';
-import { Trip, TripLocation } from '../models';
+import { Trip, TripLocation, Contact } from '../models';
 import { EncryptionService } from './encryption.service';
-import { auditLog } from './audit.service';
-import { AppError } from '../utils/errors';
+import { auditLog, logger } from './audit.service';
+import { AppError, NotFoundError } from '../utils/errors';
 import { NotificationService } from './notifications/notification.service';
 
 export class TripService {
@@ -20,13 +20,29 @@ export class TripService {
       vehicle_plate: string;
       contact_id?: string;
       contact_name: string;
-      contact_phone: string;
+      contact_phone?: string;
       safety_notes?: string[];
     },
   ) {
+    let contactPhone = input.contact_phone;
+
+    // If contact_id is provided but no phone, look up the phone from the contact record
+    if (!contactPhone && input.contact_id) {
+      const contact = await Contact.findOne({
+        where: { id: input.contact_id, user_id: userId, deleted_at: null },
+      });
+      if (contact) {
+        contactPhone = EncryptionService.decryptPhone(contact.phone_number_encrypted);
+      }
+    }
+
+    if (!contactPhone) {
+      throw new AppError('contact_phone is required', 400, 'VALIDATION_ERROR');
+    }
+
     const shareToken = crypto.randomBytes(16).toString('hex');
     const { encryptedPlate, encryptedDataKey } = EncryptionService.encryptPlate(input.vehicle_plate);
-    const contactPhoneEncrypted = EncryptionService.encryptPhone(input.contact_phone);
+    const contactPhoneEncrypted = EncryptionService.encryptPhone(contactPhone);
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
     const shareLinkExpiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
 
@@ -55,12 +71,12 @@ export class TripService {
 
     await this.notificationService.sendTripStarted({
       contactName: input.contact_name,
-      contactPhone: input.contact_phone,
+      contactPhone,
       shareToken,
       userName: userId,
     });
 
-    return trip;
+    return { ...trip.toJSON(), rawContactPhone: contactPhone };
   }
 
   async listTrips(userId: string) {
@@ -68,12 +84,14 @@ export class TripService {
       where: { user_id: userId },
       order: [['created_at', 'DESC']],
       limit: 50,
+      raw: true,
     });
   }
 
   async getActiveTrip(userId: string) {
     const trip = await Trip.findOne({
       where: { user_id: userId, status: 'active' },
+      order: [['created_at', 'DESC']],
       raw: true,
     });
     return trip && trip.id ? trip : null;
@@ -95,17 +113,53 @@ export class TripService {
     return { trip, latestLocation };
   }
 
-  async endTrip(userId: string, tripId: string) {
-    const trip = await Trip.findOne({ where: { id: tripId, user_id: userId, status: 'active' } });
+  async endTrip(
+    userId: string,
+    tripId: string,
+    notification?: { userName: string; destination: string },
+  ) {
+    const trip = await Trip.findOne({
+      where: { id: tripId, user_id: userId, status: ['active', 'emergency'] },
+      raw: true,
+    });
     if (!trip) throw new AppError('Active trip not found', 404, 'NOT_FOUND');
 
-    trip.status = 'completed';
-    trip.ended_at = new Date();
-    await trip.save();
+    // Use static update — bypasses model instance class field issues entirely
+    await Trip.update(
+      { status: 'completed', ended_at: new Date() },
+      { where: { id: tripId, user_id: userId, status: ['active', 'emergency'] } },
+    );
 
-    await TripLocation.destroy({ where: { trip_id: trip.id } });
-    await auditLog(userId, 'trip_ended', { tripId: trip.id });
+    // Use tripId directly — avoids trip.id class field access issue
+    await TripLocation.destroy({ where: { trip_id: tripId } });
+    await auditLog(userId, 'trip_ended', { tripId });
 
-    return trip;
+    // Send arrival notification — fire-and-forget, never blocks the response
+    if (notification && trip.contact_phone_encrypted) {
+      try {
+        const contactPhone = EncryptionService.decryptPhone(trip.contact_phone_encrypted);
+        this.notificationService.sendTripEnded({
+          contactName: trip.contact_name,
+          contactPhone,
+          userName: notification.userName,
+          destination: notification.destination,
+        }).catch((err) => logger.error('Trip-end notification failed', { error: err }));
+      } catch (err) {
+        logger.error('Failed to decrypt contact phone for trip-end notification', { error: err });
+      }
+    }
+
+    return { id: tripId, status: 'completed' };
+  }
+
+  async deleteTrip(userId: string, tripId: string) {
+    const trip = await Trip.findOne({
+      where: { id: tripId, user_id: userId },
+      raw: true,
+    });
+    if (!trip) throw new NotFoundError('Trip not found');
+
+    await Trip.destroy({ where: { id: tripId, user_id: userId } });
+    await auditLog(userId, 'trip_deleted', { tripId });
   }
 }

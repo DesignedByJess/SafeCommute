@@ -18,7 +18,7 @@ export function StepProgress({ currentStep, totalSteps = 5 }: StepProgressProps)
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                   isCompleted || isActive
-                    ? 'bg-[#1a2b4a] text-white'
+                    ? 'bg-[#0F172A] text-white'
                     : 'bg-gray-200 text-gray-500'
                 }`}
               >
@@ -31,7 +31,7 @@ export function StepProgress({ currentStep, totalSteps = 5 }: StepProgressProps)
               {stepNum < totalSteps && (
                 <div
                   className={`w-6 h-[2px] transition-colors ${
-                    i < currentStep ? 'bg-[#1a2b4a]' : 'bg-gray-200'
+                    i < currentStep ? 'bg-[#0F172A]' : 'bg-gray-200'
                   }`}
                 />
               )}

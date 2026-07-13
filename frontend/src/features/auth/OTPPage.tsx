@@ -72,7 +72,7 @@ export default function OTPPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-xl p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-6">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
@@ -107,11 +107,13 @@ export default function OTPPage() {
                 ref={(el) => { inputRefs.current[i] = el }}
                 type="text"
                 inputMode="numeric"
+                autoComplete={i === 0 ? 'one-time-code' : 'off'}
+                pattern="[0-9]*"
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(i, e)}
-                className="w-12 h-14 text-center text-lg font-semibold rounded-lg border border-gray-300 bg-gray-100 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white min-h-[44px]"
+                className="w-12 h-14 text-center text-lg font-semibold rounded-lg border border-gray-400 bg-gray-100 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white min-h-[44px]"
               />
             ))}
           </div>

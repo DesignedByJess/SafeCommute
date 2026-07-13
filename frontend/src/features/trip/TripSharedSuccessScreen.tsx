@@ -22,27 +22,27 @@ export function TripSharedSuccessScreen({
   ]
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col max-w-md mx-auto w-full">
-      <div className="flex-1 flex flex-col items-center px-6 pt-16">
-        <div className="w-20 h-20 rounded-full bg-[#2dd4a7] flex items-center justify-center mb-6">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col max-w-md mx-auto w-full">
+      <div className="flex flex-col items-center px-6 pt-14">
+        <div className="w-20 h-20 rounded-full bg-[#059669] flex items-center justify-center mb-5">
           <CheckCircle className="w-10 h-10 text-white" strokeWidth={2.5} />
         </div>
 
-        <h1 className="text-[26px] font-bold text-[#1a2b4a] text-center mb-1">
+        <h1 className="text-2xl font-bold text-[#0F172A] text-center mb-2">
           Trip Shared Successfully
         </h1>
-        <p className="text-sm text-gray-500 text-center mb-8">
+        <p className="text-sm text-gray-500 text-center mb-7">
           {contactName} is now tracking your journey
         </p>
 
-        <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+        <div className="w-full bg-white rounded-2xl border border-[#F3EFEF] mb-7">
           {rows.map((row, i) => {
             const Icon = row.icon
             return (
               <div
                 key={row.label}
-                className={`px-4 py-3.5 ${
-                  i < rows.length - 1 ? 'border-b border-gray-100' : ''
+                className={`rounded-2xl px-4 py-3.5 ${
+                  i < rows.length - 1 ? 'border-b border-[#F3EFEF]' : ''
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export function TripSharedSuccessScreen({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{row.label}</p>
-                    <p className="text-sm font-bold text-[#1a2b4a] mt-0.5 truncate">{row.value}</p>
+                    <p className="text-sm font-bold text-[#0F172A] mt-0.5 truncate">{row.value}</p>
                   </div>
                 </div>
                 {row.secondary && (
@@ -64,18 +64,20 @@ export function TripSharedSuccessScreen({
             )
           })}
         </div>
+      </div>
 
-        <div className="flex items-center gap-2 mb-8">
-          <Wifi className="w-4 h-4 text-[#16A34A]" />
-          <span className="text-sm font-medium text-[#16A34A]">Live location sharing is active</span>
-        </div>
-
+      <div className="px-6 pb-8">
         <button
           onClick={onViewLiveTrip}
           className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
         >
           View Live Trip
         </button>
+
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <Wifi className="w-4 h-4 text-[#059669]" />
+          <span className="text-sm font-medium text-[#059669]">Live location sharing is active</span>
+        </div>
       </div>
     </div>
   )

@@ -7,12 +7,6 @@ exports.EncryptionKey = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class EncryptionKey extends sequelize_1.Model {
-    id;
-    key_version;
-    master_key_encrypted;
-    active;
-    created_at;
-    rotated_at;
 }
 exports.EncryptionKey = EncryptionKey;
 EncryptionKey.init({

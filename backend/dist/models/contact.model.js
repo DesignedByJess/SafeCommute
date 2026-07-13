@@ -7,18 +7,6 @@ exports.Contact = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class Contact extends sequelize_1.Model {
-    id;
-    user_id;
-    name;
-    phone_number_encrypted;
-    phone_number_hash;
-    relationship;
-    verified;
-    otp_code;
-    otp_expires_at;
-    created_at;
-    updated_at;
-    deleted_at;
 }
 exports.Contact = Contact;
 Contact.init({

@@ -7,17 +7,6 @@ exports.EmergencyAlert = void 0;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = __importDefault(require("../database/sequelize"));
 class EmergencyAlert extends sequelize_1.Model {
-    id;
-    trip_id;
-    lat;
-    lng;
-    accuracy;
-    ip_address;
-    user_agent;
-    triggered_at;
-    retracted_at;
-    retraction_reason;
-    verified;
 }
 exports.EmergencyAlert = EmergencyAlert;
 EmergencyAlert.init({

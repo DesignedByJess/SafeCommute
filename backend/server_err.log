@@ -1,0 +1,6 @@
+(sequelize) Warning: Model "AuditLog" is declaring public class fields for attribute(s): "id", "user_id", "event_type", "event_data", "ip_address", "user_agent", "created_at".
+These class fields are shadowing Sequelize's attribute getters & setters.
+See https://sequelize.org/main/manual/model-basics.html#caveat-with-public-class-fields
+(sequelize) Warning: Model "Trip" is declaring public class fields for attribute(s): "id", "user_id", "share_token", "share_link_expires_at", "share_link_revoked", "origin_lat", "origin_lng", "origin_address", "destination_lat", "destination_lng", "destination_address", "vehicle_plate_encrypted", "vehicle_plate_data_key_encrypted", "contact_id", "contact_name", "contact_phone_encrypted", "safety_notes", "status", "started_at", "ended_at", "expires_at", "created_at", "updated_at".
+These class fields are shadowing Sequelize's attribute getters & setters.
+See https://sequelize.org/main/manual/model-basics.html#caveat-with-public-class-fields
