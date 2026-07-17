@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { LogIn } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import AppLayout from './components/AppLayout'
 import LoginPage from './features/auth/LoginPage'
@@ -16,7 +17,13 @@ import ProfilePage from './features/profile/ProfilePage'
 import ShareTrackingPage from './features/share/ShareTrackingPage'
 import OnboardingPage from './features/auth/OnboardingPage'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
+import ResetPasswordPage from './features/auth/ResetPasswordPage'
 import OTPPage from './features/auth/OTPPage'
+import EditProfilePage from './features/profile/EditProfilePage'
+import TrustedDevicesPage from './features/profile/TrustedDevicesPage'
+import NotificationSettingsPage from './features/profile/NotificationSettingsPage'
+import HelpSupportPage from './features/profile/HelpSupportPage'
+import NotificationsCenterPage from './features/dashboard/NotificationsCenterPage'
 
 function AuthGate({ isReady, children }: { isReady: boolean; children: React.ReactNode }) {
   const { authError, clearAuthError } = useAuth()
@@ -63,13 +70,42 @@ function AuthGate({ isReady, children }: { isReady: boolean; children: React.Rea
   )
 }
 
+function SessionExpiredBanner() {
+  const navigate = useNavigate()
+  const { clearSessionExpired } = useAuth()
+  return (
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4">
+      <div className="text-center max-w-sm">
+        <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+          <LogIn className="w-8 h-8 text-amber-600" />
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">Session Expired</h1>
+        <p className="text-sm text-gray-500 mb-6">
+          Your session has expired. Please sign in again to continue.
+        </p>
+        <button
+          onClick={() => {
+            clearSessionExpired()
+            navigate('/login', { replace: true })
+          }}
+          className="inline-flex items-center gap-2 bg-[#0891B2] text-white font-bold text-base rounded-2xl px-6 py-3 min-h-[48px] focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
+        >
+          <LogIn className="w-5 h-5" />
+          Sign In Again
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, initialLoading, onboardingComplete } = useAuth()
+  const { user, initialLoading, onboardingComplete, sessionExpired } = useAuth()
+  if (sessionExpired) return <SessionExpiredBanner />
   return (
     <AuthGate isReady={!initialLoading}>
-      {!user ? <Navigate to="/login" replace /> :
+      {!user ? <Navigate to="/signup" replace /> :
        !onboardingComplete ? <Navigate to="/onboarding" replace /> :
-       children}
+        children}
     </AuthGate>
   )
 }
@@ -87,7 +123,7 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, initialLoading, onboardingComplete } = useAuth()
   return (
     <AuthGate isReady={!initialLoading}>
-      {!user ? <Navigate to="/login" replace /> :
+      {!user ? <Navigate to="/signup" replace /> :
        onboardingComplete ? <Navigate to="/" replace /> :
        children}
     </AuthGate>
@@ -102,19 +138,25 @@ export default function App() {
       <Route path="/share/:share_token" element={<ShareTrackingPage />} />
       <Route path="/onboarding" element={<OnboardingGuard><OnboardingPage /></OnboardingGuard>} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
       <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
       <Route path="/safety" element={<ProtectedRoute><SafetyCenterPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/devices" element={<ProtectedRoute><TrustedDevicesPage /></ProtectedRoute>} />
+      <Route path="/profile/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
+      <Route path="/profile/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
+      <Route path="/activity" element={<ProtectedRoute><NotificationsCenterPage /></ProtectedRoute>} />
       <Route path="/trip/new" element={<ProtectedRoute><NewTripPage /></ProtectedRoute>} />
       <Route path="/trip/active" element={<ProtectedRoute><ActiveTripPage /></ProtectedRoute>} />
       <Route path="/contacts/:contactId/verify-otp" element={<ProtectedRoute><OTPPage /></ProtectedRoute>} />
+      <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-        <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/signup" replace />} />
     </Routes>
   )
 }

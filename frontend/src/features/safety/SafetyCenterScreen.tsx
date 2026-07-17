@@ -74,7 +74,7 @@ export function SafetyCenterScreen({
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
       {/* Header */}
       <div className="px-6 pt-14 pb-4">
-        <h1 className="text-2xl font-bold text-[#0F172A] text-center">Safety Center</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Safety Center</h1>
       </div>
 
       {/* Primary action card */}
@@ -83,7 +83,7 @@ export function SafetyCenterScreen({
           <button
             onClick={handleEmergencyTap}
             disabled={!canSend}
-            className={`w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold min-h-[56px] transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold min-h-[56px] transition-all focus:outline-none focus:ring-1 focus:ring-offset-2 ${
               canSend
                 ? 'border-2 border-[#DC2626] text-[#DC2626] bg-white hover:bg-red-50 focus:ring-[#DC2626]'
                 : 'border-2 border-gray-300 text-gray-400 bg-white cursor-not-allowed'
@@ -129,17 +129,14 @@ export function SafetyCenterScreen({
         </div>
       ) : (
         <div className="flex-1 px-6">
-          <div className="bg-white border border-[#F3EFEF] rounded-2xl">
-            {sortedAlerts.map((alert, i) => {
+          <div className="bg-white border border-[#F3EFEF] rounded-2xl overflow-hidden">
+            {sortedAlerts.map((alert) => {
               const isExpanded = expandedId === alert.id
-              const isLast = i === sortedAlerts.length - 1
               return (
                 <div key={alert.id}>
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : alert.id)}
-                    className={`w-full flex items-center justify-between p-4 text-left min-h-[44px] rounded-2xl ${
-                      !isLast ? 'border-b border-[#F3EFEF]' : ''
-                    }`}
+                    className="w-full flex items-center justify-between p-4 text-left min-h-[44px] rounded-lg border-b border-[#F3EFEF]"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { HomeDashboard } from './HomeDashboard'
 import { api } from '../../services/api'
+import { useAuth } from '../../hooks/useAuth'
 
 interface ApiTrip {
   id: string
@@ -32,33 +34,28 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })
 }
 
+async function fetchRecentTrips(): Promise<RecentTrip[]> {
+  const res = await api.get('/trips')
+  const trips: ApiTrip[] = res.data?.data ?? []
+  return trips.slice(0, 3).map((t) => ({
+    id: t.id,
+    origin: t.origin_address || 'Your location',
+    destination: t.destination_address,
+    date: formatDate(t.ended_at ?? t.started_at),
+    maskedPlate: '',
+  }))
+}
+
 export default function DashboardPage() {
-  const [recentTrips, setRecentTrips] = useState<RecentTrip[]>([])
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const { profilePhoto } = useAuth()
+  const { data: recentTrips = [], isLoading } = useQuery({
+    queryKey: ['trips', 'recent'],
+    queryFn: fetchRecentTrips,
+  })
+  const unreadNotifications = 0
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await api.get('/trips')
-        const trips: ApiTrip[] = res.data?.data ?? []
-        const formatted: RecentTrip[] = trips.slice(0, 5).map((t) => ({
-          id: t.id,
-          origin: t.origin_address || 'Your location',
-          destination: t.destination_address,
-          date: formatDate(t.ended_at ?? t.started_at),
-          maskedPlate: '',
-        }))
-        setRecentTrips(formatted)
-      } catch {
-        /* silently fail */
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetch()
-  }, [])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-[#0891B2] border-t-transparent rounded-full animate-spin" />
@@ -70,6 +67,9 @@ export default function DashboardPage() {
     <HomeDashboard
       hasTrips={recentTrips.length > 0}
       recentTrips={recentTrips}
+      onNotifications={() => navigate('/activity')}
+      unreadNotifications={unreadNotifications}
+      profilePhotoUrl={profilePhoto}
     />
   )
 }

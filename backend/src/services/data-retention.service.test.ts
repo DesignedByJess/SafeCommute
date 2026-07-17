@@ -46,7 +46,12 @@ describe('DataRetentionService', () => {
       TripDestroy.mockResolvedValueOnce(5);
       const result = await service.purgeExpiredTrips();
       expect(TripDestroy).toHaveBeenCalledWith({
-        where: { expires_at: { [Op.lt]: expect.any(Date) } },
+        where: {
+          [Op.or]: [
+            { expires_at: { [Op.lt]: expect.any(Date) }, status: { [Op.ne]: 'emergency' } },
+            { expires_at: { [Op.lt]: expect.any(Date) }, status: 'emergency' },
+          ],
+        },
       });
       expect(result).toBe(5);
     });

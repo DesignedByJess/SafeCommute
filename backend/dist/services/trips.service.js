@@ -10,11 +10,12 @@ const encryption_service_1 = require("./encryption.service");
 const audit_service_1 = require("./audit.service");
 const errors_1 = require("../utils/errors");
 const notification_service_1 = require("./notifications/notification.service");
+const config_1 = require("../utils/config");
 class TripService {
     constructor() {
         this.notificationService = new notification_service_1.NotificationService();
     }
-    async createTrip(userId, input) {
+    async createTrip(userId, userName, input) {
         let contactPhone = input.contact_phone;
         // If contact_id is provided but no phone, look up the phone from the contact record
         if (!contactPhone && input.contact_id) {
@@ -31,12 +32,14 @@ class TripService {
         const shareToken = crypto_1.default.randomBytes(16).toString('hex');
         const { encryptedPlate, encryptedDataKey } = encryption_service_1.EncryptionService.encryptPlate(input.vehicle_plate);
         const contactPhoneEncrypted = encryption_service_1.EncryptionService.encryptPhone(contactPhone);
-        const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-        const shareLinkExpiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const displayName = userName || userId;
+        const hmacKey = crypto_1.default.createHmac('sha256', config_1.env.HMAC_SECRET)
+            .update(shareToken)
+            .digest('hex');
         const trip = await models_1.Trip.create({
             user_id: userId,
             share_token: shareToken,
-            share_link_expires_at: shareLinkExpiresAt,
             share_link_revoked: false,
             origin_lat: input.origin_lat,
             origin_lng: input.origin_lng,
@@ -58,9 +61,9 @@ class TripService {
             contactName: input.contact_name,
             contactPhone,
             shareToken,
-            userName: userId,
+            userName: displayName,
         });
-        return { ...trip.toJSON(), rawContactPhone: contactPhone };
+        return { ...trip.toJSON(), rawContactPhone: contactPhone, hmacKey };
     }
     async listTrips(userId) {
         return models_1.Trip.findAll({
@@ -100,7 +103,11 @@ class TripService {
         if (!trip)
             throw new errors_1.AppError('Active trip not found', 404, 'NOT_FOUND');
         // Use static update — bypasses model instance class field issues entirely
-        await models_1.Trip.update({ status: 'completed', ended_at: new Date() }, { where: { id: tripId, user_id: userId, status: ['active', 'emergency'] } });
+        await models_1.Trip.update({
+            status: 'completed',
+            ended_at: new Date(),
+            share_link_expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000),
+        }, { where: { id: tripId, user_id: userId, status: ['active', 'emergency'] } });
         // Use tripId directly — avoids trip.id class field access issue
         await models_1.TripLocation.destroy({ where: { trip_id: tripId } });
         await (0, audit_service_1.auditLog)(userId, 'trip_ended', { tripId });

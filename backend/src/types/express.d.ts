@@ -4,6 +4,8 @@ declare namespace Express {
       id: string;
       email?: string;
       phone?: string;
+      name?: string;
+      onboarding_complete?: boolean;
     };
   }
 }

@@ -8,6 +8,7 @@ import EncryptionKey from './encryption-key.model';
 import AuditLog from './audit.model';
 import PendingPayment from './pending-payment.model';
 import Subscription from './subscription.model';
+import UserProfile from './user-profile.model';
 
 Contact.hasMany(Trip, { foreignKey: 'contact_id', as: 'trips' });
 Trip.belongsTo(Contact, { foreignKey: 'contact_id', as: 'contact' });
@@ -21,7 +22,7 @@ EmergencyAlert.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
 export {
   sequelize,
   Contact, Trip, TripLocation, EmergencyAlert,
-  EncryptionKey, AuditLog, PendingPayment, Subscription,
+  EncryptionKey, AuditLog, PendingPayment, Subscription, UserProfile,
 };
 
 export default sequelize;

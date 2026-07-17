@@ -4,11 +4,14 @@ import { ChevronLeft, MapPin, ArrowRight } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { StepProgress } from '../../components/StepProgress'
 import { api } from '../../services/api'
+import { useTrip } from '../../hooks/useTrip'
 import { LicensePlateCaptureScreen } from './LicensePlateCaptureScreen'
 import { ContactSelectionScreen } from './ContactSelectionScreen'
 import { SafetyConcernsScreen } from './SafetyConcernsScreen'
 import { TripSummaryScreen } from './TripSummaryScreen'
+import { PH_CENTER_LAT, PH_CENTER_LNG } from '../../utils/constants'
 import { TripSharedSuccessScreen } from './TripSharedSuccessScreen'
+import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
 type Step = 'destination' | 'vehicle' | 'contact' | 'safety'
 type View = 'form' | 'summary' | 'success'
@@ -17,6 +20,7 @@ const stepLabels: Step[] = ['destination', 'vehicle', 'contact', 'safety']
 
 export default function NewTripPage() {
   const navigate = useNavigate()
+  const { setHmacKey } = useTrip()
   const [view, setView] = useState<View>('form')
   const [step, setStep] = useState<Step>('destination')
   const [loading, setLoading] = useState(false)
@@ -77,15 +81,19 @@ export default function NewTripPage() {
       ? `+${cleanPhone}`
       : `+234${cleanPhone.replace(/^0+/, '')}`
 
-    // Geocode the destination address so the real coordinates are stored,
-    // not hardcoded Lagos values.
     let destLat: number | undefined
     let destLng: number | undefined
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
       const geo = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(payload.destination_address)}&format=json&limit=1`,
-        { headers: { 'User-Agent': 'SafeCommute/1.0 (capstone project; contact: privacy@safecommute.app)' } },
+        {
+          signal: controller.signal,
+          headers: { 'User-Agent': 'SafeCommute/1.0 (capstone project; contact: privacy@safecommute.app)' },
+        },
       )
+      clearTimeout(timeoutId)
       if (geo.ok) {
         const data = await geo.json() as { lat: string; lon: string }[]
         if (data.length > 0) {
@@ -97,9 +105,8 @@ export default function NewTripPage() {
       /* geocoding failed — omit lat/lng and let the server or fallback handle it */
     }
 
-    // Grab the user's current location once for origin coordinates.
-    let originLat = 6.5244
-    let originLng = 3.3792
+    let originLat = PH_CENTER_LAT
+    let originLng = PH_CENTER_LNG
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -111,7 +118,7 @@ export default function NewTripPage() {
       originLat = pos.coords.latitude
       originLng = pos.coords.longitude
     } catch {
-      /* GPS unavailable — fall back to generic Lagos centre */
+      /* GPS unavailable — fall back to Port Harcourt centre */
     }
 
     try {
@@ -129,6 +136,8 @@ export default function NewTripPage() {
           : {}),
       })
       const apiPhone = tripRes.data?.data?.contact_phone
+      const hmacKeyFromResponse = tripRes.data?.data?.hmac_key
+      if (hmacKeyFromResponse) setHmacKey(hmacKeyFromResponse)
       setSuccessData({
         contactName: payload.contact_name,
         contactPhone: apiPhone || payload.contact_phone,
@@ -226,29 +235,34 @@ export default function NewTripPage() {
   const current = steps[step]
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col max-w-md mx-auto w-full">
+    <ScreenWithBottomAction
+      hideBorder
+      actions={
+        <Button type="submit" form="destination-form" loading={loading} className="w-full rounded-2xl py-4 text-base font-semibold min-h-14">
+          Continue <ArrowRight className="w-5 h-5 ml-2" />
+        </Button>
+      }
+    >
       <div className="px-6 pt-14 pb-4">
         <div className="flex items-center mb-2">
           <button
             type="button"
             onClick={handleBack}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg cursor-pointer"
+            className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg cursor-pointer"
             aria-label="Go back"
           >
             <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
           </button>
-          <div className="flex-1 text-center mr-8">
-            <h1 className="text-[24px] font-bold text-[#0F172A]">{current.title}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{current.subtitle}</p>
-          </div>
+          <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">{current.title}</h1>
         </div>
+        <p className="text-sm text-gray-500 text-center mb-4">{current.subtitle}</p>
       </div>
 
       <div className="px-6">
         <StepProgress currentStep={stepIndex} totalSteps={5} />
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); handleNext() }} className="space-y-5 flex flex-col px-6">
+      <form id="destination-form" onSubmit={(e) => { e.preventDefault(); handleNext() }} className="px-6">
           {step === 'destination' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Destination</label>
@@ -265,14 +279,7 @@ export default function NewTripPage() {
               {error && <p className="text-sm text-red-600 mt-1.5">{error}</p>}
             </div>
           )}
-
-          <div className="mt-[22px]">
-            <Button type="submit" loading={loading} className="w-full rounded-2xl py-4 text-base font-semibold min-h-14">
-              Continue <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
       </form>
-
-    </div>
+    </ScreenWithBottomAction>
   )
 }

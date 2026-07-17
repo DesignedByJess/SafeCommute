@@ -4,12 +4,14 @@ import { EncryptionService } from './encryption.service';
 import { auditLog, logger } from './audit.service';
 import { AppError, NotFoundError } from '../utils/errors';
 import { NotificationService } from './notifications/notification.service';
+import { env } from '../utils/config';
 
 export class TripService {
   private notificationService = new NotificationService();
 
   async createTrip(
     userId: string,
+    userName: string,
     input: {
       origin_lat: number;
       origin_lng: number;
@@ -43,13 +45,16 @@ export class TripService {
     const shareToken = crypto.randomBytes(16).toString('hex');
     const { encryptedPlate, encryptedDataKey } = EncryptionService.encryptPlate(input.vehicle_plate);
     const contactPhoneEncrypted = EncryptionService.encryptPhone(contactPhone);
-    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const shareLinkExpiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const displayName = userName || userId;
+    const hmacKey = crypto.createHmac('sha256', env.HMAC_SECRET)
+      .update(shareToken)
+      .digest('hex');
 
     const trip = await Trip.create({
       user_id: userId,
       share_token: shareToken,
-      share_link_expires_at: shareLinkExpiresAt,
       share_link_revoked: false,
       origin_lat: input.origin_lat,
       origin_lng: input.origin_lng,
@@ -73,10 +78,10 @@ export class TripService {
       contactName: input.contact_name,
       contactPhone,
       shareToken,
-      userName: userId,
+      userName: displayName,
     });
 
-    return { ...trip.toJSON(), rawContactPhone: contactPhone };
+    return { ...trip.toJSON(), rawContactPhone: contactPhone, hmacKey };
   }
 
   async listTrips(userId: string) {
@@ -126,7 +131,11 @@ export class TripService {
 
     // Use static update — bypasses model instance class field issues entirely
     await Trip.update(
-      { status: 'completed', ended_at: new Date() },
+      {
+        status: 'completed',
+        ended_at: new Date(),
+        share_link_expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      },
       { where: { id: tripId, user_id: userId, status: ['active', 'emergency'] } },
     );
 

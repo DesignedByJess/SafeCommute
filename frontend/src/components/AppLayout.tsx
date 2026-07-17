@@ -17,7 +17,8 @@ export default function AppLayout() {
   return (
     <div className="flex min-h-screen">
       <nav className="w-64 bg-white border-r border-[#F3EFEF] flex flex-col">
-        <div className="p-4 border-b border-[#F3EFEF]">
+        <div className="p-4 border-b border-[#F3EFEF] flex items-center gap-2.5">
+          <img src="/logo.png" alt="" className="w-8 h-8 object-contain" />
           <h1 className="text-xl font-bold text-[#0891B2]">SafeCommute</h1>
         </div>
         <div className="flex-1 p-3 space-y-1">

@@ -43,3 +43,89 @@ Add a 12px corner radius on all cards and what is the background color of the ca
 The back to camera button on the licence plate capture page should be below the confirm plate button
 Reduce the border color thickness on the selected contact on the trusted contact page
 Increase the corner radius of the cards in the following pages: homepage, trip summary, success confirmation, alert history, profile.
+Privacy & security screen needs a back button
+let the back navigation of all the subpages of the profile screen should be aligned horizontally with the content of the page. Like the back button should start on the same line as the cards.
+Bring the button on the trusted contact subpage of the profile up a bit more.
+Make sure to use consistent space between buttons and the last element on the page across all pages.Use 54px space, it should be uniform.
+when i clicked the save changes inthe profile edit page, the changes were not saved, i added a profile user picture but it was not saved.
+increase the margin space between the last input field and button in the sign up and login pages, use a margin space of 56px.
+Remove the ios or any google autofil background highlight on the input fields in the login and sign up page, that is when a user clicke on the device autofill suggestion, remove the device's background color and let only our app fill background color show on the input field.
+add 12px margin space between the buttons of the sign up and login screens of the last input field. reduce the space between the buttons and the captions below them in the sign up and login screens.
+Center the contact added successfully in the middle of the page and add an animation of a checkmark growing from the center, add the animation to all success pages of the app.
+The texts and icons on the enable location access screen are not aligning vertically.
+remove the divider and shadow on the enable location access screen
+The button have a fixed property but theyre too close to the bottom of the page, bring them up a bit more. just a bit.
+
+The Active Trip map is repeatedly zooming out to show most of Africa 
+instead of just the user's current location and destination. This is 
+likely caused by one of the two coordinates passed to fitBounds() being 
+an invalid default value (most commonly {lat: 0, lng: 0}, which sits in 
+the ocean off the African coast and forces Leaflet to zoom out massively 
+to fit both the real point and this bad one).
+
+Fix this in two layers — root cause AND a hard safety constraint:
+
+1. ROOT CAUSE — find where the current position and destination 
+   coordinates are set and passed to fitBounds(). Add validation before 
+   calling fitBounds():
+   - Log both coordinate pairs right before fitBounds() runs
+   - Confirm neither is {lat: 0, lng: 0}, null, undefined, or NaN
+   - If the current position hasn't loaded yet (e.g. geolocation is still 
+     resolving), do NOT call fitBounds() with a placeholder value — wait 
+     until both real coordinates are available, showing a brief loading 
+     state on the map if needed
+   - If destination geocoding (via Nominatim) failed silently and 
+     returned no result, handle that explicitly rather than falling back 
+     to a zero-coordinate default
+
+2. HARD SAFETY CONSTRAINT — regardless of the above fix, add a maxBounds 
+   and reasonable zoom constraints to the MapContainer so the map can 
+   never render a world or multi-country view for this Nigeria-only app:
+
+   <MapContainer
+     maxBounds={[[4.0, 2.5], [14.0, 15.0]]}  // roughly Nigeria's bounding box
+     maxBoundsViscosity={1.0}
+     minZoom={6}
+     ...
+   >
+
+   This ensures that even if a future bug produces a bad coordinate, the 
+   map physically cannot pan or zoom out past Nigeria's borders — it's a 
+   defensive constraint, not a replacement for fixing the actual data 
+   bug above.
+
+3. Once both are in place, fitBounds() should reliably zoom to show just 
+   the current position and destination with reasonable padding (e.g. 
+   50-80px), at a street/neighborhood level zoom — matching the original 
+   reference design — every time the trip screen loads, not just 
+   sometimes.
+
+Please confirm with a screenshot showing the map correctly zoomed to just 
+the two relevant points, and report what the actual bad coordinate value 
+turned out to be.
+
+
+Fix the divider lines between stacked cards (e.g. Recent Trips list, 
+History list, or anywhere cards are stacked with a thin line between 
+them) so the line ends appear subtly curved, not flat/squared-off.
+
+This is NOT a separate horizontal divider element between cards. Instead:
+- Each card should have border-radius: 8px on ALL corners (not just the 
+  top, and not 0 on the bottom)
+- Apply the divider as a border-bottom (e.g. 1px solid, light gray 
+  #e5e7eb or similar) directly on the card element itself — the same 
+  element that has the 8px border-radius
+- Because the border-bottom is drawn along the card's own rounded-corner 
+  path, it will naturally curve upward right where it meets the 
+  bottom-left and bottom-right corners, rather than ending in a sharp 
+  90-degree corner like a plain horizontal <hr> or a separately 
+  positioned divider div would
+
+Do not implement this as: a separate <div> or <hr> sitting between two 
+cards with straight ends and no border-radius of its own — that will 
+render as a flat line with squared ends and will NOT reproduce the 
+curved-end look.
+
+Apply this consistently to every card-stack pattern in the app that 
+currently uses dividers between items (Recent Trips, History list, 
+Profile settings groups, etc.) so the visual language is consistent.

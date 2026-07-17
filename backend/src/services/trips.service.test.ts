@@ -6,6 +6,8 @@ jest.mock('../models', () => ({
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
+    destroy: jest.fn(),
   },
   TripLocation: {
     findOne: jest.fn(),
@@ -34,6 +36,16 @@ jest.mock('winston', () => {
   };
 });
 
+jest.mock('../utils/config', () => ({
+  env: {
+    HMAC_SECRET: 'test-hmac-secret',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+    SUPABASE_JWT_SECRET: 'test-jwt-secret',
+    NODE_ENV: 'test',
+  },
+}));
+
 jest.mock('./notifications/notification.service', () => ({
   NotificationService: jest.fn().mockImplementation(() => ({
     sendTripStarted: jest.fn().mockResolvedValue(undefined),
@@ -48,6 +60,8 @@ import { NotificationService } from './notifications/notification.service';
 const TripCreate = Trip.create as jest.Mock;
 const TripFindAll = Trip.findAll as jest.Mock;
 const TripFindOne = Trip.findOne as jest.Mock;
+const TripUpdate = Trip.update as jest.Mock;
+const TripDestroy = Trip.destroy as jest.Mock;
 const TripLocationFindOne = TripLocation.findOne as jest.Mock;
 const TripLocationDestroy = TripLocation.destroy as jest.Mock;
 const MockNotificationService = NotificationService as jest.Mock;
@@ -99,9 +113,10 @@ describe('TripService', () => {
         destination_address: defaultInput.destination_address,
         contact_name: 'Alice',
         safety_notes: null,
+        toJSON: function () { return this; },
       };
       TripCreate.mockResolvedValue(mockTrip);
-      const result = await service.createTrip(userId, defaultInput);
+      const result = await service.createTrip(userId, 'Test User', defaultInput);
       expect(TripCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: userId,
@@ -113,15 +128,15 @@ describe('TripService', () => {
     });
 
     it('sends notification on trip creation', async () => {
-      TripCreate.mockResolvedValue({ id: 'trip-uuid', share_token: 'token123' });
-      await service.createTrip(userId, defaultInput);
+      TripCreate.mockResolvedValue({ id: 'trip-uuid', share_token: 'token123', toJSON: function () { return this; } });
+      await service.createTrip(userId, 'Test User', defaultInput);
       const { NotificationService } = await import('./notifications/notification.service');
       const mockInstance = (NotificationService as jest.Mock).mock.results[0].value;
       expect(mockInstance.sendTripStarted).toHaveBeenCalledWith({
         contactName: 'Alice',
         contactPhone: '+2348012345678',
         shareToken: expect.any(String),
-        userName: userId,
+        userName: 'Test User',
       });
     });
   });
@@ -135,6 +150,7 @@ describe('TripService', () => {
         where: { user_id: userId },
         order: [['created_at', 'DESC']],
         limit: 50,
+        raw: true,
       });
       expect(result).toEqual(mockTrips);
     });
@@ -147,6 +163,8 @@ describe('TripService', () => {
       const result = await service.getActiveTrip(userId);
       expect(TripFindOne).toHaveBeenCalledWith({
         where: { user_id: userId, status: 'active' },
+        order: [['created_at', 'DESC']],
+        raw: true,
       });
       expect(result).toEqual(mockTrip);
     });
@@ -179,24 +197,17 @@ describe('TripService', () => {
 
   describe('endTrip', () => {
     it('marks trip as completed and deletes locations', async () => {
-      const savedEndedAt = new Date();
       const mockTrip = {
         id: 'trip-id',
         user_id: userId,
         status: 'active',
-        ended_at: savedEndedAt,
-        save: jest.fn().mockImplementation(function (this: any) {
-          this.status = 'completed';
-          this.ended_at = new Date();
-          return Promise.resolve();
-        }),
       };
       TripFindOne.mockResolvedValue(mockTrip);
+      TripUpdate.mockResolvedValue([1]);
       TripLocationDestroy.mockResolvedValue(42);
       const result = await service.endTrip(userId, 'trip-id');
       expect(result.status).toBe('completed');
-      expect(result.ended_at).toBeDefined();
-      expect(mockTrip.save).toHaveBeenCalled();
+      expect(TripUpdate).toHaveBeenCalled();
       expect(TripLocationDestroy).toHaveBeenCalledWith({ where: { trip_id: 'trip-id' } });
     });
 

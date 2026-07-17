@@ -13,6 +13,8 @@ interface Trip {
 
 interface TripContextType {
   activeTrip: Trip | null
+  hmacKey: string | null
+  setHmacKey: (key: string | null) => void
   fetchActiveTrip: () => Promise<void>
   clearActiveTrip: () => void
 }
@@ -21,6 +23,7 @@ export const TripContext = createContext<TripContextType | null>(null)
 
 export function TripProvider({ children }: { children: ReactNode }) {
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null)
+  const [hmacKey, setHmacKey] = useState<string | null>(null)
 
   const fetchActiveTrip = useCallback(async () => {
     try {
@@ -33,10 +36,11 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   const clearActiveTrip = useCallback(() => {
     setActiveTrip(null)
+    setHmacKey(null)
   }, [])
 
   return (
-    <TripContext.Provider value={{ activeTrip, fetchActiveTrip, clearActiveTrip }}>
+    <TripContext.Provider value={{ activeTrip, hmacKey, setHmacKey, fetchActiveTrip, clearActiveTrip }}>
       {children}
     </TripContext.Provider>
   )

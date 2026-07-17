@@ -35,7 +35,6 @@ class EmergencyService {
         if (existingActiveAlert) {
             throw new errors_1.AppError('An active emergency alert already exists for this trip', 409, 'ALERT_EXISTS');
         }
-        // Generate verification code
         const code = config_1.env.NODE_ENV !== 'production' ? devCode() : generateCode();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
         pendingMap.set(tripId, {
@@ -51,26 +50,25 @@ class EmergencyService {
             ip: meta.ip,
             userAgent: meta.userAgent,
         });
-        // In dev mode, log the code
         if (config_1.env.NODE_ENV !== 'production') {
             audit_service_1.logger.info(`[DEV] Emergency verification code for trip ${tripId}: ${code}`);
         }
-        // Send code to the user's own phone
-        try {
-            const userPhone = encryption_service_1.EncryptionService.decryptPhone(trip.contact_phone_encrypted);
-            const message = `Your SafeCommute emergency verification code is: ${code}. It expires in 5 minutes.`;
-            const results = await Promise.allSettled([
-                this.notificationService.sendAfricaTalking(userPhone, message),
-            ]);
-            results.forEach((r, i) => {
-                if (r.status === 'rejected') {
-                    audit_service_1.logger.error(`SMS channel ${i} failed for emergency verification code`, { error: r.reason });
-                }
-            });
-        }
-        catch (err) {
-            audit_service_1.logger.error('Failed to decrypt phone for emergency verification code', { error: err });
-            throw new errors_1.AppError('Could not send verification code. Please try again.', 500, 'SMS_FAILED');
+        if (input.userPhone) {
+            try {
+                const message = `Your SafeCommute emergency verification code is: ${code}. It expires in 5 minutes.`;
+                const results = await Promise.allSettled([
+                    this.notificationService.sendAfricaTalking(input.userPhone, message),
+                ]);
+                results.forEach((r, i) => {
+                    if (r.status === 'rejected') {
+                        audit_service_1.logger.error(`SMS channel ${i} failed for emergency verification code`, { error: r.reason });
+                    }
+                });
+            }
+            catch (err) {
+                audit_service_1.logger.error('Failed to send emergency verification code', { error: err });
+                throw new errors_1.AppError('Could not send verification code. Please try again.', 500, 'SMS_FAILED');
+            }
         }
         return { expires_at: expiresAt.toISOString() };
     }

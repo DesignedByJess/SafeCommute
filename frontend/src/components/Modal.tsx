@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 
 interface ModalProps {
   open: boolean
@@ -8,10 +8,24 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children }: ModalProps) {
-  if (!open) return null
+  const openedAt = useRef(0)
+
+  if (open && openedAt.current === 0) {
+    openedAt.current = Date.now()
+  }
+
+  if (!open) {
+    if (openedAt.current !== 0) openedAt.current = 0
+    return null
+  }
+
+  const handleClose = () => {
+    if (Date.now() - openedAt.current < 300) return
+    onClose()
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={handleClose}>
       <div
         className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6"
         onClick={(e) => e.stopPropagation()}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Shield } from 'lucide-react'
+
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { useAuth } from '../../hooks/useAuth'
@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { login, loading, onboardingComplete } = useAuth()
+  const { login, loading } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,7 +18,7 @@ export default function LoginPage() {
     setError('')
     try {
       await login(email, password)
-      navigate(onboardingComplete ? '/' : '/onboarding', { replace: true })
+      navigate('/', { replace: true })
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ error?: string; code?: string }>
       const message = axiosErr?.response?.data?.error
@@ -32,11 +32,11 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Shield className="w-12 h-12 text-[#0891B2] mx-auto mb-3" />
+          <img src="/logo.png" alt="SafeCommute" className="w-12 h-12 mx-auto mb-3 object-contain" />
           <h1 className="text-2xl font-bold text-gray-900">SafeCommute</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
-        <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-3">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
@@ -48,6 +48,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
+            autoComplete="email"
             required
           />
           <div>
@@ -63,17 +64,18 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              autoComplete="current-password"
               showPasswordToggle
               required
             />
           </div>
-          <div className="pt-4">
+          <div className="mt-16">
             <Button type="submit" loading={loading} className="w-full">
               Sign In
             </Button>
           </div>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 mt-2">
           Don't have an account?{' '}
           <Link to="/signup" className="text-[#0891B2] hover:text-[#0E7490] font-medium">
             Sign up

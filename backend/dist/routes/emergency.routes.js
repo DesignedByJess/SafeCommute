@@ -12,7 +12,7 @@ const emergencyService = new emergency_service_1.EmergencyService();
 router.use(authenticate_1.authenticate);
 router.post('/:tripId/initiate', rate_limit_1.emergencyLimiter, (0, validate_1.validate)(emergency_schema_1.initiateEmergencySchema), async (req, res, next) => {
     try {
-        const result = await emergencyService.initiateEmergency(req.user.id, req.params.tripId, req.body, { ip: req.ip || '', userAgent: req.headers['user-agent'] || '' });
+        const result = await emergencyService.initiateEmergency(req.user.id, req.params.tripId, { ...req.body, userPhone: req.user.phone || undefined }, { ip: req.ip || '', userAgent: req.headers['user-agent'] || '' });
         (0, response_1.sendSuccess)(res, result);
     }
     catch (err) {

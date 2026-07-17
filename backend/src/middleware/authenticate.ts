@@ -1,52 +1,38 @@
 import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError } from '../utils/errors';
+import { verifyJwt } from '../utils/jwt';
 
-interface SupabaseJwtPayload {
-  sub: string;
-  email?: string;
-  phone?: string;
-  exp?: number;
-  aud?: string;
-  role?: string;
-}
-
-export function authenticate(req: Request, _res: Response, next: NextFunction): void {
-  const accessToken = req.cookies?.['sb-access-token'];
-  const authHeader = req.headers.authorization;
-
-  let token: string | undefined;
-
-  if (accessToken) {
-    token = accessToken;
-  } else if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
-  }
-
-  if (!token) {
-    return next(new UnauthorizedError('Authentication required'));
-  }
-
+export async function authenticate(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
-    const base64Payload = token.split('.')[1];
-    if (!base64Payload) throw new UnauthorizedError('Invalid token format');
+    const accessToken = req.cookies?.['sb-access-token'];
+    const authHeader = req.headers.authorization;
 
-    const payload: SupabaseJwtPayload = JSON.parse(
-      Buffer.from(base64Payload, 'base64').toString('utf-8'),
-    );
+    let token: string | undefined;
 
-    if (payload.exp && Date.now() >= payload.exp * 1000) {
-      return next(new UnauthorizedError('Token has expired'));
+    if (accessToken) {
+      token = accessToken;
+    } else if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+
+    if (!token) {
+      return next(new UnauthorizedError('Authentication required'));
+    }
+
+    const payload = await verifyJwt(token);
+    if (!payload) {
+      return next(new UnauthorizedError('Invalid or expired token'));
     }
 
     req.user = {
       id: payload.sub,
       email: payload.email,
       phone: payload.phone,
+      name: payload.user_metadata?.name || undefined,
     };
 
     next();
   } catch (err) {
-    if (err instanceof UnauthorizedError) return next(err);
-    return next(new UnauthorizedError('Invalid token'));
+    next(err);
   }
 }

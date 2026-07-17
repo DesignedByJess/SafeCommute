@@ -7,6 +7,7 @@ import {
 import { api } from '../../services/api'
 import { formatDuration } from '../../utils/format'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
 interface TripDetail {
  id: string
@@ -181,124 +182,125 @@ export function TripDetailScreen({ tripId, onBack }: TripDetailScreenProps) {
   { icon: ShieldAlert, label: 'Safety notes', value: safetyValue },
  ]
 
- return (
-  <div className="min-h-screen bg-[#FAFAFA] flex flex-col max-w-md mx-auto w-full">
-   {/* Header */}
-   <div className="px-6 pt-14 pb-4">
-    <div className="flex items-center mb-2">
-     <button
-      type="button"
-      onClick={onBack}
-      className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg"
-      aria-label="Go back"
-     >
-      <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
-     </button>
-     <div className="flex-1 text-center mr-8">
-      <h1 className="text-[24px] font-bold text-[#0F172A] truncate">{trip.destination_address}</h1>
-      <p className="text-sm text-gray-500 mt-0.5">{formatFullDate(trip.started_at)}</p>
-     </div>
-    </div>
-   </div>
-
-   {/* Status badge */}
-   <div className="px-6 pb-4">
-    <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
-     label === 'Completed'
-      ? 'bg-teal-50 text-[#059669]'
-      : label === 'Emergency'
-      ? 'bg-red-50 text-[#DC2626]'
-      : 'bg-amber-50 text-[#F86911]'
-    }`}>
-     {label}
-    </span>
-   </div>
-
-   {/* Trip details card */}
-   <div className="px-6 pb-4">
-     <div className="bg-white rounded-2xl border border-[#F3EFEF] overflow-hidden">
-     {detailsRows.map((row, i) => {
-      const Icon = row.icon
-      return (
-       <div
-        key={row.label}
-        className={`flex items-center gap-3 px-4 py-3.5 ${
-         i < detailsRows.length - 1 ? 'border-b border-[#F3EFEF]' : ''
-        }`}
-       >
-        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-         <Icon className="w-4 h-4 text-gray-500" />
+  return (
+    <ScreenWithBottomAction
+      bgColor="bg-[#FAFAFA]"
+      actions={
+        <div className="space-y-3">
+          {deleteError && (
+            <p className="text-xs text-red-600 text-center bg-red-50 border border-red-200 rounded-lg px-3 py-2">{deleteError}</p>
+          )}
+          <button
+            type="button"
+            onClick={handleExport}
+            className="w-full flex items-center justify-center gap-2 border border-gray-400 text-gray-700 font-semibold text-sm rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
+          >
+            <Download className="w-5 h-5" />
+            Export Trip Data
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="w-full flex items-center justify-center gap-2 border border-[#DC2626] text-[#DC2626] font-semibold text-sm rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#DC2626]"
+          >
+            <Trash2 className="w-5 h-5" />
+            Delete Trip
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{row.label}</p>
-         <p className="text-sm font-bold text-gray-700 mt-0.5 truncate">{row.value}</p>
+      }
+    >
+      <div className="max-w-md mx-auto w-full">
+        {/* Header */}
+        <div className="px-6 pt-14 pb-4">
+          <div className="flex items-center mb-2">
+            <button
+              type="button"
+              onClick={onBack}
+              className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg"
+              aria-label="Go back"
+            >
+              <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+            </button>
+            <div className="flex-1 text-center mr-8">
+              <h1 className="text-[24px] font-bold text-[#0F172A] truncate">{trip.destination_address}</h1>
+              <p className="text-sm text-gray-500 mt-0.5">{formatFullDate(trip.started_at)}</p>
+            </div>
+          </div>
         </div>
-       </div>
-      )
-     })}
-    </div>
-   </div>
 
-   {/* Emergency alert section */}
-   {alert && (
-    <div className="px-6 pb-4">
-     <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-      <div className="flex items-center gap-2 mb-2">
-       <ShieldAlert className="w-4 h-4 text-[#DC2626]" />
-       <span className="text-sm font-bold text-[#DC2626]">Emergency Alert</span>
+        {/* Status badge */}
+        <div className="px-6 pb-4">
+          <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
+            label === 'Completed'
+              ? 'bg-teal-50 text-[#059669]'
+              : label === 'Emergency'
+              ? 'bg-red-50 text-[#DC2626]'
+              : 'bg-amber-50 text-[#F86911]'
+          }`}>
+            {label}
+          </span>
+        </div>
+
+        {/* Trip details card */}
+        <div className="px-6 pb-4">
+          <div className="bg-white rounded-2xl border border-[#F3EFEF] overflow-hidden">
+            {detailsRows.map((row) => {
+              const Icon = row.icon
+              return (
+                <div
+                  key={row.label}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-lg border-b border-[#F3EFEF]"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{row.label}</p>
+                    <p className="text-sm font-bold text-gray-700 mt-0.5 truncate">{row.value}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Emergency alert section */}
+        {alert && (
+          <div className="px-6 pb-4">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldAlert className="w-4 h-4 text-[#DC2626]" />
+                <span className="text-sm font-bold text-[#DC2626]">Emergency Alert</span>
+              </div>
+              <p className="text-xs text-gray-600 mb-1">
+                Triggered: {formatFullDate(alert.triggered_at)}
+              </p>
+              <p className="text-xs text-gray-600 mb-3">
+                Status: {alert.retracted_at
+                  ? `Retracted (${alert.retraction_reason || 'No reason given'})`
+                  : alert.verified ? 'Verified false alarm' : 'Sent'}
+              </p>
+              <button
+                onClick={() => navigate('/safety')}
+                className="text-xs font-semibold text-[#0891B2] underline"
+              >
+                View full alert details
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-      <p className="text-xs text-gray-600 mb-1">
-       Triggered: {formatFullDate(alert.triggered_at)}
-      </p>
-      <p className="text-xs text-gray-600 mb-3">
-       Status: {alert.retracted_at
-        ? `Retracted (${alert.retraction_reason || 'No reason given'})`
-        : alert.verified ? 'Verified false alarm' : 'Sent'}
-      </p>
-      <button
-       onClick={() => navigate('/safety')}
-       className="text-xs font-semibold text-[#0891B2] underline"
-      >
-       View full alert details
-      </button>
-     </div>
-    </div>
-   )}
 
-   {/* Bottom actions */}
-   <div className="flex-1" />
-   <div className="px-6 pb-8 space-y-3">
-    {deleteError && (
-     <p className="text-xs text-red-600 text-center bg-red-50 border border-red-200 rounded-lg px-3 py-2">{deleteError}</p>
-    )}
-    <button
-     type="button"
-     onClick={handleExport}
-     className="w-full flex items-center justify-center gap-2 border border-gray-400 text-gray-700 font-semibold text-sm rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
-    >
-     <Download className="w-5 h-5" />
-     Export Trip Data
-    </button>
-    <button
-     type="button"
-     onClick={() => setDeleteOpen(true)}
-     className="w-full flex items-center justify-center gap-2 border border-[#DC2626] text-[#DC2626] font-semibold text-sm rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#DC2626]"
-    >
-     <Trash2 className="w-5 h-5" />
-     Delete Trip
-    </button>
-   </div>
-
-   <ConfirmModal
-    open={deleteOpen}
-    title="Delete Trip"
-    message="Delete this trip? This action cannot be undone."
-    confirmLabel={deleteLoading ? 'Deleting...' : 'Delete'}
-    cancelLabel="Cancel"
-    variant="emergency"
-    onConfirm={handleDelete}
-    onCancel={() => { setDeleteOpen(false); setDeleteError('') }}
-   />
-  </div>
- )
+      <ConfirmModal
+        open={deleteOpen}
+        title="Delete Trip"
+        message="Delete this trip? This action cannot be undone."
+        confirmLabel={deleteLoading ? 'Deleting...' : 'Delete'}
+        cancelLabel="Cancel"
+        variant="emergency"
+        onConfirm={handleDelete}
+        onCancel={() => { setDeleteOpen(false); setDeleteError('') }}
+      />
+    </ScreenWithBottomAction>
+  )
 }

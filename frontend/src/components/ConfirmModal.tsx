@@ -23,14 +23,21 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const titleId = 'confirm-modal-title'
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const openedAt = useRef(0)
 
   useEffect(() => {
     if (open) {
+      openedAt.current = Date.now()
       confirmRef.current?.focus()
     }
   }, [open])
 
   if (!open) return null
+
+  const handleCancel = () => {
+    if (Date.now() - openedAt.current < 300) return
+    onCancel()
+  }
 
   const confirmButtonClass =
     variant === 'emergency'
@@ -38,7 +45,7 @@ export function ConfirmModal({
       : 'bg-[#0891B2] text-white hover:bg-[#0E7490] focus:ring-[#0891B2]'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={handleCancel}>
       <div
         className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6"
         role="dialog"
@@ -51,14 +58,14 @@ export function ConfirmModal({
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-400 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 min-h-[44px] min-w-[44px]"
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-400 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-400 min-h-[44px] min-w-[44px]"
           >
             {cancelLabel}
           </button>
           <button
             ref={confirmRef}
             onClick={onConfirm}
-            className={`px-4 py-2.5 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[44px] min-w-[44px] ${confirmButtonClass}`}
+            className={`px-4 py-2.5 text-sm font-medium rounded-lg focus:outline-none focus:ring-1 focus:ring-offset-2 min-h-[44px] min-w-[44px] ${confirmButtonClass}`}
           >
             {confirmLabel}
           </button>

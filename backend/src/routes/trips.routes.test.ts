@@ -10,6 +10,8 @@ jest.mock('../models', () => ({
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
+    destroy: jest.fn(),
   },
   TripLocation: {
     findOne: jest.fn(),
@@ -25,7 +27,7 @@ jest.mock('../models/audit.model', () => ({
 
 jest.mock('../middleware/authenticate', () => ({
   authenticate: (req: any, _res: any, next: any) => {
-    req.user = { id: 'test-user-id', email: 'test@example.com' };
+    req.user = { id: 'test-user-id', email: 'test@example.com', name: 'Test User' };
     next();
   },
 }));
@@ -38,6 +40,16 @@ jest.mock('winston', () => {
     transports: { Console: jest.fn() },
   };
 });
+
+jest.mock('../utils/config', () => ({
+  env: {
+    HMAC_SECRET: 'test-hmac-secret',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+    SUPABASE_JWT_SECRET: 'test-jwt-secret',
+    NODE_ENV: 'test',
+  },
+}));
 
 jest.mock('../services/notifications/notification.service', () => ({
   NotificationService: jest.fn().mockImplementation(() => ({
@@ -106,6 +118,20 @@ describe('Trips Routes', () => {
         status: 'active',
         started_at: new Date(),
         expires_at: new Date(Date.now() + 7200000),
+        toJSON: () => ({
+          id: 'trip-uuid',
+          share_token: 'abcdef1234567890abcdef1234567890',
+          origin_lat: 6.5244,
+          origin_lng: 3.3792,
+          origin_address: 'Lagos',
+          destination_lat: 6.4428,
+          destination_lng: 3.4419,
+          destination_address: 'Ikeja',
+          contact_name: 'Alice',
+          status: 'active',
+          started_at: new Date(),
+          expires_at: new Date(Date.now() + 7200000),
+        }),
       });
       const app = createApp();
       const agent = request.agent(app);
@@ -146,13 +172,9 @@ describe('Trips Routes', () => {
         id: 'trip-id',
         user_id: 'test-user-id',
         status: 'active',
-        save: jest.fn().mockImplementation(function (this: any) {
-          this.status = 'completed';
-          this.ended_at = new Date();
-          return Promise.resolve();
-        }),
       };
       TripFindOne.mockResolvedValue(mockTrip);
+      (Trip.update as jest.Mock).mockResolvedValue([1]);
       TripLocationDestroy.mockResolvedValue(1);
       const app = createApp();
       const agent = request.agent(app);
@@ -161,7 +183,7 @@ describe('Trips Routes', () => {
       const res = await agent
         .patch('/api/v1/trips/trip-id/end')
         .set('x-csrf-token', csrfToken)
-        .send({ lat: 6.5, lng: 3.4 });
+        .send({ lat: 6.5, lng: 3.4, userName: 'Test User', destination: 'Ikeja' });
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe('completed');
     });

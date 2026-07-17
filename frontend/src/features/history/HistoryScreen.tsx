@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { BottomNav } from '../../components/BottomNav'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { maskPlate } from '../../utils/format'
 
 interface Trip {
@@ -30,6 +31,8 @@ interface HistoryScreenProps {
   onStartTrip?: () => void
   deleteError?: string
   onClearDeleteError?: () => void
+  successMessage?: string
+  onClearSuccess?: () => void
 }
 
 export function HistoryScreen({
@@ -40,6 +43,8 @@ export function HistoryScreen({
   onStartTrip,
   deleteError,
   onClearDeleteError,
+  successMessage,
+  onClearSuccess,
 }: HistoryScreenProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
@@ -61,6 +66,12 @@ export function HistoryScreen({
     document.addEventListener('click', handleClick)
     return () => document.removeEventListener('click', handleClick)
   }, [openMenuId])
+
+  useEffect(() => {
+    if (!successMessage) return
+    const id = setTimeout(() => onClearSuccess?.(), 3000)
+    return () => clearTimeout(id)
+  }, [successMessage, onClearSuccess])
 
   const handleTripTap = (tripId: string) => {
     if (onTripTap) {
@@ -84,33 +95,37 @@ export function HistoryScreen({
 
   if (trips.length === 0) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
-        <div className="px-6 pt-14 pb-4">
-          <h1 className="text-2xl font-bold text-[#0F172A]">Trip History</h1>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-16">
-          <div className="flex items-center justify-center mb-6">
-            <img
-              src="/illustrations/empty-state-illustration.png"
-              alt=""
-              className="w-full max-w-[200px] h-auto object-contain mix-blend-multiply"
-            />
+      <>
+        <ScreenWithBottomAction
+          actions={
+            <button
+              onClick={onStartTrip ?? (() => navigate('/trip/new'))}
+              className="w-full bg-[#0891B2] text-white font-bold text-base rounded-lg py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
+            >
+              Start a Trip
+            </button>
+          }
+        >
+          <div className="px-6 pt-14 pb-4">
+            <h1 className="text-2xl font-bold text-[#0F172A]">Trip History</h1>
           </div>
-          <h2 className="text-xl font-bold text-[#0F172A] mb-1">No trip history yet</h2>
-          <p className="text-sm text-gray-600 text-center mb-[42px] max-w-xs">
-            Trips you complete will show up here for 30 days
-          </p>
-          <button
-            onClick={onStartTrip ?? (() => navigate('/trip/new'))}
-            className="w-full bg-[#0891B2] text-white font-bold text-base rounded-lg py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
-          >
-            Start a Trip
-          </button>
-        </div>
 
+          <div className="flex flex-col items-center justify-center px-6">
+            <div className="flex items-center justify-center mb-6">
+              <img
+                src="/illustrations/empty-state-illustration.png"
+                alt=""
+                className="w-full max-w-[200px] h-auto object-contain mix-blend-multiply"
+              />
+            </div>
+            <h2 className="text-xl font-bold text-[#0F172A] mb-1">No trip history yet</h2>
+            <p className="text-sm text-gray-600 text-center max-w-xs">
+              Trips you complete will show up here for 30 days
+            </p>
+          </div>
+        </ScreenWithBottomAction>
         <BottomNav />
-      </div>
+      </>
     )
   }
 
@@ -119,6 +134,29 @@ export function HistoryScreen({
         <div className="px-6 pt-14 pb-3">
           <h1 className="text-2xl font-bold text-[#0F172A]">Trip History</h1>
         </div>
+
+      {successMessage && (
+        <div className="px-6 pb-2">
+          <div className="flex items-center gap-2 bg-[#16A34A] text-white text-sm font-medium rounded-lg px-4 py-2.5">
+            <span>{successMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="px-6 pb-2">
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2.5">
+            <span>{deleteError}</span>
+            <button
+              onClick={() => onClearDeleteError?.()}
+              className="ml-auto min-h-[44px] min-w-[44px] flex items-center justify-center text-red-400 hover:text-red-600"
+              aria-label="Dismiss error"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="px-6 pb-4">
         <div className="flex items-center gap-2">
@@ -150,7 +188,7 @@ export function HistoryScreen({
                 isEmergency
                   ? 'border-red-200 bg-red-50/40'
                   : 'border-gray-100 bg-white shadow-sm'
-              } overflow-hidden`}
+              } ${openMenuId === trip.id ? 'overflow-visible' : 'overflow-hidden'}`}
             >
               {isEmergency && (
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626]" />
@@ -237,10 +275,10 @@ export function HistoryScreen({
       <ConfirmModal
         open={deleteTarget !== null}
         title="Delete Trip"
-        message="This will permanently delete this trip and all associated data. This cannot be undone."
+        message="Delete this trip? This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
-        variant="default"
+        variant="emergency"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
       />

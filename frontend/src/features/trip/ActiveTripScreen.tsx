@@ -5,10 +5,14 @@ import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMap } from 'reac
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { Modal } from '../../components/Modal'
 import { useLocation } from '../../hooks/useLocation'
+import { useTripSocket } from '../../hooks/useTripSocket'
 import { useTrip } from '../../hooks/useTrip'
 import { useAuth } from '../../hooks/useAuth'
 import { api } from '../../services/api'
+import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
+import { PH_CENTER_LAT, PH_CENTER_LNG, PH_CENTER } from '../../utils/constants'
 
 interface ActiveTripScreenProps {
   tripId: string
@@ -17,9 +21,8 @@ interface ActiveTripScreenProps {
   destinationLng?: number
   vehiclePlate: string
   contactName: string
+  hmacKey?: string
   eta?: string
-  onEndTrip?: () => void
-  onEmergency?: () => void
   loading?: boolean
 }
 
@@ -42,13 +45,23 @@ const POSITION_ICON = L.divIcon({
   iconAnchor: [8, 8],
 })
 
+function isValidCoord(coord: [number, number] | null): coord is [number, number] {
+  if (!coord) return false
+  const [lat, lng] = coord
+  if (typeof lat !== 'number' || typeof lng !== 'number') return false
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return false
+  if (lat === 0 && lng === 0) return false
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false
+  return true
+}
+
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap()
   useEffect(() => {
-    if (points.length >= 2) {
-      const padding = Math.min(40, Math.max(10, Math.floor(window.innerWidth * 0.08)))
-      map.fitBounds(points, { padding: [padding, padding] })
-    }
+    const valid = points.filter(isValidCoord)
+    if (valid.length < 2) return
+    const padding = Math.min(40, Math.max(10, Math.floor(window.innerWidth * 0.08)))
+    map.fitBounds(valid, { padding: [padding, padding], maxZoom: 16 })
   }, [map, points])
   return null
 }
@@ -106,12 +119,12 @@ function TripMap({
 }) {
   const boundsPoints: [number, number][] = useMemo(() => {
     const pts: [number, number][] = []
-    if (destCoords) pts.push(destCoords)
-    if (liveCoords) pts.push(liveCoords)
+    if (isValidCoord(destCoords)) pts.push(destCoords!)
+    if (isValidCoord(liveCoords)) pts.push(liveCoords!)
     return pts
   }, [destCoords, liveCoords])
 
-  const center: [number, number] = destCoords ?? liveCoords ?? [6.5244, 3.3792]
+  const center: [number, number] = (isValidCoord(destCoords) ? destCoords : liveCoords) ?? PH_CENTER
 
   return (
     <MapContainer
@@ -119,6 +132,9 @@ function TripMap({
       zoom={13}
       className="h-full w-full"
       zoomControl={false}
+      maxBounds={[[4.0, 2.5], [14.0, 15.0]]}
+      maxBoundsViscosity={1.0}
+      minZoom={6}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -127,7 +143,7 @@ function TripMap({
 
       {boundsPoints.length >= 2 && <FitBounds points={boundsPoints} />}
 
-      {destCoords && (
+      {isValidCoord(destCoords) && (
         <>
           <Marker position={destCoords} icon={DESTINATION_ICON}>
             <Tooltip permanent direction="right" offset={[10, 0]}>
@@ -136,11 +152,11 @@ function TripMap({
               </span>
             </Tooltip>
           </Marker>
-          {liveCoords && <RoutePolyline start={liveCoords} end={destCoords} />}
+          {isValidCoord(liveCoords) && <RoutePolyline start={liveCoords} end={destCoords} />}
         </>
       )}
 
-      {liveCoords && (
+      {isValidCoord(liveCoords) && (
         <Marker position={liveCoords} icon={POSITION_ICON} />
       )}
     </MapContainer>
@@ -154,89 +170,148 @@ export function ActiveTripScreen({
   destinationLng,
   vehiclePlate,
   contactName,
+  hmacKey,
   eta = '25 mins',
-  onEndTrip,
-  onEmergency,
   loading,
 }: ActiveTripScreenProps) {
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false)
+  const [showCodeModal, setShowCodeModal] = useState(false)
+  const [emergencyCode, setEmergencyCode] = useState('')
+  const [codeError, setCodeError] = useState('')
+  const [codeLoading, setCodeLoading] = useState(false)
   const [destCoords, setDestCoords] = useState<[number, number] | null>(null)
   const { coordinates: liveCoords, startWatching, stopWatching } = useLocation()
+  const { connected, joinTrip, leaveTrip, sendLocation } = useTripSocket()
   const geocodedRef = useRef(false)
   const navigate = useNavigate()
   const { clearActiveTrip } = useTrip()
   const { user } = useAuth()
   const userName = user?.name ?? user?.email ?? 'A user'
+  const lastLocationRef = useRef(liveCoords)
+
+  const [endError, setEndError] = useState('')
 
   const handleEndTrip = async () => {
+    setEndError('')
     try {
       await api.patch(`/trips/${tripId}/end`, {
-        lat: 6.5244, lng: 3.3792,
+        lat: liveCoords?.lat ?? PH_CENTER_LAT,
+        lng: liveCoords?.lng ?? PH_CENTER_LNG,
         userName,
         destination,
-      })
+      }, { headers: { 'X-Skip-Auth': 'true' } })
       clearActiveTrip()
       navigate('/', { replace: true })
     } catch {
-      /* error handled silently — user can retry */
+      setEndError('Failed to end trip. Please try again.')
     }
   }
 
-  const handleEmergency = async () => {
+  const handleEmergencyInitiate = async () => {
     try {
-      const emLat = liveCoords?.lat ?? 6.5244
-      const emLng = liveCoords?.lng ?? 3.3792
-      await api.post(`/emergency/${tripId}/trigger`, {
-        lat: emLat, lng: emLng, userName, destination,
-      })
-      clearActiveTrip()
-      navigate('/', { replace: true })
+      const emLat = liveCoords?.lat ?? PH_CENTER_LAT
+      const emLng = liveCoords?.lng ?? PH_CENTER_LNG
+      await api.post(`/emergency/${tripId}/initiate`, {
+        lat: emLat,
+        lng: emLng,
+        userName,
+      }, { headers: { 'X-Skip-Auth': 'true' } })
+      setShowEmergencyConfirm(false)
+      setShowCodeModal(true)
+      setEmergencyCode('')
+      setCodeError('')
     } catch {
-      /* error handled silently */
+      setCodeError('Failed to initiate emergency alert. Please try again.')
     }
   }
 
-  // Always geocode the destination name so the pin appears at the real
-  // address rather than potentially stale stored coordinates (the trip
-  // creation flow sends hardcoded Lagos coordinates). If geocoding fails,
-  // fall back to the stored coordinates from the API.
+  const handleEmergencyVerify = async () => {
+    if (emergencyCode.length !== 6) {
+      setCodeError('Please enter the 6-digit code')
+      return
+    }
+    setCodeLoading(true)
+    try {
+      await api.post(`/emergency/${tripId}/verify`, { code: emergencyCode }, { headers: { 'X-Skip-Auth': 'true' } })
+      setShowCodeModal(false)
+      clearActiveTrip()
+      navigate('/', { replace: true })
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Invalid code. Please try again.'
+      setCodeError(msg)
+    } finally {
+      setCodeLoading(false)
+    }
+  }
+
+  // Nominatim geocoding with 5s timeout
   useEffect(() => {
     if (geocodedRef.current) return
     geocodedRef.current = true
     const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+
     const geocode = async () => {
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destination)}&format=json&limit=1`,
           {
             signal: controller.signal,
-            headers: { 'User-Agent': 'SafeCommute/1.0 (capstone project; contact: privacy@safecommute.app)' },
+            headers: {
+              'User-Agent': 'SafeCommute/1.0 (capstone project; contact: privacy@safecommute.app)',
+            },
           },
         )
+        clearTimeout(timeoutId)
         if (!res.ok) throw new Error('Geocode request failed')
         const data = await res.json() as { lat: string; lon: string }[]
         if (data.length > 0) {
-          setDestCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)])
-          return
+          const lat = parseFloat(data[0].lat)
+          const lon = parseFloat(data[0].lon)
+          if (!Number.isNaN(lat) && !Number.isNaN(lon) && !(lat === 0 && lon === 0)) {
+            setDestCoords([lat, lon])
+            return
+          }
         }
       } catch {
         /* geocoding failed — fall back to stored coordinates */
       }
       if (destinationLat !== undefined && destinationLng !== undefined) {
-        setDestCoords([destinationLat, destinationLng])
+        if (!(destinationLat === 0 && destinationLng === 0) && !Number.isNaN(destinationLat) && !Number.isNaN(destinationLng)) {
+          setDestCoords([destinationLat, destinationLng])
+        }
       }
     }
     geocode()
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+      clearTimeout(timeoutId)
+    }
   }, [destination, destinationLat, destinationLng])
 
+  // Wire up socket connection
+  useEffect(() => {
+    if (!tripId) return
+    joinTrip(tripId)
+    return () => leaveTrip(tripId)
+  }, [tripId, joinTrip, leaveTrip])
+
+  // Start GPS watching
   useEffect(() => {
     startWatching()
     return () => stopWatching()
   }, [startWatching, stopWatching])
 
-  // Intercept back navigation — prevents accidental trip exit
+  // Send location updates via socket whenever GPS coordinates change
+  useEffect(() => {
+    if (!liveCoords || !tripId) return
+    if (lastLocationRef.current === liveCoords) return
+    lastLocationRef.current = liveCoords
+    sendLocation(tripId, liveCoords.lat, liveCoords.lng, liveCoords.accuracy ?? undefined, hmacKey)
+  }, [liveCoords, tripId, hmacKey, sendLocation])
+
+  // Intercept back navigation
   useEffect(() => {
     window.history.pushState(null, '', window.location.pathname)
     const onPop = () => {
@@ -250,10 +325,41 @@ export function ActiveTripScreen({
     ? [liveCoords.lat, liveCoords.lng]
     : null
 
+  const actions = (
+    <div className="relative z-10 space-y-3">
+      {endError && (
+        <p className="text-sm text-red-600 text-center">{endError}</p>
+      )}
+      <button
+        type="button"
+        onClick={() => setShowEndConfirm(true)}
+        disabled={loading}
+        className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
+      >
+        End Trip
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setShowEmergencyConfirm(true)}
+        className="w-full flex items-center justify-center gap-2 bg-white border border-[#DC2626] text-[#DC2626] font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#DC2626]"
+      >
+        <ShieldAlert className="w-5 h-5" />
+        Send Emergency Alert
+      </button>
+
+      <p className="text-center text-xs text-gray-600">
+        {connected ? `${contactName} is receiving your live location updates` : 'Connecting...'}
+      </p>
+    </div>
+  )
+
   return (
-    <div className="h-screen bg-gray-200 flex flex-col relative w-full max-w-full">
-      {/* Map — fills entire parent, edge-to-edge */}
-      <div className="absolute inset-0 w-full z-0">
+    <ScreenWithBottomAction
+      bgColor="bg-gray-100"
+      actions={actions}
+    >
+      <div className="fixed inset-x-0 top-0 bottom-[140px] z-0">
         <TripMap
           destination={destination}
           destCoords={destCoords}
@@ -261,16 +367,14 @@ export function ActiveTripScreen({
         />
       </div>
 
-      {/* Status header — center aligned, no card */}
       <div className="relative z-10 flex flex-col items-center pt-12">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#059669] animate-pulse" />
+          <span className={`w-3 h-3 rounded-full ${connected ? 'bg-[#0891B2]' : 'bg-gray-400'} animate-pulse`} />
           <h1 className="text-xl font-bold text-[#0F172A]">Trip in Progress</h1>
         </div>
         <p className="text-sm text-gray-600 mt-0.5">Live tracking is active</p>
       </div>
 
-      {/* Trip info bar — floating card */}
       <div className="relative z-10 px-4 pt-8">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center divide-x divide-gray-300">
@@ -294,38 +398,6 @@ export function ActiveTripScreen({
         </div>
       </div>
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* White bottom panel — no corner radius, white starts at half-height of End Trip button */}
-      <div className="relative z-10 bg-white px-4 pt-0 pb-8">
-        {/* End Trip — top half overlaps onto map via negative margin */}
-        <div className="-mt-7">
-          <button
-            type="button"
-            onClick={() => setShowEndConfirm(true)}
-            disabled={loading}
-            className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#0891B2]"
-          >
-            End Trip
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowEmergencyConfirm(true)}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-[#DC2626] text-[#DC2626] font-bold text-base rounded-2xl py-4 min-h-[56px] mt-4 transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#DC2626]"
-        >
-          <ShieldAlert className="w-5 h-5" />
-          Send Emergency Alert
-        </button>
-
-        <p className="text-center text-xs text-gray-600 mt-4">
-          {contactName} is receiving your live location updates
-        </p>
-      </div>
-
-      {/* End Trip confirmation modal */}
       <ConfirmModal
         open={showEndConfirm}
         title="End Trip?"
@@ -340,20 +412,63 @@ export function ActiveTripScreen({
         onCancel={() => setShowEndConfirm(false)}
       />
 
-      {/* Emergency confirmation modal */}
       <ConfirmModal
         open={showEmergencyConfirm}
         title="Send Emergency Alert?"
-        message="Your trusted contacts and authorities will be notified immediately with your current location."
-        confirmLabel="Send Alert"
+        message="A verification code will be sent to your phone. You'll need to enter it to confirm the alert."
+        confirmLabel="Continue"
         cancelLabel="Cancel"
         variant="emergency"
         onConfirm={() => {
-          setShowEmergencyConfirm(false)
-          handleEmergency()
+          handleEmergencyInitiate()
         }}
         onCancel={() => setShowEmergencyConfirm(false)}
       />
-    </div>
+
+      <Modal open={showCodeModal} onClose={() => setShowCodeModal(false)} title="">
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 text-center">
+            Enter Verification Code
+          </h2>
+          <p className="text-sm text-gray-500 text-center">
+            A 6-digit code has been sent to your phone. Enter it below to confirm the emergency alert.
+          </p>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={emergencyCode}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+              setEmergencyCode(val)
+              setCodeError('')
+            }}
+            placeholder="000000"
+            className="block w-full text-center font-mono text-2xl tracking-[0.3em] bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 outline-none focus:border-[#0891B2] focus:ring-1 focus:ring-[#BAE6FD] min-h-[56px]"
+            autoFocus
+          />
+          {codeError && (
+            <p className="text-sm text-red-500 text-center">{codeError}</p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowCodeModal(false)}
+              className="flex-1 bg-white border border-gray-300 text-gray-700 font-semibold text-base rounded-2xl py-4 min-h-[56px]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleEmergencyVerify}
+              disabled={emergencyCode.length !== 6 || codeLoading}
+              className="flex-1 bg-[#DC2626] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] disabled:opacity-50"
+            >
+              {codeLoading ? 'Verifying...' : 'Confirm Alert'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </ScreenWithBottomAction>
   )
 }

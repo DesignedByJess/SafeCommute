@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Shield, ArrowLeft, Mail } from 'lucide-react'
+import { ArrowLeft, Mail } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { api } from '../../services/api'
@@ -55,14 +55,14 @@ export default function ForgotPasswordPage() {
         <div className="flex items-center mb-6">
           <button
             onClick={() => navigate('/login')}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600"
+            className="min-w-[32px] min-h-[32px] flex items-center justify-center text-gray-400 hover:text-gray-600"
             aria-label="Back to sign in"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
         <div className="text-center mb-8">
-          <Shield className="w-12 h-12 text-[#0891B2] mx-auto mb-3" />
+          <img src="/logo.png" alt="SafeCommute" className="w-12 h-12 mx-auto mb-3 object-contain" />
           <h1 className="text-2xl font-bold text-gray-900">Reset Password</h1>
           <p className="text-sm text-gray-500 mt-1">
             Enter your email and we&apos;ll send you a reset link

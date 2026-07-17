@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ActiveTripScreen } from './ActiveTripScreen'
 import { api } from '../../services/api'
+import { useTrip } from '../../hooks/useTrip'
 
 interface TripDetails {
   id: string
@@ -19,6 +20,7 @@ export default function ActiveTripPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const fetchedRef = useRef(false)
   const navigate = useNavigate()
+  const { hmacKey } = useTrip()
 
   const [eta, setEta] = useState('25 mins')
 
@@ -94,6 +96,7 @@ export default function ActiveTripPage() {
       vehiclePlate={trip.vehicle_plate}
       contactName={trip.contact_name}
       eta={eta}
+      hmacKey={hmacKey ?? undefined}
     />
   )
 }

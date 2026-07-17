@@ -99,8 +99,18 @@ export class NotificationService {
       throw new Error('AFRICA_TALKING_API_KEY not configured');
     }
 
+    const baseUrl = env.AFRICA_TALKING_SANDBOX
+      ? 'https://api.sandbox.africastalking.com'
+      : 'https://api.africastalking.com';
+
+    const params: Record<string, string> = {
+      username: env.AFRICA_TALKING_USERNAME,
+      to: phone,
+      message,
+    };
+
     const response = await fetch(
-      'https://api.africastalking.com/version1/messaging',
+      `${baseUrl}/version1/messaging`,
       {
         method: 'POST',
         headers: {
@@ -108,20 +118,28 @@ export class NotificationService {
           'ApiKey': env.AFRICA_TALKING_API_KEY,
           'Accept': 'application/json',
         },
-        body: new URLSearchParams({
-          username: 'safecommute',
-          to: phone,
-          message,
-        }),
+        body: new URLSearchParams(params),
       },
     );
 
+    const body = await response.json();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Africa's Talking API error: ${response.status} ${errorText}`);
+      throw new Error(`Africa's Talking API error: ${response.status} ${JSON.stringify(body)}`);
     }
 
-    logger.info(`[Africa's Talking] Sent to ${phone}`);
+    logger.info('[Africa\'s Talking] API response', { body });
+
+    const statusCode = body?.SMSMessageData?.Recipients?.[0]?.statusCode;
+    if (statusCode && statusCode !== '101') {
+      throw new Error(`Africa's Talking delivery failed: code ${statusCode} - ${body?.SMSMessageData?.Recipients?.[0]?.status ?? 'unknown'}`);
+    }
+
+    if (!statusCode) {
+      logger.warn('[Africa\'s Talking] No status code in response', { body });
+    }
+
+    logger.info(`[Africa's Talking] Sent to ${phone}`, { statusCode });
   }
 
   private async sendTwilio(phone: string, message: string): Promise<void> {

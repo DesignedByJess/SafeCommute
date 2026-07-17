@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Shield, UserPlus, MapPin, ArrowLeft, Check, Phone, ChevronRight, ChevronDown } from 'lucide-react'
 import { Button } from '../../components/Button'
+import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
+import { OnboardingStepper } from '../../components/OnboardingStepper'
 import { useAuth } from '../../hooks/useAuth'
 import { api } from '../../services/api'
 
@@ -16,30 +18,27 @@ interface StepProps {
   stepIndex: number
 }
 
-function Dots({ active, total = 3 }: { active: number; total?: number }) {
-  return (
-    <div className="flex justify-center items-center gap-2">
-      {Array.from({ length: total }, (_, i) => {
-        if (i < active) {
-          return (
-            <div key={i} className="w-2.5 h-2.5 rounded-full bg-[#0891B2] flex items-center justify-center">
-              <Check className="w-2 h-2 text-white" strokeWidth={4} />
-            </div>
-          )
-        }
-        if (i === active) {
-          return <div key={i} className="w-3 h-3 rounded-full bg-[#0891B2]" />
-        }
-        return <div key={i} className="w-2.5 h-2.5 rounded-full border border-gray-400 bg-transparent" />
-      })}
-    </div>
-  )
-}
-
 function Step1Welcome({ onNext, onSkip }: StepProps) {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <ScreenWithBottomAction
+      bgColor="bg-gray-100"
+      hideBorder
+      centered
+      footer={<OnboardingStepper active={0} />}
+      actions={
+        <div className="space-y-3">
+          <Button onClick={onNext} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
+            Get Started <ChevronRight className="w-5 h-5 ml-1" />
+          </Button>
+          <div className="flex justify-center">
+            <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
+              Skip
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div className="w-full max-w-sm mx-auto px-4">
         <div className="flex items-center justify-center pt-4">
           <img
             src="/illustrations/welcome-screen-illustration.png"
@@ -54,20 +53,9 @@ function Step1Welcome({ onNext, onSkip }: StepProps) {
           <p className="text-base text-gray-500 text-center mb-2 leading-relaxed">
             Your safety companion for every journey
           </p>
-          <Dots active={0} />
-          <div className="flex justify-center mt-6 mb-4">
-            <Button onClick={onNext} size="lg" className="rounded-2xl py-3 px-[5.5rem] text-base font-semibold min-h-[48px]">
-              Get Started <ChevronRight className="w-5 h-5 ml-1" />
-            </Button>
-          </div>
-          <div className="flex justify-center mt-2">
-            <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
-              Skip
-            </button>
-          </div>
         </div>
       </div>
-    </div>
+    </ScreenWithBottomAction>
   )
 }
 
@@ -117,24 +105,51 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className={`transition-all duration-500 ${saved ? 'opacity-0 pointer-events-none max-h-0 overflow-hidden mb-0' : ''}`}>
-          <div className="flex mb-4">
-            <button onClick={onBack} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600">
-              <ArrowLeft className="w-5 h-5" />
+    <ScreenWithBottomAction
+      bgColor="bg-gray-100"
+      hideBorder
+      footer={<OnboardingStepper active={1} />}
+      actions={
+        <div className="space-y-2">
+          {saved ? (
+            <Button onClick={onNext} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
+              Continue
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSave}
+              loading={saving}
+              disabled={!formValid}
+              size="lg"
+              className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]"
+            >
+              Save Contact
+            </Button>
+          )}
+          <div className="flex justify-center">
+            <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
+              Skip
             </button>
           </div>
-          <div className="flex justify-center mb-6">
+        </div>
+      }
+    >
+      <div className="w-full max-w-sm mx-auto px-4">
+        <div className={`transition-all duration-500 ${saved ? 'opacity-0 pointer-events-none max-h-0 overflow-hidden mb-0' : ''}`}>
+          <div className="flex items-center justify-between mb-6 pt-12">
+            <button onClick={onBack} className="min-w-[32px] min-h-[32px] flex items-center justify-center text-gray-400 hover:text-gray-600">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <div className="w-20 h-20 rounded-2xl bg-[#E0F2FE] flex items-center justify-center">
               <UserPlus className="w-10 h-10 text-[#0891B2]" />
             </div>
+            <div className="w-[32px]" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
             Add a Trusted Contact
           </h1>
           <p className="text-base text-gray-500 text-center mb-6 leading-relaxed">
-            Add someone who will receive your trip links and live location when you start a journey.
+            They'll receive your live trip details when you start a journey
           </p>
           <div className="space-y-4">
             <div>
@@ -146,7 +161,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                 placeholder="e.g. Chioma Okafor"
                 spellCheck={false}
                 autoComplete="name"
-                className="block w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-100 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-gray-300"
+                className="block w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-100 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-0 focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-gray-300"
               />
             </div>
             <div>
@@ -163,7 +178,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                   onBlur={() => setPhoneTouched(true)}
                   placeholder="800 000 0000"
                   autoComplete="tel"
-                  className="block w-full rounded-r-lg border px-3 py-2.5 text-sm bg-gray-100 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-gray-300"
+                  className="block w-full rounded-r-lg border px-3 py-2.5 text-sm bg-gray-100 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-0 focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px] border-gray-300"
                   aria-describedby={phoneError ? 'phone-error' : undefined}
                 />
               </div>
@@ -176,7 +191,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                   id="contact-relationship"
                   value={relationship}
                   onChange={(e) => setRelationship(e.target.value)}
-                  className={`block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm transition-colors text-gray-700 appearance-none focus:outline-none focus:ring-1 focus:ring-[#0891B2] focus:border-[#0891B2] focus:bg-white min-h-[44px] ${
+                  className={`block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm transition-colors text-gray-700 appearance-none focus:outline-none focus:ring-0 focus:border-[#0891B2] focus:bg-white min-h-[44px] ${
                     relationship ? 'bg-gray-50' : 'bg-gray-100'
                   }`}
                 >
@@ -193,55 +208,24 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
         </div>
 
         {saved && (
-          <div className="text-center py-4 animate-in">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-2xl bg-[#DCFCE7] flex items-center justify-center transition-all duration-500 scale-110">
-                <Check className="w-10 h-10 text-[#059669] transition-all duration-500 scale-110" />
+          <div className="min-h-[calc(100dvh-120px)] flex flex-col items-center justify-center px-4 -mt-8">
+            <div className="animate-[scaleIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_both]">
+              <div className="w-20 h-20 rounded-2xl bg-[#DCFCE7] flex items-center justify-center">
+                <Check className="w-10 h-10 text-[#059669] animate-[scaleIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)_0.2s_both]" strokeWidth={3} />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
-              Contact Added Successfully
-            </h1>
-            <p className="text-base text-gray-500 text-center mb-6 leading-relaxed">
-              {name.trim()} — +234***{phoneDigits.slice(-4)}
-            </p>
-          </div>
-        )}
-
-        <div className="flex justify-center items-center mt-8 mb-4">
-          <Dots active={saved ? 2 : 1} />
-        </div>
-        {saved ? (
-          <div className="space-y-2">
-            <Button onClick={onNext} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
-              Continue
-            </Button>
-            <div className="flex justify-center">
-              <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
-                Skip
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <Button
-              onClick={handleSave}
-              loading={saving}
-              disabled={!formValid}
-              size="lg"
-              className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]"
-            >
-              Save Contact
-            </Button>
-            <div className="flex justify-center">
-              <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
-                Skip
-              </button>
-            </div>
+              <div className="text-center mt-6 animate-[fadeInUp_0.4s_ease-out_0.3s_both]">
+                <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight whitespace-nowrap">
+                  Contact Added Successfully
+                </h1>
+                <p className="text-sm text-gray-500 text-center leading-relaxed">
+                  {name.trim()} · +234***{phoneDigits.slice(-4)}
+                </p>
+              </div>
           </div>
         )}
       </div>
-    </div>
+    </ScreenWithBottomAction>
   )
 }
 
@@ -267,89 +251,111 @@ function Step3Location({ onBack }: StepProps) {
     )
   }
 
-  const handleDone = () => {
-    completeOnboarding()
-    navigate('/', { replace: true })
+  const handleDone = async () => {
+    try {
+      await completeOnboarding()
+      navigate('/', { replace: true })
+    } catch {
+      // Server call failed — user stays on onboarding page to retry
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex mb-4">
-          <button onClick={onBack} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+    <ScreenWithBottomAction
+      bgColor="bg-gray-100"
+      hideBorder
+      footer={<OnboardingStepper active={granted ? 3 : 2} />}
+      actions={
+        <div className="space-y-3">
+          {granted ? (
+            <Button onClick={handleDone} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
+              Go to Dashboard
+            </Button>
+          ) : (
+            <Button
+              onClick={permissionStatus === 'idle' ? requestLocation : handleDone}
+              loading={permissionStatus === 'loading'}
+              size="lg"
+              className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]"
+            >
+              {permissionStatus === 'idle' ? 'Enable Location' : 'Continue'}
+            </Button>
+          )}
+          <div className="flex justify-center">
+            <button onClick={handleDone} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
+              Skip
+            </button>
+          </div>
         </div>
-        <div className={`flex justify-center mb-6 transition-all duration-500 ${granted ? 'scale-110' : ''}`}>
-          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500 ${granted ? 'bg-[#DCFCE7] scale-110' : 'bg-[#E0F2FE]'}`}>
-            {granted ? (
-              <Check className="w-10 h-10 text-[#059669] transition-all duration-500 scale-110" />
-            ) : (
+      }
+    >
+      {granted ? (
+        <div className="w-full max-w-sm mx-auto px-4 min-h-[calc(100dvh-200px)] flex flex-col items-center justify-center -mt-8">
+          <div className="animate-[scaleIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_both]">
+            <div className="w-20 h-20 rounded-2xl bg-[#DCFCE7] flex items-center justify-center">
+              <Check className="w-10 h-10 text-[#059669] animate-[scaleIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)_0.2s_both]" strokeWidth={3} />
+            </div>
+          </div>
+          <div className="text-center mt-6 animate-[fadeInUp_0.4s_ease-out_0.3s_both]">
+            <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
+              Location Access Granted
+            </h1>
+            <p className="text-base text-gray-500 text-center leading-relaxed">
+              SafeCommute will only track you during active trips
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full max-w-sm mx-auto px-4">
+          <div className="flex items-center justify-between mb-6 pt-12">
+            <button onClick={onBack} className="min-w-[32px] min-h-[32px] flex items-center justify-center text-gray-400 hover:text-gray-600">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="w-20 h-20 rounded-2xl bg-[#E0F2FE] flex items-center justify-center">
               <MapPin className="w-10 h-10 text-[#0891B2]" />
-            )}
-          </div>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight transition-all duration-500">
-          {granted ? 'Location Access Granted' : 'Location Access'}
-        </h1>
-        <p className={`text-base text-gray-500 text-center leading-relaxed transition-all duration-500 ${granted ? 'mb-2' : 'mb-6'}`}>
-          {granted ? 'SafeCommute will only track you during active trips' : "Your location is never stored — shared live only while travelling."}
-        </p>
-        <div className={`space-y-3 mb-6 transition-all duration-500 ${granted ? 'opacity-0 pointer-events-none max-h-0 overflow-hidden mb-0' : ''}`}>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-5 h-5 text-[#0891B2]" />
             </div>
-            <p className="text-sm text-gray-700 leading-relaxed pt-2">
-              Shared only during an active trip — nothing is tracked while you're not travelling
-            </p>
+            <div className="w-[32px]" />
           </div>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
-              <Shield className="w-5 h-5 text-[#0891B2]" />
-            </div>
-            <p className="text-sm text-gray-700 leading-relaxed pt-2">
-              Location breadcrumbs are deleted immediately when your trip ends
-            </p>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
-              <Phone className="w-5 h-5 text-[#0891B2]" />
-            </div>
-            <p className="text-sm text-gray-700 leading-relaxed pt-2">
-              You can revoke access anytime from your device settings or the Privacy Dashboard
-            </p>
-          </div>
-        </div>
-        {permissionStatus === 'denied' && (
-          <p className="text-sm text-amber-600 text-center mb-4">
-            Location access was denied. You can enable it later in your device settings.
+          <h1 className="text-2xl font-bold text-gray-900 text-center mb-1 leading-tight">
+            Location Access
+          </h1>
+          <p className="text-base text-gray-500 text-center leading-relaxed mb-6">
+            Your location is never stored — shared live only while travelling.
           </p>
-        )}
-        {granted ? (
-          <Button onClick={handleDone} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
-            Go to Dashboard
-          </Button>
-        ) : (
-          <Button
-            onClick={permissionStatus === 'idle' ? requestLocation : handleDone}
-            loading={permissionStatus === 'loading'}
-            size="lg"
-            className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]"
-          >
-            {permissionStatus === 'idle' ? 'Enable Location' : 'Continue'}
-          </Button>
-        )}
-        <div className="flex justify-center items-center mt-4 mb-2">
-          <Dots active={granted ? 3 : 2} />
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 text-[#0891B2]" />
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Shared only during an active trip — nothing is tracked while you're not travelling
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
+                <Shield className="w-5 h-5 text-[#0891B2]" />
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Location breadcrumbs are deleted immediately when your trip ends
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center flex-shrink-0">
+                <Phone className="w-5 h-5 text-[#0891B2]" />
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                You can revoke access anytime from your device settings or the Privacy Dashboard
+              </p>
+            </div>
+          </div>
+          {permissionStatus === 'denied' && (
+            <p className="text-sm text-amber-600 text-center mb-4">
+              Location access was denied. You can enable it later in your device settings.
+            </p>
+          )}
         </div>
-        <div className="flex justify-center">
-          <button onClick={handleDone} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
-            Skip
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </ScreenWithBottomAction>
   )
 }
 

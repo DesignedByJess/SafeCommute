@@ -16,7 +16,7 @@ router.use(authenticate);
 
 router.post('/', tripCreationLimiter, validate(createTripSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tripResult = await tripService.createTrip(req.user!.id, req.body);
+    const tripResult = await tripService.createTrip(req.user!.id, req.user!.name || req.user!.id, req.body);
     sendCreated(res, {
       id: tripResult.id,
       share_token: tripResult.share_token,
@@ -32,6 +32,7 @@ router.post('/', tripCreationLimiter, validate(createTripSchema), async (req: Re
       status: tripResult.status,
       started_at: tripResult.started_at,
       expires_at: tripResult.expires_at,
+      hmac_key: (tripResult as any).hmacKey || null,
     });
   } catch (err) { next(err); }
 });

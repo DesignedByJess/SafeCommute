@@ -1,10 +1,19 @@
+jest.mock('../utils/config', () => ({
+  env: {
+    SUPABASE_JWT_SECRET: 'test-jwt-secret',
+    NODE_ENV: 'test',
+  },
+}));
+
+jest.mock('../utils/jwt', () => ({
+  verifyJwt: jest.fn(),
+}));
+
 import { authenticate } from './authenticate';
 import { UnauthorizedError } from '../utils/errors';
+import { verifyJwt } from '../utils/jwt';
 
-function makeToken(payload: Record<string, unknown>): string {
-  const b64 = Buffer.from(JSON.stringify(payload)).toString('base64');
-  return `header.${b64}.signature`;
-}
+const mockVerifyJwt = verifyJwt as jest.Mock;
 
 function mockReqRes() {
   const req: any = { cookies: {}, headers: {} };
@@ -20,20 +29,20 @@ describe('authenticate', () => {
 
   it('extracts user from cookie token', () => {
     const { req, res, next } = mockReqRes();
-    const token = makeToken({ sub: 'user-123', email: 'a@b.com', exp: Math.floor(Date.now() / 1000) + 3600 });
-    req.cookies['sb-access-token'] = token;
+    mockVerifyJwt.mockReturnValueOnce({ sub: 'user-123', email: 'a@b.com', user_metadata: { name: 'Alice' } });
+    req.cookies['sb-access-token'] = 'valid-token';
     authenticate(req, res, next);
     expect(next).toHaveBeenCalled();
-    expect(req.user).toEqual({ id: 'user-123', email: 'a@b.com' });
+    expect(req.user).toMatchObject({ id: 'user-123', email: 'a@b.com', name: 'Alice' });
   });
 
   it('extracts user from Bearer auth header', () => {
     const { req, res, next } = mockReqRes();
-    const token = makeToken({ sub: 'user-456', exp: Math.floor(Date.now() / 1000) + 3600 });
-    req.headers.authorization = `Bearer ${token}`;
+    mockVerifyJwt.mockReturnValueOnce({ sub: 'user-456' });
+    req.headers.authorization = 'Bearer valid-token';
     authenticate(req, res, next);
     expect(next).toHaveBeenCalled();
-    expect(req.user).toEqual({ id: 'user-456' });
+    expect(req.user).toMatchObject({ id: 'user-456' });
   });
 
   it('calls next with UnauthorizedError when no token', () => {
@@ -44,26 +53,26 @@ describe('authenticate', () => {
 
   it('calls next with UnauthorizedError when token expired', () => {
     const { req, res, next } = mockReqRes();
-    const token = makeToken({ sub: 'user-789', exp: Math.floor(Date.now() / 1000) - 60 });
-    req.cookies['sb-access-token'] = token;
+    mockVerifyJwt.mockReturnValueOnce(null);
+    req.cookies['sb-access-token'] = 'expired-token';
     authenticate(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
   });
 
   it('calls next with UnauthorizedError on malformed token', () => {
     const { req, res, next } = mockReqRes();
-    req.cookies['sb-access-token'] = 'not-a-jwt';
+    mockVerifyJwt.mockReturnValueOnce(null);
+    req.cookies['sb-access-token'] = 'bad-token';
     authenticate(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
   });
 
   it('prefers cookie over auth header when both present', () => {
     const { req, res, next } = mockReqRes();
-    const cookieToken = makeToken({ sub: 'cookie-user', exp: Math.floor(Date.now() / 1000) + 3600 });
-    const headerToken = makeToken({ sub: 'header-user', exp: Math.floor(Date.now() / 1000) + 3600 });
-    req.cookies['sb-access-token'] = cookieToken;
-    req.headers.authorization = `Bearer ${headerToken}`;
+    mockVerifyJwt.mockReturnValueOnce({ sub: 'cookie-user' });
+    req.cookies['sb-access-token'] = 'cookie-token';
+    req.headers.authorization = 'Bearer header-token';
     authenticate(req, res, next);
-    expect(req.user).toEqual({ id: 'cookie-user' });
+    expect(req.user).toMatchObject({ id: 'cookie-user' });
   });
 });

@@ -6,8 +6,15 @@ const models_1 = require("../models");
 const audit_service_1 = require("./audit.service");
 class DataRetentionService {
     async purgeExpiredTrips() {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
         const count = await models_1.Trip.destroy({
-            where: { expires_at: { [sequelize_1.Op.lt]: new Date() } },
+            where: {
+                [sequelize_1.Op.or]: [
+                    { expires_at: { [sequelize_1.Op.lt]: thirtyDaysAgo }, status: { [sequelize_1.Op.ne]: 'emergency' } },
+                    { expires_at: { [sequelize_1.Op.lt]: ninetyDaysAgo }, status: 'emergency' },
+                ],
+            },
         });
         if (count > 0)
             audit_service_1.logger.info(`Purged ${count} expired trips`);

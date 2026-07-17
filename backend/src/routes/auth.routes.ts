@@ -26,11 +26,12 @@ import { authenticate } from '../middleware/authenticate';
 import { validate } from '../middleware/validate';
 import { signupSchema } from '../middleware/validate/auth.schema';
 import { loginSchema } from '../middleware/validate/auth.schema';
-import { loginLimiter, signupLimiter } from '../middleware/rate-limit';
+import { loginLimiter, signupLimiter, forgotPasswordLimiter } from '../middleware/rate-limit';
 import { sendSuccess, sendCreated } from '../utils/response';
 import { env } from '../utils/config';
 import { auditLog, logger } from '../services/audit.service';
 import { AppError } from '../utils/errors';
+import { UserProfile } from '../models/user-profile.model';
 
 const router = Router();
 
@@ -38,9 +39,11 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
   try {
     const { name, email, password } = req.body;
 
-    let response: Response;
+    let supabaseRes;
     try {
-      response = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      supabaseRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,15 +56,20 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
           email_confirm: true,
           user_metadata: { name },
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
     } catch (fetchErr) {
       logger.error('Supabase unreachable during signup', { error: fetchErr, supabaseUrl: env.SUPABASE_URL });
-      return next(new AppError('Authentication service is unavailable. Please ensure Supabase is running and try again.', 503, 'AUTH_SERVICE_UNAVAILABLE'));
+      const message = (fetchErr as Error)?.name === 'AbortError'
+        ? 'Authentication service timed out. Please try again.'
+        : 'Authentication service is unavailable. Please ensure Supabase is running and try again.';
+      return next(new AppError(message, 503, 'AUTH_SERVICE_UNAVAILABLE'));
     }
 
-    const data = (await response.json()) as SupabaseSignupResponse;
+    const data = (await supabaseRes.json()) as SupabaseSignupResponse;
 
-    if (!response.ok) {
+    if (!supabaseRes.ok) {
       return next(new AppError(data.msg || data.error_description || 'Signup failed', 400, 'SIGNUP_FAILED'));
     }
 
@@ -70,24 +78,28 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
 
     await auditLog(data.id, 'signup', { email, name }, ipAddress, userAgent);
 
-    let loginResponse: Response;
+    let loginRes;
     try {
-      loginResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      const loginController = new AbortController();
+      const loginTimeout = setTimeout(() => loginController.abort(), 15000);
+      loginRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
         },
         body: JSON.stringify({ email, password }),
+        signal: loginController.signal,
       });
+      clearTimeout(loginTimeout);
     } catch (fetchErr) {
       logger.error('Supabase unreachable during auto-login after signup', { error: fetchErr });
       return next(new AppError('Account created but could not sign in automatically. Please try logging in.', 200, 'SIGNUP_NO_SESSION'));
     }
 
-    const loginData = (await loginResponse.json()) as SupabaseLoginResponse;
+    const loginData = (await loginRes.json()) as SupabaseLoginResponse;
 
-    if (!loginResponse.ok) {
+    if (!loginRes.ok) {
       return next(new AppError('Account created but could not sign in automatically. Please try logging in.', 200, 'SIGNUP_NO_SESSION'));
     }
 
@@ -107,37 +119,57 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
 
     const user: UserResponse = { id: loginData.user.id, email: loginData.user.email, name };
     sendCreated(res, { user });
+
+    // Fire-and-forget: create user profile in background.
+    // Uses findOrCreate to avoid overwriting onboarding_complete if user
+    // completes onboarding before this fires (race condition fix).
+    UserProfile.findOrCreate({
+      where: { user_id: loginData.user.id },
+      defaults: { onboarding_complete: false },
+    }).catch((err) => logger.error('Failed to create user profile after signup', { error: err }));
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/forgot-password', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
     if (!email) {
       return next(new AppError('Email is required', 400, 'VALIDATION_ERROR'));
     }
 
-    let response: Response;
+    const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+    const resetUrl = `${origin}/reset-password`;
+
+    let resetRes;
     try {
-      response = await fetch(`${env.SUPABASE_URL}/auth/v1/recover`, {
+      const resetController = new AbortController();
+      const resetTimeout = setTimeout(() => resetController.abort(), 15000);
+      resetRes = await fetch(`${env.SUPABASE_URL}/auth/v1/recover`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, redirect_to: resetUrl }),
+        signal: resetController.signal,
       });
+      clearTimeout(resetTimeout);
     } catch (fetchErr) {
       logger.error('Supabase unreachable during password reset', { error: fetchErr });
-      return next(new AppError('Authentication service is unavailable. Please try again later.', 503, 'AUTH_SERVICE_UNAVAILABLE'));
+      const message = (fetchErr as Error)?.name === 'AbortError'
+        ? 'Authentication service timed out. Please try again.'
+        : 'Authentication service is unavailable. Please try again later.';
+      return next(new AppError(message, 503, 'AUTH_SERVICE_UNAVAILABLE'));
     }
 
-    if (!response.ok) {
-      const data = await response.json();
+    if (!resetRes.ok) {
+      const data = await resetRes.json() as { msg?: string };
       return next(new AppError(data.msg || 'Failed to send reset email', 400, 'RESET_FAILED'));
     }
+
+    await auditLog(null, 'password_reset_requested', { email }, req.ip || req.socket.remoteAddress || null, req.headers['user-agent'] || null);
 
     sendSuccess(res, { message: 'Reset link sent' });
   } catch (err) {
@@ -149,24 +181,31 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
   try {
     const { email, password } = req.body;
 
-    let response: Response;
+    let loginRes;
     try {
-      response = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      const loginController = new AbortController();
+      const loginTimeout = setTimeout(() => loginController.abort(), 15000);
+      loginRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
         },
         body: JSON.stringify({ email, password }),
+        signal: loginController.signal,
       });
+      clearTimeout(loginTimeout);
     } catch (fetchErr) {
       logger.error('Supabase unreachable during login', { error: fetchErr, supabaseUrl: env.SUPABASE_URL });
-      return next(new AppError('Authentication service is unavailable. Please ensure Supabase is running and try again.', 503, 'AUTH_SERVICE_UNAVAILABLE'));
+      const message = (fetchErr as Error)?.name === 'AbortError'
+        ? 'Authentication service timed out. Please try again.'
+        : 'Authentication service is unavailable. Please ensure Supabase is running and try again.';
+      return next(new AppError(message, 503, 'AUTH_SERVICE_UNAVAILABLE'));
     }
 
-    const data = (await response.json()) as SupabaseLoginResponse;
+    const data = (await loginRes.json()) as SupabaseLoginResponse;
 
-    if (!response.ok) {
+    if (!loginRes.ok) {
       return next(new AppError(data.msg || 'Invalid credentials', 401, 'LOGIN_FAILED'));
     }
 
@@ -189,14 +228,126 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
       maxAge: 60 * 60 * 24 * 30 * 1000,
     });
 
-    sendSuccess(res, { user: { id: data.user.id, email: data.user.email } });
+    let onboardingComplete = false;
+    const profile = await UserProfile.findByPk(data.user.id);
+    if (profile) {
+      onboardingComplete = profile.onboarding_complete;
+    }
+
+    sendSuccess(res, { user: { id: data.user.id, email: data.user.email, onboarding_complete: onboardingComplete } });
   } catch (err) {
     next(err);
   }
 });
 
-router.get('/me', authenticate, (req: Request, res: Response) => {
-  sendSuccess(res, { user: req.user });
+router.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let onboardingComplete = false;
+    const profile = await UserProfile.findByPk(req.user!.id);
+    if (profile) {
+      onboardingComplete = profile.onboarding_complete;
+    }
+
+    sendSuccess(res, {
+      user: {
+        ...req.user,
+        onboarding_complete: onboardingComplete,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/reset-password', forgotPasswordLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return next(new AppError('Token and new password are required', 400, 'VALIDATION_ERROR'));
+    }
+    if (password.length < 8) {
+      return next(new AppError('Password must be at least 8 characters', 400, 'VALIDATION_ERROR'));
+    }
+
+    let supabaseRes;
+    try {
+      const pwResetController = new AbortController();
+      const pwResetTimeout = setTimeout(() => pwResetController.abort(), 15000);
+      supabaseRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password }),
+        signal: pwResetController.signal,
+      });
+      clearTimeout(pwResetTimeout);
+    } catch (fetchErr) {
+      logger.error('Supabase unreachable during password reset', { error: fetchErr });
+      const message = (fetchErr as Error)?.name === 'AbortError'
+        ? 'Authentication service timed out. Please try again.'
+        : 'Authentication service is unavailable. Please try again later.';
+      return next(new AppError(message, 503, 'AUTH_SERVICE_UNAVAILABLE'));
+    }
+
+    if (!supabaseRes.ok) {
+      const data = await supabaseRes.json() as { msg?: string };
+      return next(new AppError(data.msg || 'Failed to reset password. The link may have expired.', 400, 'RESET_FAILED'));
+    }
+
+    sendSuccess(res, { message: 'Password updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/complete-onboarding', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await UserProfile.upsert({
+      user_id: req.user!.id,
+      onboarding_complete: true,
+    });
+
+    await auditLog(req.user!.id, 'onboarding_completed', {}, req.ip || req.socket.remoteAddress || null, req.headers['user-agent'] || null);
+
+    sendSuccess(res, { message: 'Onboarding marked as complete' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/logout', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ipAddress = req.ip || req.socket.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
+
+    await auditLog(req.user!.id, 'logout', {}, ipAddress, userAgent);
+
+    res.clearCookie('sb-access-token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    res.clearCookie('sb-refresh-token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    res.clearCookie('_csrf', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    sendSuccess(res, { message: 'Logged out successfully' });
+  } catch (err) { next(err); }
 });
 
 export default router;

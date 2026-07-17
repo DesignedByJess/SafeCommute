@@ -5,6 +5,7 @@ const authenticate_1 = require("../middleware/authenticate");
 const validate_1 = require("../middleware/validate");
 const response_1 = require("../utils/response");
 const contacts_service_1 = require("../services/contacts.service");
+const encryption_service_1 = require("../services/encryption.service");
 const contact_schema_1 = require("../middleware/validate/contact.schema");
 const rate_limit_1 = require("../middleware/rate-limit");
 const sanitize_1 = require("../utils/sanitize");
@@ -14,10 +15,18 @@ router.use(authenticate_1.authenticate);
 router.get('/', async (req, res, next) => {
     try {
         const contacts = await contactService.listContacts(req.user.id);
-        const masked = contacts.map((c) => ({
-            ...c.toJSON(),
-            phone_number_encrypted: (0, sanitize_1.maskPhone)(c.phone_number_encrypted),
-        }));
+        const masked = contacts.map((c) => {
+            const json = c.toJSON();
+            let displayPhone = json.phone_number_encrypted;
+            try {
+                const decrypted = encryption_service_1.EncryptionService.decryptPhone(json.phone_number_encrypted);
+                displayPhone = (0, sanitize_1.maskPhone)(decrypted);
+            }
+            catch {
+                displayPhone = (0, sanitize_1.maskPhone)(json.phone_number_encrypted);
+            }
+            return { ...json, phone_number_encrypted: displayPhone };
+        });
         (0, response_1.sendSuccess)(res, masked);
     }
     catch (err) {
@@ -27,10 +36,18 @@ router.get('/', async (req, res, next) => {
 router.post('/', (0, validate_1.validate)(contact_schema_1.createContactSchema), async (req, res, next) => {
     try {
         const result = await contactService.addContact(req.user.id, req.body);
+        let displayPhone = result.phone_number_encrypted;
+        try {
+            const decrypted = encryption_service_1.EncryptionService.decryptPhone(result.phone_number_encrypted);
+            displayPhone = (0, sanitize_1.maskPhone)(decrypted);
+        }
+        catch {
+            displayPhone = (0, sanitize_1.maskPhone)(result.phone_number_encrypted);
+        }
         const payload = {
             id: result.id,
             name: result.name,
-            phone_number_encrypted: (0, sanitize_1.maskPhone)(result.phone_number_encrypted),
+            phone_number_encrypted: displayPhone,
             relationship: result.relationship,
             verified: result.verified,
             created_at: result.created_at,
@@ -57,7 +74,13 @@ router.get('/:id', async (req, res, next) => {
     try {
         const contact = await contactService.getContact(req.user.id, req.params.id);
         const data = contact.toJSON();
-        data.phone_number_encrypted = (0, sanitize_1.maskPhone)(data.phone_number_encrypted);
+        try {
+            const decrypted = encryption_service_1.EncryptionService.decryptPhone(data.phone_number_encrypted);
+            data.phone_number_encrypted = (0, sanitize_1.maskPhone)(decrypted);
+        }
+        catch {
+            data.phone_number_encrypted = (0, sanitize_1.maskPhone)(data.phone_number_encrypted);
+        }
         (0, response_1.sendSuccess)(res, data);
     }
     catch (err) {

@@ -36,6 +36,7 @@ jest.mock('./notifications/notification.service', () => ({
   NotificationService: jest.fn().mockImplementation(() => ({
     sendTripStarted: jest.fn().mockResolvedValue(undefined),
     sendEmergencyAlert: jest.fn().mockResolvedValue(undefined),
+    sendAfricaTalking: jest.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -73,19 +74,60 @@ describe('EmergencyService', () => {
     MockNotificationService.mockImplementation(() => ({
       sendTripStarted: jest.fn().mockResolvedValue(undefined),
       sendEmergencyAlert: jest.fn().mockResolvedValue(undefined),
+      sendAfricaTalking: jest.fn().mockResolvedValue(undefined),
     }));
     service = new EmergencyService();
   });
 
-  describe('triggerEmergency', () => {
-    it('creates alert and updates trip status', async () => {
+  describe('initiateEmergency', () => {
+    it('generates verification code and returns expires_at', async () => {
+      const mockTrip = {
+        id: tripId,
+        user_id: userId,
+        status: 'active',
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      TripFindOne.mockResolvedValue(mockTrip);
+      AlertFindOne.mockResolvedValue(null);
+      const result = await service.initiateEmergency(
+        userId, tripId,
+        { lat: 6.5, lng: 3.3, accuracy: 10, userName: 'Test User' },
+        meta,
+      );
+      expect(result.expires_at).toBeDefined();
+    });
+
+    it('throws 404 when trip not found', async () => {
+      TripFindOne.mockResolvedValue(null);
+      await expect(
+        service.initiateEmergency(userId, tripId, { lat: 6.5, lng: 3.3, userName: 'Test' }, meta),
+      ).rejects.toMatchObject({ statusCode: 404 });
+    });
+
+    it('throws 400 when trip is completed', async () => {
+      TripFindOne.mockResolvedValue({ id: tripId, user_id: userId, status: 'completed' });
+      await expect(
+        service.initiateEmergency(userId, tripId, { lat: 6.5, lng: 3.3, userName: 'Test' }, meta),
+      ).rejects.toMatchObject({ statusCode: 400, code: 'TRIP_COMPLETED' });
+    });
+
+    it('throws 409 when alert already active', async () => {
+      TripFindOne.mockResolvedValue({ id: tripId, user_id: userId, status: 'active', save: jest.fn() });
+      AlertFindOne.mockResolvedValue({ id: 'existing' });
+      await expect(
+        service.initiateEmergency(userId, tripId, { lat: 6.5, lng: 3.3, userName: 'Test' }, meta),
+      ).rejects.toMatchObject({ statusCode: 409, code: 'ALERT_EXISTS' });
+    });
+  });
+
+  describe('verifyAndTrigger', () => {
+    it('verifies code and creates alert', async () => {
       const mockTrip = {
         id: tripId,
         user_id: userId,
         status: 'active',
         contact_name: 'Alice',
         contact_phone_encrypted: testEncryptedPhone,
-        share_token: 'token123',
         save: jest.fn().mockResolvedValue(undefined),
       };
       const mockAlert = {
@@ -98,69 +140,32 @@ describe('EmergencyService', () => {
       TripFindOne.mockResolvedValue(mockTrip);
       AlertFindOne.mockResolvedValue(null);
       AlertCreate.mockResolvedValue(mockAlert);
-      const result = await service.triggerEmergency(userId, tripId, alertInput, meta);
-      expect(mockTrip.status).toBe('emergency');
-      expect(mockTrip.save).toHaveBeenCalled();
-      expect(AlertCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          trip_id: tripId,
-          lat: 6.5,
-          lng: 3.3,
-          accuracy: 10,
-          ip_address: '192.168.1.1',
-          user_agent: 'Chrome',
-        }),
+
+      // First initiate
+      await service.initiateEmergency(
+        userId, tripId,
+        { lat: 6.5, lng: 3.3, accuracy: 10, userName: 'Test User' },
+        meta,
       );
-      expect(result).toEqual(mockAlert);
+
+      // Then verify with dev code
+      const result = await service.verifyAndTrigger(userId, tripId, '123456');
+      expect(result.trip_id).toBe(tripId);
     });
 
-    it('sends emergency notification', async () => {
-      const mockTrip = {
-        id: tripId,
-        user_id: userId,
-        status: 'active',
-        contact_name: 'Alice',
-        contact_phone_encrypted: testEncryptedPhone,
-        share_token: 'token123',
-        save: jest.fn().mockResolvedValue(undefined),
-      };
-      TripFindOne.mockResolvedValue(mockTrip);
-      AlertFindOne.mockResolvedValue(null);
-      AlertCreate.mockResolvedValue({ id: 'alert-uuid' });
-      await service.triggerEmergency(userId, tripId, alertInput, meta);
-      const { NotificationService } = await import('./notifications/notification.service');
-      const mockInstance = (NotificationService as jest.Mock).mock.results[0].value;
-      expect(mockInstance.sendEmergencyAlert).toHaveBeenCalledWith({
-        contactName: 'Alice',
-        contactPhone: '+2348012345678',
-        shareToken: 'token123',
-        lat: 6.5,
-        lng: 3.3,
-      });
-    });
-
-    it('throws 404 when trip not found', async () => {
-      TripFindOne.mockResolvedValue(null);
-      await expect(service.triggerEmergency(userId, tripId, alertInput, meta)).rejects.toMatchObject({
-        statusCode: 404,
-      });
-    });
-
-    it('throws 400 when trip is completed', async () => {
-      TripFindOne.mockResolvedValue({ id: tripId, user_id: userId, status: 'completed' });
-      await expect(service.triggerEmergency(userId, tripId, alertInput, meta)).rejects.toMatchObject({
-        statusCode: 400,
-        code: 'TRIP_COMPLETED',
-      });
-    });
-
-    it('throws 409 when alert already active', async () => {
+    it('throws 400 for invalid code', async () => {
       TripFindOne.mockResolvedValue({ id: tripId, user_id: userId, status: 'active', save: jest.fn() });
-      AlertFindOne.mockResolvedValue({ id: 'existing' });
-      await expect(service.triggerEmergency(userId, tripId, alertInput, meta)).rejects.toMatchObject({
-        statusCode: 409,
-        code: 'ALERT_EXISTS',
-      });
+      AlertFindOne.mockResolvedValue(null);
+
+      await service.initiateEmergency(
+        userId, tripId,
+        { lat: 6.5, lng: 3.3, userName: 'Test' },
+        meta,
+      );
+
+      await expect(
+        service.verifyAndTrigger(userId, tripId, '000000'),
+      ).rejects.toMatchObject({ statusCode: 400 });
     });
   });
 

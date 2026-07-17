@@ -1,9 +1,23 @@
 @import 'tailwindcss';
 
+/* Suppress Safari/iOS native credential autofill button that overlaps custom eye icon */
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+input[type="password"]::-webkit-textfield-decoration-container {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Also suppress Edge/IE reveal and clear buttons */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear,
-input[type="password"]::-webkit-reveal,
-input[type="password"]::-webkit-credentials-auto-fill-button {
+input[type="password"]::-webkit-reveal {
   display: none !important;
 }
 
@@ -15,6 +29,7 @@ input:-webkit-autofill:active {
   box-shadow: 0 0 0 1000px #F9FAFB inset !important;
   -webkit-text-fill-color: #111827 !important;
   caret-color: #111827 !important;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 button {
@@ -50,6 +65,11 @@ body {
 @keyframes scaleIn {
   from { transform: scale(0); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes scanPulse {

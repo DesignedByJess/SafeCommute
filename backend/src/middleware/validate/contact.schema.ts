@@ -7,7 +7,6 @@ export const createContactSchema = z.object({
 });
 
 export const verifyOtpSchema = z.object({
-  contactId: z.string().uuid(),
   otp: z.string().length(6),
 });
 

@@ -14,7 +14,8 @@ router.use(authenticate);
 router.post('/:tripId/initiate', emergencyLimiter, validate(initiateEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await emergencyService.initiateEmergency(
-      req.user!.id, req.params.tripId, req.body,
+      req.user!.id, req.params.tripId,
+      { ...req.body, userPhone: req.user!.phone || undefined },
       { ip: req.ip || '', userAgent: req.headers['user-agent'] || '' },
     );
     sendSuccess(res, result);

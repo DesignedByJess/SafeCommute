@@ -22,9 +22,10 @@ const app = (0, express_1.default)();
 exports.app = app;
 const httpServer = (0, http_1.createServer)(app);
 exports.httpServer = httpServer;
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
 const io = new socket_io_1.Server(httpServer, {
     cors: {
-        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        origin: corsOrigins,
         credentials: true,
     },
     transports: ['websocket'],
@@ -32,7 +33,7 @@ const io = new socket_io_1.Server(httpServer, {
 exports.io = io;
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: corsOrigins,
     credentials: true,
 }));
 app.use((0, cookie_parser_1.default)());

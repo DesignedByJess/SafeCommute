@@ -19,9 +19,11 @@ import { DataRetentionService } from './services/data-retention.service';
 const app = express();
 const httpServer = createServer(app);
 
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: corsOrigins,
     credentials: true,
   },
   transports: ['websocket'],
@@ -29,7 +31,7 @@ const io = new Server(httpServer, {
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: corsOrigins,
   credentials: true,
 }));
 app.use(cookieParser());

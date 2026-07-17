@@ -47,3 +47,11 @@ export const signupLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, error: 'Too many signup attempts, try again later', code: 'RATE_LIMITED' },
 });
+
+export const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many reset requests, try again later', code: 'RATE_LIMITED' },
+});

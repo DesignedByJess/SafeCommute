@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield } from 'lucide-react'
+import { X } from 'lucide-react'
+
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { useAuth } from '../../hooks/useAuth'
@@ -12,10 +13,10 @@ interface Requirement {
 
 const requirements: Requirement[] = [
   { label: 'At least 8 characters', test: (pw) => pw.length >= 8 },
-  { label: 'Contains an uppercase letter', test: (pw) => /[A-Z]/.test(pw) },
-  { label: 'Contains a lowercase letter', test: (pw) => /[a-z]/.test(pw) },
-  { label: 'Contains a number', test: (pw) => /[0-9]/.test(pw) },
-  { label: 'Contains a special character', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
+  { label: 'Must contain an uppercase letter', test: (pw) => /[A-Z]/.test(pw) },
+  { label: 'Must contain a lowercase letter', test: (pw) => /[a-z]/.test(pw) },
+  { label: 'Must contain a number', test: (pw) => /[0-9]/.test(pw) },
+  { label: 'Must contain a special character', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
 ]
 
 export default function SignupPage() {
@@ -26,12 +27,12 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const { signup, loading } = useAuth()
 
-  const unmet = useMemo(
-    () => requirements.filter((r) => !r.test(password)),
+  const result = useMemo(
+    () => requirements.map((r) => ({ ...r, met: r.test(password) })),
     [password],
   )
 
-  const allMet = unmet.length === 0
+  const allMet = result.every((r) => r.met)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,11 +60,11 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Shield className="w-12 h-12 text-[#0891B2] mx-auto mb-3" />
+          <img src="/logo.png" alt="SafeCommute" className="w-12 h-12 mx-auto mb-3 object-contain" />
           <h1 className="text-2xl font-bold text-gray-900">SafeCommute</h1>
           <p className="text-sm text-gray-500 mt-1">Create your account</p>
         </div>
-        <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-3">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
@@ -83,6 +84,7 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
+            autoComplete="email"
             required
           />
           <div>
@@ -92,13 +94,15 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              autoComplete="new-password"
               showPasswordToggle
               required
             />
-            {password && unmet.length > 0 && (
+            {password && !allMet && (
               <ul className="mt-2 space-y-1">
-                {unmet.map((req, i) => (
-                  <li key={i} className="text-xs text-gray-500">
+                {result.filter((r) => !r.met).map((req, i) => (
+                  <li key={i} className="text-xs flex items-center gap-1.5 text-gray-500">
+                    <X className="w-3 h-3" />
                     {req.label}
                   </li>
                 ))}
@@ -111,14 +115,17 @@ export default function SignupPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Repeat your password"
+            autoComplete="new-password"
             showPasswordToggle
             required
           />
-          <Button type="submit" loading={loading} disabled={!allMet} className="w-full">
-            Create Account
-          </Button>
+          <div className="mt-16">
+            <Button type="submit" loading={loading} disabled={!allMet} className="w-full">
+              Create Account
+            </Button>
+          </div>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 mt-2">
           Already have an account?{' '}
           <Link to="/login" className="text-[#0891B2] hover:text-[#0E7490] font-medium">
             Sign in

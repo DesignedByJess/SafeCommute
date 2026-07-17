@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { HistoryScreen } from './HistoryScreen'
 import { TripDetailScreen } from './TripDetailScreen'
 import { api } from '../../services/api'
@@ -48,63 +48,40 @@ function formatTime(iso: string): string {
   })
 }
 
-async function checkSession(): Promise<boolean> {
-  try {
-    const res = await api.get('/auth/me')
-    return !!res.data?.data?.user
-  } catch {
-    return false
-  }
+async function fetchTrips(): Promise<Trip[]> {
+  const res = await api.get('/trips')
+  const apiTrips: ApiTrip[] = res.data.data ?? []
+  return apiTrips.map((t) => ({
+    id: t.id,
+    destination: t.destination_address,
+    date: formatDate(t.started_at),
+    time: formatTime(t.started_at),
+    statusLabel: statusLabel(t.status, t.ended_at),
+    duration: computeDuration(t.started_at, t.ended_at),
+    maskedPlate: t.destination_address,
+    status: t.status as Trip['status'],
+  }))
 }
 
 export default function HistoryPage() {
-  const navigate = useNavigate()
-  const [apiTrips, setApiTrips] = useState<ApiTrip[]>([])
-  const [trips, setTrips] = useState<Trip[]>([])
-  const [loading, setLoading] = useState(true)
   const [deleteError, setDeleteError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
 
-  const fetchHistory = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await api.get('/trips')
-      setApiTrips(res.data.data ?? [])
-    } catch {
-      setApiTrips([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    fetchHistory()
-  }, [fetchHistory])
-
-  useEffect(() => {
-    const mapped: Trip[] = apiTrips.map((t) => ({
-      id: t.id,
-      destination: t.destination_address,
-      date: formatDate(t.started_at),
-      time: formatTime(t.started_at),
-      statusLabel: statusLabel(t.status, t.ended_at),
-      duration: computeDuration(t.started_at, t.ended_at),
-      maskedPlate: t.destination_address,
-      status: t.status as Trip['status'],
-    }))
-    setTrips(mapped)
-  }, [apiTrips])
+  const { data: trips = [], isLoading } = useQuery({
+    queryKey: ['trips'],
+    queryFn: fetchTrips,
+  })
 
   const handleDeleteTrip = async (id: string) => {
     setDeleteError('')
-    const valid = await checkSession()
-    if (!valid) {
-      navigate('/login', { replace: true })
-      return
-    }
+    setSuccessMessage('')
     try {
       await api.delete(`/trips/${id}`)
-      setApiTrips((prev) => prev.filter((t) => t.id !== id))
+      queryClient.setQueryData<Trip[]>(['trips'], (prev) => (prev ?? []).filter((t) => t.id !== id))
+      setSuccessMessage('Trip deleted')
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } }
       setDeleteError(axiosErr?.response?.data?.error ?? 'Failed to delete trip. Please try again.')
@@ -112,11 +89,8 @@ export default function HistoryPage() {
   }
 
   const handleExportTrip = async (id: string) => {
-    const valid = await checkSession()
-    if (!valid) {
-      navigate('/login', { replace: true })
-      return
-    }
+    setDeleteError('')
+    setSuccessMessage('')
     try {
       const res = await api.get(`/trips/${id}/export`)
       const tripData = res.data?.data
@@ -130,8 +104,9 @@ export default function HistoryPage() {
       a.download = `safecommute-trip-${tripIdShort}-${dateStr}.json`
       a.click()
       URL.revokeObjectURL(url)
+      setSuccessMessage('Trip data downloaded')
     } catch {
-      /* export failed silently — user can retry via the menu */
+      setDeleteError('Failed to export trip data. Please try again.')
     }
   }
 
@@ -139,12 +114,12 @@ export default function HistoryPage() {
     return (
       <TripDetailScreen
         tripId={selectedTripId}
-        onBack={() => { setSelectedTripId(null); fetchHistory() }}
+        onBack={() => { setSelectedTripId(null) }}
       />
     )
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <p className="text-gray-500">Loading...</p>
@@ -160,6 +135,8 @@ export default function HistoryPage() {
       onExportTrip={handleExportTrip}
       deleteError={deleteError}
       onClearDeleteError={() => setDeleteError('')}
+      successMessage={successMessage}
+      onClearSuccess={() => setSuccessMessage('')}
     />
   )
 }

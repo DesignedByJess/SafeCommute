@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Subscription = exports.PendingPayment = exports.AuditLog = exports.EncryptionKey = exports.EmergencyAlert = exports.TripLocation = exports.Trip = exports.Contact = exports.sequelize = void 0;
+exports.UserProfile = exports.Subscription = exports.PendingPayment = exports.AuditLog = exports.EncryptionKey = exports.EmergencyAlert = exports.TripLocation = exports.Trip = exports.Contact = exports.sequelize = void 0;
 const sequelize_1 = __importDefault(require("../database/sequelize"));
 exports.sequelize = sequelize_1.default;
 const contact_model_1 = __importDefault(require("./contact.model"));
@@ -22,6 +22,8 @@ const pending_payment_model_1 = __importDefault(require("./pending-payment.model
 exports.PendingPayment = pending_payment_model_1.default;
 const subscription_model_1 = __importDefault(require("./subscription.model"));
 exports.Subscription = subscription_model_1.default;
+const user_profile_model_1 = __importDefault(require("./user-profile.model"));
+exports.UserProfile = user_profile_model_1.default;
 contact_model_1.default.hasMany(trip_model_1.default, { foreignKey: 'contact_id', as: 'trips' });
 trip_model_1.default.belongsTo(contact_model_1.default, { foreignKey: 'contact_id', as: 'contact' });
 trip_model_1.default.hasMany(trip_location_model_1.default, { foreignKey: 'trip_id', as: 'locations' });

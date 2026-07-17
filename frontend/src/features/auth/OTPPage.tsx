@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom'
-import { Shield, ArrowLeft, X } from 'lucide-react'
+import { ArrowLeft, X } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { api } from '../../services/api'
 
@@ -65,7 +65,7 @@ export default function OTPPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Shield className="w-12 h-12 text-[#0891B2] mx-auto mb-3" />
+          <img src="/logo.png" alt="SafeCommute" className="w-12 h-12 mx-auto mb-3 object-contain" />
           <h1 className="text-2xl font-bold text-gray-900">Verify Contact</h1>
           <p className="text-sm text-gray-500 mt-1">
             Enter the 6-digit code sent to your contact

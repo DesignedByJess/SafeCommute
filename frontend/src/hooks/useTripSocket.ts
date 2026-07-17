@@ -13,10 +13,25 @@ interface UseTripSocketReturn {
   latestLocation: LocationUpdate | null
   joinTrip: (tripId: string) => void
   leaveTrip: (tripId: string) => void
-  sendLocation: (tripId: string, lat: number, lng: number, accuracy?: number) => void
+  sendLocation: (tripId: string, lat: number, lng: number, accuracy?: number, hmacKey?: string) => void
 }
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || ''
+
+async function createSignature(payload: Record<string, unknown>, key: string): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(payload))
+  const keyData = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(key),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sig = await crypto.subtle.sign('HMAC', keyData, data)
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
 
 export function useTripSocket(): UseTripSocketReturn {
   const socketRef = useRef<Socket | null>(null)
@@ -53,13 +68,25 @@ export function useTripSocket(): UseTripSocketReturn {
     socketRef.current?.emit('leave:trip', tripId)
   }, [])
 
-  const sendLocation = useCallback((tripId: string, lat: number, lng: number, accuracy?: number) => {
+  const sendLocation = useCallback(async (tripId: string, lat: number, lng: number, accuracy?: number, hmacKey?: string) => {
     const now = Date.now()
     const last = lastSend.current[tripId] ?? 0
     if (now - last < 10000) return
 
     lastSend.current[tripId] = now
-    socketRef.current?.emit('location:update', { tripId, lat, lng, accuracy })
+
+    const payload = { tripId, lat, lng, accuracy }
+    let signature = ''
+
+    if (hmacKey && window.crypto?.subtle) {
+      try {
+        signature = await createSignature(payload, hmacKey)
+      } catch {
+        signature = ''
+      }
+    }
+
+    socketRef.current?.emit('location:update', { ...payload, signature })
   }, [])
 
   return { connected, latestLocation, joinTrip, leaveTrip, sendLocation }

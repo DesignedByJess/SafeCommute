@@ -1,10 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Clock, TriangleAlert, User } from 'lucide-react'
+import { House, Clock, Warning, User } from '@phosphor-icons/react'
 
 const tabs = [
-  { key: 'home', label: 'Home', icon: Home, path: '/' },
+  { key: 'home', label: 'Home', icon: House, path: '/' },
   { key: 'history', label: 'History', icon: Clock, path: '/history' },
-  { key: 'alerts', label: 'Alerts', icon: TriangleAlert },
+  { key: 'alerts', label: 'Alerts', icon: Warning },
   { key: 'profile', label: 'Profile', icon: User, path: '/profile' },
 ]
 
@@ -38,38 +38,41 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-400 z-50">
-      <div className="flex items-start justify-around px-4 pt-5 pb-2">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key
-          const Icon = tab.icon
-          return (
-            <button
-              key={tab.key}
-              onClick={() => handleTab(tab.key)}
-              className="flex flex-col items-center gap-0.5 min-w-[56px]"
-            >
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+    <nav className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+      <div className="mx-4 mb-4 sm:mx-5 sm:mb-5 pointer-events-auto">
+        <div className="bg-white rounded-full shadow-lg shadow-black/10 border border-gray-100 px-2 py-1.5 flex items-center justify-around">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.key}
+                onClick={() => handleTab(tab.key)}
+                className={`flex flex-col items-center justify-center gap-0.5 px-5 py-2 rounded-full transition-colors w-[86px] ${
                   isActive
-                    ? 'bg-[#0891B2] -mt-3 shadow-md shadow-[#0891B2]/30'
-                    : 'bg-transparent'
+                    ? 'bg-[#0891B2]/10'
+                    : 'bg-transparent hover:bg-gray-50'
                 }`}
               >
                 <Icon
                   className={`w-5 h-5 ${
-                    isActive ? 'text-white' : 'text-gray-500'
+                    isActive ? 'text-[#0891B2]' : 'text-gray-500'
                   }`}
+                  weight={isActive ? 'fill' : 'regular'}
                 />
-              </div>
-              {isActive && (
-                <span className="text-xs font-bold text-[#0F172A]">
+                <span
+                  className={`text-xs whitespace-nowrap ${
+                    isActive
+                      ? 'font-semibold text-[#0891B2]'
+                      : 'font-medium text-gray-500'
+                  }`}
+                >
                   {tab.label}
                 </span>
-              )}
-            </button>
-          )
-        })}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </nav>
   )

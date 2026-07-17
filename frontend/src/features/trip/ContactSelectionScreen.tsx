@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Plus, ArrowRight } from 'lucide-react'
 import { StepProgress } from '../../components/StepProgress'
 import { api } from '../../services/api'
+import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
 interface Contact {
  id: string
@@ -57,35 +58,46 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
   }
  }
 
- // Get a consistent background color based on name
- const avatarColor = (name: string): string => {
-  const colors = ['bg-gray-100', 'bg-gray-200', 'bg-gray-300']
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-   hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  // Get a consistent background color based on name
+  const avatarColor = (): string => {
+    return 'bg-[#E0F2FE]'
   }
-  return colors[Math.abs(hash) % colors.length]
- }
 
  return (
-  <div className="min-h-screen bg-[#FAFAFA] flex flex-col max-w-md mx-auto w-full">
-   {/* Header */}
+   <ScreenWithBottomAction
+      hideBorder
+      actions={
+        <div>
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={!selected}
+            className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-[#0891B2] flex items-center justify-center gap-2"
+          >
+            Continue
+            <ArrowRight className="w-5 h-5" />
+          </button>
+          <p className="text-center text-xs text-gray-400 mt-3">
+            Free tier: 1 contact per trip
+          </p>
+        </div>
+      }
+    >
+      {/* Header */}
    <div className="px-6 pt-14 pb-4">
-    <div className="flex items-center mb-2">
-     <button
-      type="button"
-      onClick={onBack}
-      className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-2 focus:ring-[#0891B2] rounded-lg"
-      aria-label="Go back"
-     >
-      <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
-     </button>
-     <div className="flex-1 text-center mr-8">
-      <h1 className="text-[24px] font-bold text-[#0F172A]">Who should we notify?</h1>
-      <p className="text-sm text-gray-500 mt-0.5">They'll receive your live trip details for safety</p>
+     <div className="flex items-center mb-2">
+      <button
+       type="button"
+       onClick={onBack}
+       className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg"
+       aria-label="Go back"
+      >
+       <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+      </button>
+      <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">Who should we notify?</h1>
      </div>
+     <p className="text-sm text-gray-500 mt-0.5 text-center">They'll receive your live trip details for safety</p>
     </div>
-   </div>
 
    {/* Step progress */}
    <div className="px-6">
@@ -119,8 +131,8 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
          }`}
         >
          {/* Avatar with initials */}
-         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${avatarColor(contact.name)}`}>
-          <span className="text-sm font-bold text-gray-700">{getInitials(contact.name)}</span>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${avatarColor()}`}>
+           <span className="text-sm font-bold text-[#0891B2]">{getInitials(contact.name)}</span>
          </div>
 
          {/* Name and phone */}
@@ -157,21 +169,6 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
     </button>
    </div>
 
-   {/* Bottom action */}
-   <div className="px-6 pb-8">
-    <button
-     type="button"
-     onClick={handleContinue}
-     disabled={!selected}
-     className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#0891B2] flex items-center justify-center gap-2"
-    >
-     Continue
-     <ArrowRight className="w-5 h-5" />
-    </button>
-    <p className="text-center text-xs text-gray-400 mt-3">
-     Free tier: 1 contact per trip
-    </p>
-   </div>
-  </div>
- )
+    </ScreenWithBottomAction>
+  )
 }

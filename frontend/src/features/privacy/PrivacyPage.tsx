@@ -1,4 +1,5 @@
-import { Shield, Lock, Clock, Database } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronLeft, Shield, Lock, Clock, Database } from 'lucide-react'
 import { Card } from '../../components/Card'
 import { BottomNav } from '../../components/BottomNav'
 
@@ -26,11 +27,21 @@ const policies = [
 ]
 
 export default function PrivacyPage() {
+  const navigate = useNavigate()
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
       <div className="px-6 pt-14 pb-4">
-        <h1 className="text-2xl font-bold text-[#0F172A]">Privacy & Security</h1>
-        <p className="text-base text-gray-500 mt-1">How we protect your data</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="min-h-[32px] min-w-[32px] flex items-center justify-center text-[#0F172A]"
+            aria-label="Back"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Privacy & Security</h1>
+        </div>
+        <p className="text-base text-gray-500 mt-1 ml-[52px]">How we protect your data</p>
       </div>
 
       <div className="flex-1 px-6 space-y-3">

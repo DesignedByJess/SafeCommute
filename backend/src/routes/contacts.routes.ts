@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/authenticate';
 import { validate } from '../middleware/validate';
 import { sendSuccess, sendCreated, sendNoContent } from '../utils/response';
 import { ContactService } from '../services/contacts.service';
+import { EncryptionService } from '../services/encryption.service';
 import { createContactSchema, verifyOtpSchema } from '../middleware/validate/contact.schema';
 import { otpLimiter } from '../middleware/rate-limit';
 import { maskPhone } from '../utils/sanitize';
@@ -15,10 +16,17 @@ router.use(authenticate);
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const contacts = await contactService.listContacts(req.user!.id);
-    const masked = contacts.map((c) => ({
-      ...c.toJSON(),
-      phone_number_encrypted: maskPhone(c.phone_number_encrypted),
-    }));
+    const masked = contacts.map((c) => {
+      const json = c.toJSON();
+      let displayPhone = json.phone_number_encrypted;
+      try {
+        const decrypted = EncryptionService.decryptPhone(json.phone_number_encrypted);
+        displayPhone = maskPhone(decrypted);
+      } catch {
+        displayPhone = maskPhone(json.phone_number_encrypted);
+      }
+      return { ...json, phone_number_encrypted: displayPhone };
+    });
     sendSuccess(res, masked);
   } catch (err) { next(err); }
 });
@@ -26,10 +34,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.post('/', validate(createContactSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await contactService.addContact(req.user!.id, req.body);
+    let displayPhone = result.phone_number_encrypted;
+    try {
+      const decrypted = EncryptionService.decryptPhone(result.phone_number_encrypted);
+      displayPhone = maskPhone(decrypted);
+    } catch {
+      displayPhone = maskPhone(result.phone_number_encrypted);
+    }
     const payload: Record<string, unknown> = {
       id: result.id,
       name: result.name,
-      phone_number_encrypted: maskPhone(result.phone_number_encrypted),
+      phone_number_encrypted: displayPhone,
       relationship: result.relationship,
       verified: result.verified,
       created_at: result.created_at,
@@ -52,7 +67,12 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const contact = await contactService.getContact(req.user!.id, req.params.id);
     const data = contact.toJSON();
-    data.phone_number_encrypted = maskPhone(data.phone_number_encrypted);
+    try {
+      const decrypted = EncryptionService.decryptPhone(data.phone_number_encrypted);
+      data.phone_number_encrypted = maskPhone(decrypted);
+    } catch {
+      data.phone_number_encrypted = maskPhone(data.phone_number_encrypted);
+    }
     sendSuccess(res, data);
   } catch (err) { next(err); }
 });

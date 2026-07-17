@@ -21,7 +21,7 @@ jest.mock('../models/audit.model', () => ({
 
 jest.mock('../middleware/authenticate', () => ({
   authenticate: (req: any, _res: any, next: any) => {
-    req.user = { id: 'test-user-id', email: 'test@example.com' };
+    req.user = { id: 'test-user-id', email: 'test@example.com', phone: '+2348012345678', name: 'Test User' };
     next();
   },
 }));
@@ -35,9 +35,20 @@ jest.mock('winston', () => {
   };
 });
 
+jest.mock('../utils/config', () => ({
+  env: {
+    HMAC_SECRET: 'test-hmac-secret',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+    SUPABASE_JWT_SECRET: 'test-jwt-secret',
+    NODE_ENV: 'test',
+  },
+}));
+
 jest.mock('../services/encryption.service', () => ({
   EncryptionService: {
     decryptPhone: jest.fn().mockReturnValue('+2348012345678'),
+    encryptPhone: jest.fn().mockReturnValue('encrypted-phone'),
   },
 }));
 
@@ -45,6 +56,7 @@ jest.mock('../services/notifications/notification.service', () => ({
   NotificationService: jest.fn().mockImplementation(() => ({
     sendTripStarted: jest.fn().mockResolvedValue(undefined),
     sendEmergencyAlert: jest.fn().mockResolvedValue(undefined),
+    sendAfricaTalking: jest.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -80,35 +92,25 @@ describe('Emergency Routes', () => {
     jest.resetAllMocks();
   });
 
-  describe('POST /api/v1/emergency/:tripId/trigger', () => {
-    it('returns 201 with created alert', async () => {
+  describe('POST /api/v1/emergency/:tripId/initiate', () => {
+    it('returns 200 with expires_at', async () => {
       TripFindOne.mockResolvedValue({
         id: 'trip-1',
         user_id: 'test-user-id',
         status: 'active',
-        contact_name: 'Alice',
-        contact_phone_encrypted: 'enc123',
-        share_token: 'token123',
         save: jest.fn().mockResolvedValue(undefined),
       });
       AlertFindOne.mockResolvedValue(null);
-      AlertCreate.mockResolvedValue({
-        id: 'alert-uuid',
-        trip_id: 'trip-1',
-        lat: 6.5,
-        lng: 3.4,
-        triggered_at: new Date(),
-      });
       const app = createApp();
       const agent = request.agent(app);
       const csrfRes = await agent.get('/csrf-token');
       const csrfToken = csrfRes.body.data.csrfToken;
       const res = await agent
-        .post('/api/v1/emergency/trip-1/trigger')
+        .post('/api/v1/emergency/trip-1/initiate')
         .set('x-csrf-token', csrfToken)
-        .send({ lat: 6.5, lng: 3.4 });
-      expect(res.status).toBe(201);
-      expect(res.body.data.id).toBe('alert-uuid');
+        .send({ lat: 6.5, lng: 3.4, userName: 'Test User' });
+      expect(res.status).toBe(200);
+      expect(res.body.data.expires_at).toBeDefined();
     });
 
     it('returns 400 when trip is completed', async () => {
@@ -122,10 +124,49 @@ describe('Emergency Routes', () => {
       const csrfRes = await agent.get('/csrf-token');
       const csrfToken = csrfRes.body.data.csrfToken;
       const res = await agent
-        .post('/api/v1/emergency/trip-1/trigger')
+        .post('/api/v1/emergency/trip-1/initiate')
         .set('x-csrf-token', csrfToken)
-        .send({ lat: 6.5, lng: 3.4 });
+        .send({ lat: 6.5, lng: 3.4, userName: 'Test User' });
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /api/v1/emergency/:tripId/verify', () => {
+    it('returns 201 with created alert for valid code', async () => {
+      TripFindOne.mockResolvedValue({
+        id: 'trip-1',
+        user_id: 'test-user-id',
+        status: 'active',
+        contact_name: 'Alice',
+        contact_phone_encrypted: 'enc123',
+        save: jest.fn().mockResolvedValue(undefined),
+      });
+      AlertFindOne.mockResolvedValue(null);
+      AlertCreate.mockResolvedValue({
+        id: 'alert-uuid',
+        trip_id: 'trip-1',
+        lat: 6.5,
+        lng: 3.4,
+        triggered_at: new Date(),
+      });
+
+      // First initiate to set up the pending verification
+      const app = createApp();
+      const agent = request.agent(app);
+      const csrfRes = await agent.get('/csrf-token');
+      const csrfToken = csrfRes.body.data.csrfToken;
+
+      await agent
+        .post('/api/v1/emergency/trip-1/initiate')
+        .set('x-csrf-token', csrfToken)
+        .send({ lat: 6.5, lng: 3.4, userName: 'Test User' });
+
+      const res = await agent
+        .post('/api/v1/emergency/trip-1/verify')
+        .set('x-csrf-token', csrfToken)
+        .send({ code: '123456' });
+      expect(res.status).toBe(201);
+      expect(res.body.data.trip_id).toBe('trip-1');
     });
   });
 

@@ -1,5 +1,9 @@
 export function maskPhone(phone: string): string {
   if (phone.length < 7) return phone
+  if (phone.startsWith('+234')) {
+    const digits = phone.slice(4)
+    return `+234***${digits.slice(-4)}`
+  }
   return `${phone.slice(0, 5)}***${phone.slice(-4)}`
 }
 

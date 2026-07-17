@@ -65,7 +65,10 @@ class NotificationService {
         if (!config_1.env.AFRICA_TALKING_API_KEY) {
             throw new Error('AFRICA_TALKING_API_KEY not configured');
         }
-        const response = await fetch('https://api.africastalking.com/version1/messaging', {
+        const baseUrl = config_1.env.AFRICA_TALKING_SANDBOX
+            ? 'https://api.sandbox.africastalking.com'
+            : 'https://api.africastalking.com';
+        const response = await fetch(`${baseUrl}/version1/messaging`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -73,7 +76,7 @@ class NotificationService {
                 'Accept': 'application/json',
             },
             body: new URLSearchParams({
-                username: 'safecommute',
+                username: config_1.env.AFRICA_TALKING_USERNAME,
                 to: phone,
                 message,
             }),
