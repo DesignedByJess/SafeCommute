@@ -89,8 +89,7 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
       const supaMsg = data.msg || data.error_description || data.error || data.message;
       const supaCode = data.code || data.hint;
       const detail = supaMsg ? `: ${supaMsg}` : supaCode ? ` (code: ${supaCode})` : '';
-      // TODO: Remove _debug before production launch
-      return next(new AppError(`Signup failed${detail}`, 400, 'SIGNUP_FAILED', { supabaseStatus: supabaseRes.status, supabaseBody: data }));
+      return next(new AppError(`Signup failed${detail}`, 400, 'SIGNUP_FAILED'));
     }
 
     const ipAddress = req.ip || req.socket.remoteAddress || null;

@@ -5,11 +5,7 @@ import { logger } from '../services/audit.service';
 
 export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof AppError) {
-    const body: Record<string, unknown> = { success: false, error: err.message, code: err.code };
-    if (err.details) {
-      body._debug = err.details;
-    }
-    res.status(err.statusCode).json(body);
+    sendError(res, err.message, err.statusCode, err.code);
     return;
   }
 
