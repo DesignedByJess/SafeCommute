@@ -19,6 +19,20 @@ import { DataRetentionService } from './services/data-retention.service';
 const app = express();
 const httpServer = createServer(app);
 
+// csurf v1.11 uses cookie@0.4 which ignores sameSite option, so patch it here
+app.use((_req, res, next) => {
+  const originalSetHeader = res.setHeader.bind(res);
+  res.setHeader = function (name: string, value: string | string[]) {
+    if (name.toLowerCase() === 'set-cookie' && Array.isArray(value)) {
+      value = value.map((cookie) =>
+        cookie.startsWith('_csrf=') ? cookie.replace('SameSite=Strict', 'SameSite=None') : cookie,
+      );
+    }
+    return originalSetHeader(name, value);
+  };
+  next();
+});
+
 const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
 const corsOriginCheck = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
   if (!origin) return callback(null, true);
