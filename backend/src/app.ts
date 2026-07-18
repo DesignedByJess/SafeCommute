@@ -22,7 +22,6 @@ const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').s
 const corsOriginCheck = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
   if (!origin) return callback(null, true);
   if (configuredOrigins.includes(origin)) return callback(null, true);
-  if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return callback(null, true);
   callback(null, false);
 };
 

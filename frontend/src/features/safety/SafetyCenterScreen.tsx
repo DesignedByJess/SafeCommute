@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShieldAlert, Clock, MapPin } from 'lucide-react'
+import { ShieldWarning, Clock, MapPin } from '@phosphor-icons/react'
 import { BottomNav } from '../../components/BottomNav'
 import { ConfirmModal } from '../../components/ConfirmModal'
 
@@ -89,7 +89,7 @@ export function SafetyCenterScreen({
                 : 'border-2 border-gray-300 text-gray-400 bg-white cursor-not-allowed'
             }`}
           >
-            <ShieldAlert className="w-5 h-5" />
+            <ShieldWarning className="w-5 h-5" />
             Send Emergency Alert
           </button>
 
@@ -120,7 +120,7 @@ export function SafetyCenterScreen({
       {pastAlerts.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-16">
           <div className="w-20 h-20 rounded-2xl bg-[#DCFCE7] flex items-center justify-center mb-6">
-            <ShieldAlert className="w-10 h-10 text-[#059669]" />
+            <ShieldWarning className="w-10 h-10 text-[#059669]" />
           </div>
           <h2 className="text-xl font-bold text-[#0F172A] mb-1">No alerts sent</h2>
           <p className="text-sm text-gray-600 text-center max-w-xs">

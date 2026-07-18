@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronDown, ChevronUp, Mail, ExternalLink } from 'lucide-react'
+import { CaretLeft, CaretDown, CaretUp, EnvelopeSimple, ArrowSquareOut } from '@phosphor-icons/react'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
 const FAQS = [
@@ -33,7 +33,7 @@ export function HelpSupportScreen({ onBack }: HelpSupportScreenProps) {
             className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none"
             aria-label="Back"
           >
-            <ChevronLeft className="w-5 h-5 text-[#0F172A]" />
+            <CaretLeft className="w-5 h-5 text-[#0F172A]" />
           </button>
           <h1 className="text-2xl font-bold text-[#0F172A]">Help & Support</h1>
         </div>
@@ -45,13 +45,13 @@ export function HelpSupportScreen({ onBack }: HelpSupportScreenProps) {
           <p className="text-sm font-bold text-[#0F172A] px-1">Contact Us</p>
           <a href="mailto:support@safecommute.app" className="flex items-center gap-3 bg-white rounded-lg border border-[#F3EFEF] px-4 py-3.5 hover:bg-gray-50 transition-colors min-h-[44px]">
             <div className="w-9 h-9 rounded-lg bg-[#E0F2FE] flex items-center justify-center shrink-0">
-              <Mail className="w-4 h-4 text-[#0891B2]" />
+              <EnvelopeSimple className="w-4 h-4 text-[#0891B2]" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-[#0F172A]">Email</p>
               <p className="text-xs text-gray-500">support@safecommute.app</p>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400" />
+            <ArrowSquareOut className="w-4 h-4 text-gray-400" />
           </a>
         </div>
 
@@ -68,9 +68,9 @@ export function HelpSupportScreen({ onBack }: HelpSupportScreenProps) {
                 >
                   <span className="text-sm font-medium text-[#0F172A] flex-1 pr-2">{faq.q}</span>
                   {open ? (
-                    <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+                    <CaretUp className="w-4 h-4 text-gray-400 shrink-0" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                    <CaretDown className="w-4 h-4 text-gray-400 shrink-0" />
                   )}
                 </button>
                 {open && (

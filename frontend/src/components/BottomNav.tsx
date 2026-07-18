@@ -58,7 +58,6 @@ export function BottomNav() {
                   className={`w-5 h-5 ${
                     isActive ? 'text-[#0891B2]' : 'text-gray-500'
                   }`}
-                  weight={isActive ? 'fill' : 'regular'}
                 />
                 <span
                   className={`text-xs whitespace-nowrap ${

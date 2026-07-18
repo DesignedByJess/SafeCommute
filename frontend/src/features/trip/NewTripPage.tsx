@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, MapPin, ArrowRight } from 'lucide-react'
+import { CaretLeft, MapPin, ArrowRight } from '@phosphor-icons/react'
 import { Button } from '../../components/Button'
 import { StepProgress } from '../../components/StepProgress'
 import { api } from '../../services/api'
@@ -251,7 +251,7 @@ export default function NewTripPage() {
             className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg cursor-pointer"
             aria-label="Go back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+            <CaretLeft className="w-6 h-6 text-[#0F172A]" />
           </button>
           <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">{current.title}</h1>
         </div>

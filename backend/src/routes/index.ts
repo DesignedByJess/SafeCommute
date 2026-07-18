@@ -6,6 +6,9 @@ import emergencyRoutes from './emergency.routes';
 import shareRoutes from './share.routes';
 import paymentsRoutes from './payments.routes';
 import ocrRoutes from './ocr.routes';
+import sessionsRoutes from './sessions.routes';
+import notificationsRoutes from './notifications.routes';
+import subscriptionRoutes from './subscription.routes';
 
 const router = Router();
 
@@ -16,5 +19,8 @@ router.use('/emergency', emergencyRoutes);
 router.use('/share', shareRoutes);
 router.use('/payments', paymentsRoutes);
 router.use('/ocr', ocrRoutes);
+router.use('/sessions', sessionsRoutes);
+router.use('/notifications', notificationsRoutes);
+router.use('/subscription', subscriptionRoutes);
 
 export default router;

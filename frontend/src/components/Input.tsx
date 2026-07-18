@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, type InputHTMLAttributes } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeSlash } from '@phosphor-icons/react'
 
 const autofillStyles = `
 input:-webkit-autofill,
@@ -103,7 +103,7 @@ export function Input({
               className="absolute right-1 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 cursor-pointer select-none"
               style={{ pointerEvents: 'auto' }}
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </span>
           </div>
         )}

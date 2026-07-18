@@ -7,5 +7,6 @@ declare namespace Express {
       name?: string;
       onboarding_complete?: boolean;
     };
+    sessionId?: string;
   }
 }

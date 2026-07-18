@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Search,
+  MagnifyingGlass,
   SlidersHorizontal,
-  MoreVertical,
-  Trash2,
+  DotsThreeVertical,
+  Trash,
   Download,
-} from 'lucide-react'
+} from '@phosphor-icons/react'
 import { BottomNav } from '../../components/BottomNav'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { maskPlate } from '../../utils/format'
@@ -155,7 +155,7 @@ export function HistoryScreen({
       <div className="px-6 pb-4">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -224,7 +224,7 @@ export function HistoryScreen({
                     className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
                     aria-label="Trip options"
                   >
-                    <MoreVertical className="w-4 h-4 text-gray-400" />
+                    <DotsThreeVertical className="w-4 h-4 text-gray-400" />
                   </button>
 
                   {openMenuId === trip.id && (
@@ -239,7 +239,7 @@ export function HistoryScreen({
                         }}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 min-h-[44px]"
                       >
-                        <Trash2 className="w-4 h-4 text-gray-400" />
+                        <Trash className="w-4 h-4 text-gray-400" />
                         Delete Trip
                       </button>
                       <button

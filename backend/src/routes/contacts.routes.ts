@@ -77,6 +77,13 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   } catch (err) { next(err); }
 });
 
+router.post('/:id/resend-otp', otpLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await contactService.resendOtp(req.user!.id, req.params.id);
+    sendSuccess(res, result);
+  } catch (err) { next(err); }
+});
+
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await contactService.deleteContact(req.user!.id, req.params.id);

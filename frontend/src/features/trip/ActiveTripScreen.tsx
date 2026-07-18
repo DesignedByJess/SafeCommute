@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Car, Clock, ShieldAlert } from 'lucide-react'
+import { MapPin, Car, Clock, ShieldWarning } from '@phosphor-icons/react'
 import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -344,7 +344,7 @@ export function ActiveTripScreen({
         onClick={() => setShowEmergencyConfirm(true)}
         className="w-full flex items-center justify-center gap-2 bg-white border border-[#DC2626] text-[#DC2626] font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#DC2626]"
       >
-        <ShieldAlert className="w-5 h-5" />
+        <ShieldWarning className="w-5 h-5" />
         Send Emergency Alert
       </button>
 

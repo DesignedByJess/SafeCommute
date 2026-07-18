@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { Check } from 'lucide-react'
+import { Check } from '@phosphor-icons/react'
 
 interface SuccessAnimationProps {
   children: ReactNode

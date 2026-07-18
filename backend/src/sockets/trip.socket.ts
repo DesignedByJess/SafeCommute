@@ -1,23 +1,15 @@
-import crypto from 'crypto';
 import { Server, Socket } from 'socket.io';
 import { Trip, TripLocation } from '../models';
+import sequelize from '../database/sequelize';
 import { EncryptionService } from '../services/encryption.service';
 import { logger } from '../services/audit.service';
 import { verifyJwt } from '../utils/jwt';
-import { env } from '../utils/config';
-
-const locationRateLimit = new Map<string, number>();
+import { deriveTripHmacKey, verifyLocationSignature } from '../utils/hmac';
 
 function parseAccessToken(cookieHeader: string | undefined): string | null {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(/sb-access-token=([^;]+)/);
   return match ? match[1] : null;
-}
-
-function getTripHmacKey(shareToken: string): string {
-  return crypto.createHmac('sha256', env.HMAC_SECRET)
-    .update(shareToken)
-    .digest('hex');
 }
 
 export function registerTripSocketHandlers(io: Server): void {
@@ -72,6 +64,8 @@ export function registerTripSocketHandlers(io: Server): void {
         }
 
         socket.data.shareToken = trip.share_token;
+        socket.data.tripHmacKeys = socket.data.tripHmacKeys || {};
+        socket.data.tripHmacKeys[tripId] = deriveTripHmacKey(trip.share_token);
         socket.join(`trip:${tripId}`);
         logger.info(`Socket ${socket.id} joined trip:${tripId}`);
       } catch (err) {
@@ -85,48 +79,34 @@ export function registerTripSocketHandlers(io: Server): void {
     });
 
     socket.on('location:update', async (data: { tripId: string; lat: number; lng: number; accuracy?: number; signature: string }) => {
-      const now = Date.now();
-      const last = locationRateLimit.get(data.tripId) ?? 0;
-      if (now - last < 10000) {
-        logger.warn(`Rate limited location update for trip ${data.tripId} from socket ${socket.id}`);
-        return;
-      }
-      locationRateLimit.set(data.tripId, now);
-
       if (!data.signature) {
         logger.warn(`Rejected unsigned location update from socket ${socket.id} — disconnecting`);
         socket.disconnect();
         return;
       }
 
+      // Atomic rate-limit: UPDATE only if last_location_at is NULL or older than 10 seconds.
+      // Returns [results, metadata] — metadata.rowCount tells us if the update succeeded.
+      const [, metadata] = await sequelize.query(
+        `UPDATE trips SET last_location_at = NOW()
+         WHERE id = :tripId
+           AND (last_location_at IS NULL OR last_location_at < NOW() - INTERVAL '10 seconds')`,
+        { replacements: { tripId: data.tripId } },
+      );
+      if (!metadata || (metadata as { rowCount?: number }).rowCount === 0) {
+        return;
+      }
+
       try {
-        const trip = await Trip.findOne({
-          where: { id: data.tripId },
-          attributes: ['id', 'share_token'],
-        });
-        if (!trip) {
-          logger.warn(`Rejected location update for non-existent trip ${data.tripId}`);
+        const tripKey: string | undefined = socket.data.tripHmacKeys?.[data.tripId];
+        if (!tripKey) {
+          logger.warn(`Rejected location update for trip ${data.tripId} — not joined`);
           return;
         }
 
-        const tripKey = getTripHmacKey(trip.share_token);
         const payload = { tripId: data.tripId, lat: data.lat, lng: data.lng, accuracy: data.accuracy };
-        const expectedSig = crypto.createHmac('sha256', tripKey)
-          .update(JSON.stringify(payload))
-          .digest('hex');
 
-        if (expectedSig.length !== data.signature.length) {
-          logger.warn(`Rejected location update with invalid signature from socket ${socket.id} — disconnecting`);
-          socket.disconnect();
-          return;
-        }
-
-        let sigValid = true;
-        for (let i = 0; i < expectedSig.length; i++) {
-          if (expectedSig[i] !== data.signature[i]) sigValid = false;
-        }
-
-        if (!sigValid) {
+        if (!verifyLocationSignature(payload, data.signature, tripKey)) {
           logger.warn(`Rejected location update with invalid signature from socket ${socket.id} — disconnecting`);
           socket.disconnect();
           return;

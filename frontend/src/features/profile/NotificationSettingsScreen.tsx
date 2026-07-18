@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft, Bell, Smartphone, Mail, ShieldAlert, MapPin } from 'lucide-react'
+import { CaretLeft, Bell, DeviceMobile, EnvelopeSimple, ShieldWarning, MapPin } from '@phosphor-icons/react'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
 interface ToggleItem {
@@ -18,10 +18,10 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
   // TODO: replace with real GET/PATCH /api/v1/users/notification-settings
   const [toggles, setToggles] = useState<ToggleItem[]>([
     { key: 'push', icon: Bell, label: 'Push Notifications', description: 'In-app and browser alerts', enabled: true },
-    { key: 'sms', icon: Smartphone, label: 'SMS Alerts', description: 'Text message notifications', enabled: false },
-    { key: 'email', icon: Mail, label: 'Email Updates', description: 'Trip summaries and tips', enabled: true },
+    { key: 'sms', icon: DeviceMobile, label: 'SMS Alerts', description: 'Text message notifications', enabled: false },
+    { key: 'email', icon: EnvelopeSimple, label: 'Email Updates', description: 'Trip summaries and tips', enabled: true },
     { key: 'trip_updates', icon: MapPin, label: 'Trip Updates', description: 'When a contact views your location', enabled: true },
-    { key: 'emergency', icon: ShieldAlert, label: 'Emergency Alerts', description: 'Critical safety notifications', enabled: true },
+    { key: 'emergency', icon: ShieldWarning, label: 'Emergency Alerts', description: 'Critical safety notifications', enabled: true },
   ])
 
   const handleToggle = (key: string) => {
@@ -47,7 +47,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
             className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none"
             aria-label="Back"
           >
-            <ChevronLeft className="w-5 h-5 text-[#0F172A]" />
+            <CaretLeft className="w-5 h-5 text-[#0F172A]" />
           </button>
           <h1 className="text-2xl font-bold text-[#0F172A]">Notifications</h1>
         </div>

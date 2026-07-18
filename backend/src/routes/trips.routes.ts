@@ -28,11 +28,11 @@ router.post('/', tripCreationLimiter, validate(createTripSchema), async (req: Re
       destination_address: tripResult.destination_address,
       vehicle_plate: maskPlate(req.body.vehicle_plate),
       contact_name: tripResult.contact_name,
-      contact_phone: (tripResult as any).rawContactPhone || null,
+      contact_phone: tripResult.rawContactPhone || null,
       status: tripResult.status,
       started_at: tripResult.started_at,
       expires_at: tripResult.expires_at,
-      hmac_key: (tripResult as any).hmacKey || null,
+      hmac_key: tripResult.hmacKey || null,
     });
   } catch (err) { next(err); }
 });

@@ -9,6 +9,9 @@ import AuditLog from './audit.model';
 import PendingPayment from './pending-payment.model';
 import Subscription from './subscription.model';
 import UserProfile from './user-profile.model';
+import PendingEmergencyVerification from './pending-emergency-verification.model';
+import Session from './session.model';
+import Notification from './notification.model';
 
 Contact.hasMany(Trip, { foreignKey: 'contact_id', as: 'trips' });
 Trip.belongsTo(Contact, { foreignKey: 'contact_id', as: 'contact' });
@@ -23,6 +26,7 @@ export {
   sequelize,
   Contact, Trip, TripLocation, EmergencyAlert,
   EncryptionKey, AuditLog, PendingPayment, Subscription, UserProfile,
+  PendingEmergencyVerification, Session, Notification,
 };
 
 export default sequelize;

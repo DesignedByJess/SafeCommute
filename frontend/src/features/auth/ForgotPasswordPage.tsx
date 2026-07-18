@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Mail } from 'lucide-react'
+import { ArrowLeft, EnvelopeSimple } from '@phosphor-icons/react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { api } from '../../services/api'
@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
         <div className="w-full max-w-sm text-center">
           <div className="w-16 h-16 rounded-2xl bg-[#DCFCE7] flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-[#059669]" />
+            <EnvelopeSimple className="w-8 h-8 text-[#059669]" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
           <p className="text-sm text-gray-500 mb-8">

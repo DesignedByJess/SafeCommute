@@ -4,7 +4,7 @@ import { validate } from '../middleware/validate';
 import { sendSuccess } from '../utils/response';
 import { EmergencyService } from '../services/emergency.service';
 import { initiateEmergencySchema, verifyEmergencySchema, retractEmergencySchema } from '../middleware/validate/emergency.schema';
-import { emergencyLimiter } from '../middleware/rate-limit';
+import { emergencyLimiter, emergencyVerifyLimiter } from '../middleware/rate-limit';
 
 const router = Router();
 const emergencyService = new EmergencyService();
@@ -22,7 +22,7 @@ router.post('/:tripId/initiate', emergencyLimiter, validate(initiateEmergencySch
   } catch (err) { next(err); }
 });
 
-router.post('/:tripId/verify', validate(verifyEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:tripId/verify', emergencyVerifyLimiter, validate(verifyEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const alert = await emergencyService.verifyAndTrigger(req.user!.id, req.params.tripId, req.body.code);
     sendSuccess(res, alert, 201);

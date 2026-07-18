@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Check, Sparkles, Shield, Clock, Users, Bell, Route, EyeOff, CreditCard, Settings } from 'lucide-react'
+import { CaretLeft, Check, Sparkle, Shield, Clock, Users, Bell, Path, EyeSlash, CreditCard, Gear } from '@phosphor-icons/react'
 import { BottomNav } from '../../components/BottomNav'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { api } from '../../services/api'
 
 const freePlanFeatures = [
   '1 contact per trip',
@@ -15,20 +16,31 @@ const proBenefits = [
   { icon: Users, label: 'Up to 5 contacts per trip' },
   { icon: Clock, label: 'Unlimited trip history' },
   { icon: Bell, label: 'Priority alert delivery' },
-  { icon: Route, label: 'Route safety scores' },
-  { icon: EyeOff, label: 'Ad-free experience' },
+  { icon: Path, label: 'Route safety scores' },
+  { icon: EyeSlash, label: 'Ad-free experience' },
 ]
 
 export default function SubscriptionPage() {
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [isPremium, setIsPremium] = useState(false)
+  const [renewalDate, setRenewalDate] = useState<string | null>(null)
 
-  const isPremium = false
+  useEffect(() => {
+    api.get('/subscription').then((res) => {
+      const data = res.data?.data
+      setIsPremium(data?.plan === 'premium')
+      if (data?.expires_at) {
+        const d = new Date(data.expires_at)
+        setRenewalDate(d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }))
+      }
+    }).catch(() => {})
+  }, [])
+
+  const [showComingSoon, setShowComingSoon] = useState(false)
 
   const handleUpgrade = async () => {
-    setLoading(true)
-    setTimeout(() => setLoading(false), 1000)
+    setShowComingSoon(true)
   }
 
   return (
@@ -40,7 +52,7 @@ export default function SubscriptionPage() {
             className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#0F172A]"
             aria-label="Back"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <CaretLeft className="w-5 h-5" />
           </button>
           <h1 className="text-2xl font-bold text-[#0F172A]">Plan & Subscription</h1>
         </div>
@@ -52,11 +64,11 @@ export default function SubscriptionPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <Sparkle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
                   <p className="font-bold text-gray-900">Premium Plan</p>
-                  <p className="text-sm text-gray-500">Active — renews 15 Aug 2026</p>
+                  <p className="text-sm text-gray-500">Active{renewalDate ? ` — renews ${renewalDate}` : ''}</p>
                 </div>
               </div>
               <ul className="space-y-1.5">
@@ -85,7 +97,7 @@ export default function SubscriptionPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Next renewal</span>
-                  <span className="font-medium text-gray-900">15 Aug 2026</span>
+                  <span className="font-medium text-gray-900">{renewalDate || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Payment method</span>
@@ -98,7 +110,7 @@ export default function SubscriptionPage() {
               onClick={() => setShowCancelConfirm(true)}
               className="w-full flex items-center justify-center gap-2 py-3.5 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors rounded-2xl min-h-[44px]"
             >
-              <Settings className="w-4 h-4" />
+              <Gear className="w-4 h-4" />
               Manage Subscription
             </button>
           </>
@@ -126,7 +138,7 @@ export default function SubscriptionPage() {
 
             <div className="rounded-2xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] px-5 py-5 shadow-md">
               <div className="flex items-center gap-3 mb-3">
-                <Sparkles className="w-6 h-6 text-amber-400 shrink-0" />
+                <Sparkle className="w-6 h-6 text-amber-400 shrink-0" />
                 <div>
                   <h2 className="text-lg font-bold text-white">Upgrade to Pro</h2>
                   <p className="text-sm text-gray-300">Unlock everything SafeCommute has to offer</p>
@@ -152,12 +164,8 @@ export default function SubscriptionPage() {
               </div>
               <button
                 onClick={handleUpgrade}
-                disabled={loading}
-                className="w-full bg-white/10 border border-white/20 text-white hover:bg-white/20 font-medium rounded-lg px-4 py-2.5 text-sm min-h-[44px] inline-flex items-center justify-center cursor-pointer transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white/10 border border-white/20 text-white hover:bg-white/20 font-medium rounded-lg px-4 py-2.5 text-sm min-h-[44px] inline-flex items-center justify-center cursor-pointer transition-all active:scale-[0.97]"
               >
-                {loading ? (
-                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : null}
                 Upgrade to Pro
               </button>
             </div>
@@ -176,6 +184,17 @@ export default function SubscriptionPage() {
         variant="default"
         onConfirm={() => setShowCancelConfirm(false)}
         onCancel={() => setShowCancelConfirm(false)}
+      />
+
+      <ConfirmModal
+        open={showComingSoon}
+        title="Payment Coming Soon"
+        message="Flutterwave payment integration is coming soon. You'll be able to upgrade to Premium directly in the app."
+        confirmLabel="Got it"
+        cancelLabel=""
+        variant="default"
+        onConfirm={() => setShowComingSoon(false)}
+        onCancel={() => setShowComingSoon(false)}
       />
     </div>
   )

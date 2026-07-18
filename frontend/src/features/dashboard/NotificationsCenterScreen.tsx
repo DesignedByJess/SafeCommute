@@ -1,48 +1,77 @@
-import { useState } from 'react'
-import { ChevronLeft, Bell, ShieldAlert, MapPin, UserCheck, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CaretLeft, Bell, ShieldWarning, MapPin, UserCheck, X } from '@phosphor-icons/react'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
+import { api } from '../../services/api'
 
 interface Notification {
   id: string
-  type: 'trip_shared' | 'alert' | 'contact_arrived' | 'info'
+  type: string
   title: string
   message: string
-  timestamp: string
   read: boolean
+  related_entity_id: string | null
+  created_at: string
 }
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: '1', type: 'trip_shared', title: 'Trip Shared', message: 'You shared a trip to Ikeja with Jessica.', timestamp: '2 min ago', read: false },
-  { id: '2', type: 'contact_arrived', title: 'Contact Arrived Safely', message: 'Jessica marked the trip as complete.', timestamp: '1 hour ago', read: false },
-  { id: '3', type: 'alert', title: 'Emergency Drill', message: 'Your emergency contact drill was successful.', timestamp: '3 hours ago', read: true },
-  { id: '4', type: 'info', title: 'Privacy Tip', message: 'Review who can see your live location in settings.', timestamp: '1 day ago', read: true },
-]
 
 function getIcon(type: string) {
   switch (type) {
-    case 'trip_shared': return MapPin
-    case 'alert': return ShieldAlert
-    case 'contact_arrived': return UserCheck
-    default: return Bell
+    case 'trip_shared':
+    case 'trip_completed':
+      return MapPin
+    case 'emergency_alert':
+    case 'emergency_retracted':
+      return ShieldWarning
+    case 'contact_arrived':
+      return UserCheck
+    default:
+      return Bell
   }
 }
 
 function getIconBg(type: string) {
   switch (type) {
-    case 'trip_shared': return 'bg-[#E0F2FE]'
-    case 'alert': return 'bg-red-50'
-    case 'contact_arrived': return 'bg-green-50'
-    default: return 'bg-gray-100'
+    case 'trip_shared':
+    case 'trip_completed':
+      return 'bg-[#E0F2FE]'
+    case 'emergency_alert':
+    case 'emergency_retracted':
+      return 'bg-red-50'
+    case 'contact_arrived':
+      return 'bg-green-50'
+    default:
+      return 'bg-gray-100'
   }
 }
 
 function getIconColor(type: string) {
   switch (type) {
-    case 'trip_shared': return 'text-[#0891B2]'
-    case 'alert': return 'text-[#DC2626]'
-    case 'contact_arrived': return 'text-[#16A34A]'
-    default: return 'text-gray-500'
+    case 'trip_shared':
+    case 'trip_completed':
+      return 'text-[#0891B2]'
+    case 'emergency_alert':
+    case 'emergency_retracted':
+      return 'text-[#DC2626]'
+    case 'contact_arrived':
+      return 'text-[#16A34A]'
+    default:
+      return 'text-gray-500'
   }
+}
+
+function formatRelativeTime(iso: string): string {
+  const date = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+
+  if (diffMin < 1) return 'Just now'
+  if (diffMin < 60) return `${diffMin} min ago`
+
+  const diffHrs = Math.floor(diffMin / 60)
+  if (diffHrs < 24) return `${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`
+
+  const diffDays = Math.floor(diffHrs / 24)
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
 }
 
 interface NotificationsCenterScreenProps {
@@ -50,20 +79,46 @@ interface NotificationsCenterScreenProps {
 }
 
 export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenProps) {
-  // TODO: replace with real GET /api/v1/notifications call
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await api.get('/notifications')
+        setNotifications(res.data?.data?.notifications || [])
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
-  const handleMarkRead = (id: string) => {
+  const handleMarkRead = async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     )
+    try {
+      await api.patch(`/notifications/${id}/read`)
+    } catch {
+      // revert on failure
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: false } : n)),
+      )
+    }
   }
 
-  const handleMarkAllRead = () => {
-    // TODO: replace with real PATCH /api/v1/notifications/read-all call
+  const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    try {
+      await api.patch('/notifications/read-all')
+    } catch {
+      fetchNotifications()
+    }
   }
 
   return (
@@ -89,7 +144,7 @@ export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenP
             className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none"
             aria-label="Back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+            <CaretLeft className="w-6 h-6 text-[#0F172A]" />
           </button>
           <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">Notifications</h1>
         </div>
@@ -99,7 +154,11 @@ export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenP
       </div>
 
       <div className="px-6 pb-6">
-        {notifications.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-3 border-[#0891B2] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center pt-12">
             <Bell className="w-12 h-12 text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm">No notifications yet</p>
@@ -133,7 +192,7 @@ export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenP
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
-                    <p className="text-[11px] text-gray-400 mt-1.5">{n.timestamp}</p>
+                    <p className="text-[11px] text-gray-400 mt-1.5">{formatRelativeTime(n.created_at)}</p>
                   </div>
                 </div>
               )

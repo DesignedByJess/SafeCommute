@@ -1,4 +1,4 @@
-import { MapPin, Car, UserCheck, Phone, Check, Wifi } from 'lucide-react'
+import { MapPin, Car, UserCheck, Phone, Check, Wifi } from '@phosphor-icons/react'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
 interface TripSharedSuccessScreenProps {

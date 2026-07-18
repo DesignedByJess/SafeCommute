@@ -37,8 +37,12 @@ import { env } from '../utils/config';
 import { auditLog, logger } from '../services/audit.service';
 import { AppError } from '../utils/errors';
 import { UserProfile } from '../models/user-profile.model';
+import { SessionService } from '../services/session.service';
+import { InboxService } from '../services/notification.service';
 
 const router = Router();
+const sessionService = new SessionService();
+const inboxService = new InboxService();
 
 router.post('/signup', signupLimiter, validate(signupSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -78,13 +82,11 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
     try {
       data = JSON.parse(rawBody) as SupabaseSignupResponse;
     } catch {
-      console.error('[SIGNUP ERROR] Supabase returned non-JSON:', supabaseRes.status, rawBody.slice(0, 500));
       logger.error('Supabase signup returned non-JSON', { status: supabaseRes.status, body: rawBody.slice(0, 500) });
       return next(new AppError('Authentication service returned an unexpected response. Please try again.', 502, 'AUTH_SERVICE_BAD_RESPONSE'));
     }
 
     if (!supabaseRes.ok) {
-      console.error('[SIGNUP ERROR] Supabase responded with', supabaseRes.status, JSON.stringify(data));
       logger.error('Supabase signup rejected', { status: supabaseRes.status, body: data });
       const supaMsg = data.msg || data.error_description || data.error || data.message;
       const supaCode = data.code || data.hint;
@@ -133,14 +135,14 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
     res.cookie('sb-access-token', loginData.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7 * 1000,
     });
 
     res.cookie('sb-refresh-token', loginData.refresh_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30 * 1000,
     });
 
@@ -154,8 +156,12 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
       where: { user_id: loginData.user.id },
       defaults: { user_id: loginData.user.id, onboarding_complete: false },
     }).catch((err) => logger.error('Failed to create user profile after signup', { error: err }));
+
+    // Fire-and-forget: create session
+    sessionService.createOrUpdate(loginData.user.id, userAgent, ipAddress).catch((err) =>
+      logger.error('Failed to create session after signup', { error: err })
+    );
   } catch (err) {
-    console.error('[SIGNUP ERROR] Unhandled exception:', err);
     logger.error('Unhandled signup error', { error: err });
     next(err);
   }
@@ -246,14 +252,14 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
     res.cookie('sb-access-token', data.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7 * 1000,
     });
 
     res.cookie('sb-refresh-token', data.refresh_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30 * 1000,
     });
 
@@ -264,6 +270,17 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
     }
 
     sendSuccess(res, { user: { id: data.user.id, email: data.user.email, onboarding_complete: onboardingComplete }, access_token: data.access_token });
+
+    // Fire-and-forget: create session and notify
+    sessionService.createOrUpdate(data.user.id, userAgent, ipAddress).then((session) => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const UAParser = require('ua-parser-js');
+      const parser = new UAParser(userAgent || '');
+      const browser = parser.getBrowser();
+      const os = parser.getOS();
+      const deviceName = `${browser.name || 'Browser'} on ${os.name || 'Unknown OS'}`;
+      return inboxService.notifyNewSession(data.user.id, deviceName, session.id);
+    }).catch((err) => logger.error('Failed to create session/notification after login', { error: err }));
   } catch (err) {
     next(err);
   }
@@ -357,21 +374,21 @@ router.post('/logout', authenticate, async (req: Request, res: Response, next: N
     res.clearCookie('sb-access-token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       path: '/',
     });
 
     res.clearCookie('sb-refresh-token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       path: '/',
     });
 
     res.clearCookie('_csrf', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       path: '/',
     });
 

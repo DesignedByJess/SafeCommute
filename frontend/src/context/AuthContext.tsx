@@ -81,31 +81,6 @@ export async function saveProfilePhoto(dataUrl: string | null | undefined, userI
   }
 }
 
-function localStoragePhotoKey(userId: string | undefined): string {
-  return userId ? `${PROFILE_PHOTO_KEY}_${userId}` : PROFILE_PHOTO_KEY
-}
-
-export function loadProfilePhotoSync(userId?: string): string | null {
-  try {
-    const raw = localStorage.getItem(localStoragePhotoKey(userId))
-    return raw ?? null
-  } catch {
-    return null
-  }
-}
-
-export function saveProfilePhotoSync(dataUrl: string | null | undefined, userId?: string): void {
-  try {
-    if (dataUrl) {
-      localStorage.setItem(localStoragePhotoKey(userId), dataUrl)
-    } else {
-      localStorage.removeItem(localStoragePhotoKey(userId))
-    }
-  } catch {
-    /* storage full — silently ignore */
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)

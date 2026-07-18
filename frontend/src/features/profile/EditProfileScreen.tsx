@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ChevronLeft, Camera } from 'lucide-react'
+import { CaretLeft, Camera } from '@phosphor-icons/react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
@@ -123,7 +123,7 @@ export function EditProfileScreen({
             className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#0F172A]"
             aria-label="Back"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <CaretLeft className="w-5 h-5" />
           </button>
           <h1 className="text-2xl font-bold text-[#0F172A]">Edit Profile</h1>
         </div>

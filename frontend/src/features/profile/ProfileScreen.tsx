@@ -2,15 +2,15 @@ import { useNavigate } from 'react-router-dom'
 import {
   Users,
   CreditCard,
-  ShieldAlert,
-  LogOut,
-  ChevronRight,
-  Sparkles,
-  Pencil,
+  ShieldWarning,
+  SignOut,
+  CaretRight,
+  Sparkle,
+  PencilSimple,
   Monitor,
   Bell,
-  LifeBuoy,
-} from 'lucide-react'
+  Lifebuoy,
+} from '@phosphor-icons/react'
 import { BottomNav } from '../../components/BottomNav'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { useState } from 'react'
@@ -37,13 +37,13 @@ export function ProfileScreen({
   const group1 = [
     { icon: Users, label: 'Trusted Contacts', onClick: () => navigate('/contacts') },
     { icon: CreditCard, label: 'Plan & Subscription', onClick: () => navigate('/subscription') },
-    { icon: ShieldAlert, label: 'Privacy Policy', onClick: () => navigate('/privacy') },
+    { icon: ShieldWarning, label: 'Privacy Policy', onClick: () => navigate('/privacy') },
   ]
 
   const group2 = [
     { icon: Monitor, label: 'Trusted Devices', onClick: () => navigate('/profile/devices') },
     { icon: Bell, label: 'Notification Settings', onClick: () => navigate('/profile/notifications') },
-    { icon: LifeBuoy, label: 'Help & Support', onClick: () => navigate('/profile/help') },
+    { icon: Lifebuoy, label: 'Help & Support', onClick: () => navigate('/profile/help') },
   ]
 
   return (
@@ -55,7 +55,7 @@ export function ProfileScreen({
             className="w-9 h-9 rounded-full border border-gray-300 bg-white flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
             aria-label="Edit profile"
           >
-            <Pencil className="w-4 h-4 text-gray-500" />
+            <PencilSimple className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
@@ -82,7 +82,7 @@ export function ProfileScreen({
 
       <div className="px-6 -mt-4">
         <div className="w-full rounded-2xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] px-5 py-4 flex items-center gap-4">
-          <Sparkles className="w-6 h-6 text-amber-400 shrink-0" />
+          <Sparkle className="w-6 h-6 text-amber-400 shrink-0" />
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-white">Upgrade to Pro</h2>
             <p className="text-sm text-gray-300 mt-0.5">
@@ -93,7 +93,7 @@ export function ProfileScreen({
             className="shrink-0 flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full py-2 px-4 min-h-[44px] focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
           >
             <span className="text-sm font-bold text-white">Upgrade</span>
-            <ChevronRight className="w-4 h-4 text-white" />
+            <CaretRight className="w-4 h-4 text-white" />
           </button>
         </div>
       </div>
@@ -112,7 +112,7 @@ export function ProfileScreen({
                 <span className="flex-1 text-left text-sm font-medium text-[#0F172A]">
                   {item.label}
                 </span>
-                <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                <CaretRight className="w-4 h-4 text-gray-400 shrink-0" />
               </button>
             )
           })}
@@ -133,7 +133,7 @@ export function ProfileScreen({
                 <span className="flex-1 text-left text-sm font-medium text-[#0F172A]">
                   {item.label}
                 </span>
-                <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                <CaretRight className="w-4 h-4 text-gray-400 shrink-0" />
               </button>
             )
           })}
@@ -145,7 +145,7 @@ export function ProfileScreen({
           onClick={() => setShowSignOutConfirm(true)}
           className="flex items-center gap-3 px-4 py-3.5 min-h-[52px] transition-colors hover:bg-gray-100 rounded-2xl w-full"
         >
-          <LogOut className="w-5 h-5 text-[#374151] shrink-0" />
+          <SignOut className="w-5 h-5 text-[#374151] shrink-0" />
           <span className="text-sm font-medium text-[#374151]">Logout</span>
         </button>
       </div>

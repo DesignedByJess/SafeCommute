@@ -1,8 +1,10 @@
 import crypto from 'crypto';
+import { env } from '../utils/config';
 
-// Derive 32-byte keys for AES-256 from environment variables using SHA-256
-const MASTER_KEY = crypto.createHash('sha256').update(process.env.MASTER_KEY || 'default-master-key').digest();
-const PHONE_KEY = crypto.createHash('sha256').update(process.env.PHONE_KEY || 'default-phone-key').digest();
+// Derive 32-byte keys for AES-256 from validated environment variables using SHA-256.
+// env.MASTER_KEY / env.PHONE_KEY are required — config.ts throws at startup if missing.
+const MASTER_KEY = crypto.createHash('sha256').update(env.MASTER_KEY).digest();
+const PHONE_KEY = crypto.createHash('sha256').update(env.PHONE_KEY).digest();
 
 export class EncryptionService {
   /**

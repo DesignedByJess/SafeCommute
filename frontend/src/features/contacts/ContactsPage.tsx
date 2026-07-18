@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Plus, ChevronRight, Trash2 } from 'lucide-react'
+import { CaretLeft, Plus, CaretRight, Trash } from '@phosphor-icons/react'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { Modal } from '../../components/Modal'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { OtpVerifyModal } from './OtpVerifyModal'
 import { api } from '../../services/api'
 import { maskPhone } from '../../utils/format'
 import { sanitize } from '../../utils/sanitize'
@@ -34,6 +35,10 @@ export default function ContactsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
+
+  const [otpContactId, setOtpContactId] = useState('')
+  const [otpContactName, setOtpContactName] = useState('')
+  const [otpDevOtp, setOtpDevOtp] = useState<string | undefined>()
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -70,15 +75,16 @@ export default function ContactsPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
+    const contactName = name
     try {
       const res = await api.post('/contacts', { name, phone: formatPhone(phone), relationship: relationship || undefined })
       resetForm()
       setShowAddModal(false)
       const newContact = res.data.data
       if (newContact?.id) {
-        navigate(`/contacts/${newContact.id}/verify-otp`, {
-          state: { devOtp: newContact.devOtp, contactName: name },
-        })
+        setOtpContactId(newContact.id)
+        setOtpContactName(contactName)
+        setOtpDevOtp(newContact.devOtp)
       }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } }
@@ -96,6 +102,7 @@ export default function ContactsPage() {
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingContact) return
+    const contactName = name
     try {
       const res = await api.put(`/contacts/${editingContact.id}`, { name, phone, relationship: relationship || undefined })
       setEditingContact(null)
@@ -103,9 +110,9 @@ export default function ContactsPage() {
       fetchContacts()
       const updated = res.data.data
       if (updated?.phoneChanged && updated?.id) {
-        navigate(`/contacts/${updated.id}/verify-otp`, {
-          state: { devOtp: updated.devOtp, contactName: name },
-        })
+        setOtpContactId(updated.id)
+        setOtpContactName(contactName)
+        setOtpDevOtp(updated.devOtp)
       }
     } catch {
       /* handle error */
@@ -124,6 +131,19 @@ export default function ContactsPage() {
     }
   }
 
+  const handleOtpSuccess = () => {
+    setOtpContactId('')
+    setOtpContactName('')
+    setOtpDevOtp(undefined)
+    fetchContacts()
+  }
+
+  const handleOtpClose = () => {
+    setOtpContactId('')
+    setOtpContactName('')
+    setOtpDevOtp(undefined)
+  }
+
   return (
     <>
     <div className="h-dvh bg-[#FAFAFA] flex flex-col">
@@ -135,7 +155,7 @@ export default function ContactsPage() {
               className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#0F172A]"
               aria-label="Back"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <CaretLeft className="w-5 h-5" />
             </button>
             <h1 className="text-2xl font-bold text-[#0F172A]">Trusted Contacts</h1>
           </div>
@@ -161,7 +181,7 @@ export default function ContactsPage() {
                       <p className="font-semibold text-gray-900">{sanitize(contact.name)}</p>
                       <p className="text-sm text-gray-500">{maskPhone(contact.phone_number_encrypted)}</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
+                    <CaretRight className="w-5 h-5 text-gray-400 shrink-0" />
                   </button>
                 )
               })}
@@ -232,7 +252,7 @@ export default function ContactsPage() {
             onClick={() => editingContact && setDeleteTarget(editingContact)}
             className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-gray-500 hover:text-[#DC2626] transition-colors min-h-[44px]"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash className="w-4 h-4" />
             Delete Contact
           </button>
         </form>
@@ -247,6 +267,16 @@ export default function ContactsPage() {
         variant="default"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <OtpVerifyModal
+        key={otpContactId}
+        open={otpContactId !== ''}
+        contactId={otpContactId}
+        contactName={otpContactName}
+        devOtp={otpDevOtp}
+        onClose={handleOtpClose}
+        onSuccess={handleOtpSuccess}
       />
     </>
   )

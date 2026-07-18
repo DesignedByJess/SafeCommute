@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import { LogIn } from 'lucide-react'
+import { SignIn } from '@phosphor-icons/react'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './features/auth/LoginPage'
 import SignupPage from './features/auth/SignupPage'
@@ -52,8 +52,7 @@ function AuthGate({ isReady, children }: { isReady: boolean; children: React.Rea
           </p>
           <button
             onClick={() => { clearAuthError(); window.location.reload() }}
-            className="px-6 py-3 rounded-lg font-medium transition-colors"
-            style={{ backgroundColor: '#0891B2', color: 'white' }}
+            className="px-6 py-3 rounded-lg font-medium transition-colors bg-[#0891B2] text-white"
           >
             Try Again
           </button>
@@ -76,7 +75,7 @@ function SessionExpiredBanner() {
     <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4">
       <div className="text-center max-w-sm">
         <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-          <LogIn className="w-8 h-8 text-amber-600" />
+          <SignIn className="w-8 h-8 text-amber-600" />
         </div>
         <h1 className="text-xl font-bold text-gray-900 mb-2">Session Expired</h1>
         <p className="text-sm text-gray-500 mb-6">
@@ -89,7 +88,7 @@ function SessionExpiredBanner() {
           }}
           className="inline-flex items-center gap-2 bg-[#0891B2] text-white font-bold text-base rounded-2xl px-6 py-3 min-h-[48px] focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
         >
-          <LogIn className="w-5 h-5" />
+          <SignIn className="w-5 h-5" />
           Sign In Again
         </button>
       </div>

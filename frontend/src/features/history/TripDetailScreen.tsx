@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
- ChevronLeft, MapPin, Car, UserCheck, Clock, ShieldAlert,
- Download, Trash2,
-} from 'lucide-react'
+ CaretLeft, MapPin, Car, UserCheck, Clock, ShieldWarning,
+ Download, Trash,
+} from '@phosphor-icons/react'
 import { api } from '../../services/api'
 import { formatDuration } from '../../utils/format'
 import { ConfirmModal } from '../../components/ConfirmModal'
@@ -179,7 +179,7 @@ export function TripDetailScreen({ tripId, onBack }: TripDetailScreenProps) {
    : trip.contact_name },
   { icon: Clock, label: trip.ended_at ? 'Duration' : 'Started at',
    value: trip.ended_at ? duration : formatTimeOnly(trip.started_at) },
-  { icon: ShieldAlert, label: 'Safety notes', value: safetyValue },
+  { icon: ShieldWarning, label: 'Safety notes', value: safetyValue },
  ]
 
   return (
@@ -203,7 +203,7 @@ export function TripDetailScreen({ tripId, onBack }: TripDetailScreenProps) {
             onClick={() => setDeleteOpen(true)}
             className="w-full flex items-center justify-center gap-2 border border-[#DC2626] text-[#DC2626] font-semibold text-sm rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#DC2626]"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash className="w-5 h-5" />
             Delete Trip
           </button>
         </div>
@@ -219,7 +219,7 @@ export function TripDetailScreen({ tripId, onBack }: TripDetailScreenProps) {
               className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg"
               aria-label="Go back"
             >
-              <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+              <CaretLeft className="w-6 h-6 text-[#0F172A]" />
             </button>
             <div className="flex-1 text-center mr-8">
               <h1 className="text-[24px] font-bold text-[#0F172A] truncate">{trip.destination_address}</h1>
@@ -269,7 +269,7 @@ export function TripDetailScreen({ tripId, onBack }: TripDetailScreenProps) {
           <div className="px-6 pb-4">
             <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <ShieldAlert className="w-4 h-4 text-[#DC2626]" />
+                <ShieldWarning className="w-4 h-4 text-[#DC2626]" />
                 <span className="text-sm font-bold text-[#DC2626]">Emergency Alert</span>
               </div>
               <p className="text-xs text-gray-600 mb-1">

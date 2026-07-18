@@ -53,7 +53,15 @@ export default function DashboardPage() {
     queryKey: ['trips', 'recent'],
     queryFn: fetchRecentTrips,
   })
-  const unreadNotifications = 0
+  const { data: unreadData } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: async () => {
+      const res = await api.get('/notifications/unread-count')
+      return res.data?.data?.count ?? 0
+    },
+    refetchInterval: 30000,
+  })
+  const unreadNotifications = unreadData ?? 0
 
   if (isLoading) {
     return (

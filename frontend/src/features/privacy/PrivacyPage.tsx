@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Shield, Lock, Clock, Database } from 'lucide-react'
+import { CaretLeft, Shield, Lock, Clock, Database } from '@phosphor-icons/react'
 import { Card } from '../../components/Card'
 import { BottomNav } from '../../components/BottomNav'
 
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
             className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#0F172A]"
             aria-label="Back"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <CaretLeft className="w-5 h-5" />
           </button>
           <h1 className="text-2xl font-bold text-[#0F172A]">Privacy & Security</h1>
         </div>

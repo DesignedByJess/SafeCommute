@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, UserPlus, MapPin, ArrowLeft, Check, Phone, ChevronRight, ChevronDown } from 'lucide-react'
+import { Shield, UserPlus, MapPin, ArrowLeft, Check, Phone, CaretRight, CaretDown } from '@phosphor-icons/react'
 import { Button } from '../../components/Button'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { OnboardingStepper } from '../../components/OnboardingStepper'
@@ -28,7 +28,7 @@ function Step1Welcome({ onNext, onSkip }: StepProps) {
       actions={
         <div className="space-y-3">
           <Button onClick={onNext} size="lg" className="w-full rounded-2xl py-3 text-base font-semibold min-h-[48px]">
-            Get Started <ChevronRight className="w-5 h-5 ml-1" />
+            Get Started <CaretRight className="w-5 h-5 ml-1" />
           </Button>
           <div className="flex justify-center">
             <button onClick={onSkip} className="text-xs text-gray-400 hover:text-gray-600 min-w-[44px] min-h-[44px] flex items-center justify-center">
@@ -200,7 +200,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
             {error && <p className="text-sm text-red-600">{String(error)}</p>}

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { X } from 'lucide-react'
+import { X } from '@phosphor-icons/react'
 
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'

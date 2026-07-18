@@ -1,26 +1,11 @@
 import crypto from 'crypto';
-import { Trip, EmergencyAlert } from '../models';
+import { Trip, EmergencyAlert, PendingEmergencyVerification } from '../models';
 import { auditLog, logger } from './audit.service';
 import { EncryptionService } from './encryption.service';
 import { env } from '../utils/config';
 import { AppError } from '../utils/errors';
 import { NotificationService } from './notifications/notification.service';
-
-interface PendingVerification {
-  code: string;
-  expiresAt: Date;
-  attempts: number;
-  userId: string;
-  tripId: string;
-  lat: number;
-  lng: number;
-  accuracy?: number;
-  userName: string;
-  ip: string;
-  userAgent: string;
-}
-
-const pendingMap = new Map<string, PendingVerification>();
+import { InboxService } from './notification.service';
 
 function generateCode(): string {
   return crypto.randomInt(100000, 999999).toString();
@@ -32,6 +17,7 @@ function devCode(): string {
 
 export class EmergencyService {
   private notificationService = new NotificationService();
+  private inboxService = new InboxService();
 
   async initiateEmergency(
     userId: string,
@@ -55,18 +41,19 @@ export class EmergencyService {
     const code = env.NODE_ENV !== 'production' ? devCode() : generateCode();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    pendingMap.set(tripId, {
+    // Upsert into DB — survives restarts and works across instances
+    await PendingEmergencyVerification.upsert({
+      trip_id: tripId,
       code,
-      expiresAt,
+      expires_at: expiresAt,
       attempts: 0,
-      userId,
-      tripId,
+      user_id: userId,
       lat: input.lat,
       lng: input.lng,
       accuracy: input.accuracy,
-      userName: input.userName,
-      ip: meta.ip,
-      userAgent: meta.userAgent,
+      user_name: input.userName,
+      ip_address: meta.ip,
+      user_agent: meta.userAgent,
     });
 
     if (env.NODE_ENV !== 'production') {
@@ -94,27 +81,28 @@ export class EmergencyService {
   }
 
   async verifyAndTrigger(userId: string, tripId: string, code: string) {
-    const pending = pendingMap.get(tripId);
+    const pending = await PendingEmergencyVerification.findByPk(tripId);
     if (!pending) throw new AppError('No pending emergency verification. Please start again.', 400, 'NO_PENDING');
-    if (pending.userId !== userId) throw new AppError('Unauthorized', 403, 'FORBIDDEN');
+    if (pending.user_id !== userId) throw new AppError('Unauthorized', 403, 'FORBIDDEN');
 
-    if (new Date() > pending.expiresAt) {
-      pendingMap.delete(tripId);
+    if (new Date() > pending.expires_at) {
+      await pending.destroy();
       throw new AppError('Verification code has expired. Please start again.', 400, 'CODE_EXPIRED');
     }
 
-    pending.attempts++;
+    pending.attempts += 1;
     if (pending.code !== code) {
       if (pending.attempts >= 3) {
-        pendingMap.delete(tripId);
+        await pending.destroy();
         throw new AppError('Too many incorrect attempts. Please start again.', 400, 'TOO_MANY_ATTEMPTS');
       }
+      await pending.save();
       const remaining = 3 - pending.attempts;
       throw new AppError(`Incorrect code. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`, 400, 'INVALID_CODE');
     }
 
-    // Code verified — remove from pending
-    pendingMap.delete(tripId);
+    // Code verified — remove from DB
+    await pending.destroy();
 
     const trip = await Trip.findOne({ where: { id: tripId, user_id: userId } });
     if (!trip) throw new AppError('Trip not found', 404, 'NOT_FOUND');
@@ -125,9 +113,9 @@ export class EmergencyService {
       lat: pending.lat,
       lng: pending.lng,
       accuracy: pending.accuracy || null,
-      ip_address: pending.ip || null,
-      user_agent: pending.userAgent || null,
-      verified: false,
+      ip_address: pending.ip_address || null,
+      user_agent: pending.user_agent || null,
+      verified: true,
     });
 
     trip.status = 'emergency';
@@ -138,14 +126,17 @@ export class EmergencyService {
       alertId: alert.id,
       lat: pending.lat,
       lng: pending.lng,
-      ip: pending.ip,
-      userAgent: pending.userAgent,
+      ip: pending.ip_address,
+      userAgent: pending.user_agent,
       accuracy: pending.accuracy,
     });
 
+    // In-app notification — fire-and-forget
+    this.inboxService.notifyEmergencyTriggered(userId, pending.user_name, alert.id);
+
     // Send alert to contact
     const timeStr = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true });
-    const contactMessage = `🚨 EMERGENCY: ${pending.userName} needs help! Last location: https://maps.google.com/?q=${pending.lat},${pending.lng}. Alert sent at ${timeStr}. — SafeCommute`;
+    const contactMessage = `🚨 EMERGENCY: ${pending.user_name} needs help! Last location: https://maps.google.com/?q=${pending.lat},${pending.lng}. Alert sent at ${timeStr}. — SafeCommute`;
 
     try {
       const contactPhone = EncryptionService.decryptPhone(trip.contact_phone_encrypted);
@@ -169,12 +160,15 @@ export class EmergencyService {
     alert.retraction_reason = reason || null;
     await alert.save();
 
-    const trip = (alert as any).trip as Trip | undefined;
+    const trip = (alert as { trip?: Trip }).trip;
     if (trip && trip.status === 'emergency') {
       await trip.update({ status: 'active' });
     }
 
     await auditLog(userId, 'emergency_retracted', { alertId: alert.id, tripId: alert.trip_id, reason });
+
+    // In-app notification — fire-and-forget
+    this.inboxService.notifyEmergencyRetracted(userId, alert.id);
 
     // Send retraction SMS to contact
     const timeStr = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true });

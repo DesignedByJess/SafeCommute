@@ -41,6 +41,13 @@ export const emergencyLimiter = rateLimit({
   message: { success: false, error: 'Emergency alert limit reached (3 per 24 hours)', code: 'RATE_LIMITED' },
 });
 
+export const emergencyVerifyLimiter = rateLimit({
+  ...defaults,
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, error: 'Too many verification attempts, try again later', code: 'RATE_LIMITED' },
+});
+
 export const signupLimiter = rateLimit({
   ...defaults,
   windowMs: 60 * 60 * 1000,

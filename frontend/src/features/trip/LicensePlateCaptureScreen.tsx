@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
-import { ChevronLeft, CheckCircle } from 'lucide-react'
+import { CaretLeft, CheckCircle } from '@phosphor-icons/react'
 import Tesseract from 'tesseract.js'
 import { StepProgress } from '../../components/StepProgress'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
@@ -214,7 +214,7 @@ export function LicensePlateCaptureScreen({
               className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg cursor-pointer"
               aria-label="Go back"
             >
-              <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+              <CaretLeft className="w-6 h-6 text-[#0F172A]" />
             </button>
             <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">
               Scan License Plate

@@ -23,6 +23,7 @@ export interface TripAttributes {
   started_at?: Date;
   ended_at?: Date | null;
   expires_at: Date;
+  last_location_at?: Date | null;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -49,6 +50,7 @@ export class Trip extends Model<TripAttributes> implements TripAttributes {
   public readonly started_at!: Date;
   public ended_at!: Date | null;
   public expires_at!: Date;
+  public last_location_at!: Date | null;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -145,6 +147,10 @@ Trip.init(
     expires_at: {
       type: DataTypes.DATE,
       allowNull: false,
+    },
+    last_location_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,

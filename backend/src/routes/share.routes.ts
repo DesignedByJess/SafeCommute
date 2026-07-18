@@ -1,10 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { Op } from 'sequelize';
 import { Trip, TripLocation } from '../models';
-import { sendSuccess, sendError } from '../utils/response';
+import { sendSuccess } from '../utils/response';
 import { NotFoundError, ShareLinkExpiredError, AppError } from '../utils/errors';
 import { shareLinkLimiter } from '../middleware/rate-limit';
 import { auditLog } from '../services/audit.service';
 import { maskPlate } from '../utils/sanitize';
+import { EncryptionService } from '../services/encryption.service';
 
 const router = Router();
 
@@ -15,7 +17,7 @@ router.get('/:share_token', shareLinkLimiter, async (req: Request, res: Response
       attributes: [
         'id', 'share_token', 'destination_address', 'destination_lat', 'destination_lng',
         'contact_name', 'status', 'started_at', 'expires_at', 'share_link_expires_at',
-        'share_link_revoked', 'vehicle_plate_encrypted',
+        'share_link_revoked', 'vehicle_plate_encrypted', 'vehicle_plate_data_key_encrypted',
       ],
     });
 
@@ -29,6 +31,15 @@ router.get('/:share_token', shareLinkLimiter, async (req: Request, res: Response
 
     await auditLog(null, 'share_link_accessed', { shareToken: req.params.share_token });
 
+    let maskedPlate = '***';
+    try {
+      const plate = EncryptionService.decryptPlate(
+        trip.vehicle_plate_encrypted,
+        trip.vehicle_plate_data_key_encrypted,
+      );
+      maskedPlate = maskPlate(plate);
+    } catch { /* decryption failed — return masked placeholder */ }
+
     sendSuccess(res, {
       id: trip.id,
       destination_address: trip.destination_address,
@@ -38,7 +49,7 @@ router.get('/:share_token', shareLinkLimiter, async (req: Request, res: Response
       status: trip.status,
       started_at: trip.started_at,
       expires_at: trip.expires_at,
-      vehicle_plate: maskPlate(trip.vehicle_plate_encrypted),
+      vehicle_plate: maskedPlate,
     });
   } catch (err) { next(err); }
 });
@@ -58,8 +69,14 @@ router.get('/:share_token/locations', shareLinkLimiter, async (req: Request, res
       throw new ShareLinkExpiredError();
     }
 
+    const since = req.query.since as string | undefined;
+    const where: Record<string, unknown> = { trip_id: trip.id };
+    if (since) {
+      where.recorded_at = { [Op.gt]: new Date(since) };
+    }
+
     const locations = await TripLocation.findAll({
-      where: { trip_id: trip.id },
+      where,
       attributes: ['lat', 'lng', 'accuracy', 'recorded_at'],
       order: [['recorded_at', 'ASC']],
     });

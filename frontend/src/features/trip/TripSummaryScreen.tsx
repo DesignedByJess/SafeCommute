@@ -1,4 +1,4 @@
-import { ChevronLeft, MapPin, Car, UserCheck, ShieldAlert, Pencil, Send } from 'lucide-react'
+import { CaretLeft, MapPin, Car, UserCheck, ShieldWarning, PencilSimple, PaperPlaneRight } from '@phosphor-icons/react'
 import { StepProgress } from '../../components/StepProgress'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
@@ -31,7 +31,7 @@ export function TripSummaryScreen({
     { icon: MapPin, label: 'Going to', value: destination, step: 1 },
     { icon: Car, label: 'Vehicle', value: vehiclePlate, step: 2 },
     { icon: UserCheck, label: 'Sharing with', value: contactName, step: 3 },
-    { icon: ShieldAlert, label: 'Safety notes', value: safetyValue, step: 4 },
+    { icon: ShieldWarning, label: 'Safety notes', value: safetyValue, step: 4 },
   ]
 
   return (
@@ -53,7 +53,7 @@ export function TripSummaryScreen({
             {loading ? (
               <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Send className="w-5 h-5" />
+              <PaperPlaneRight className="w-5 h-5" />
             )}
             Share Trip & Start Tracking
           </button>
@@ -69,7 +69,7 @@ export function TripSummaryScreen({
             className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg cursor-pointer"
             aria-label="Go back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+            <CaretLeft className="w-6 h-6 text-[#0F172A]" />
           </button>
           <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">Ready to share?</h1>
         </div>
@@ -100,7 +100,7 @@ export function TripSummaryScreen({
                     className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
                     aria-label={`Edit ${row.label.toLowerCase()}`}
                   >
-                    <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                    <PencilSimple className="w-3.5 h-3.5 text-gray-400" />
                   </button>
                 )}
               </div>

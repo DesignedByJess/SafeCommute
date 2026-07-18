@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Bell, Shield, ChevronRight, LocateFixed, ArrowRight, Clock } from 'lucide-react'
+import { MapPin, Bell, Shield, CaretRight, CrosshairSimple, ArrowRight, Clock } from '@phosphor-icons/react'
 import { BottomNav } from '../../components/BottomNav'
 
 interface RecentTrip {
@@ -78,7 +78,7 @@ export function HomeDashboard({
               )}
             </button>
             <div className="flex items-center gap-1.5">
-              <LocateFixed className="w-[18px] h-[18px] text-[#0891B2]" />
+              <CrosshairSimple className="w-[18px] h-[18px] text-[#0891B2]" />
               <h1 className="text-xl font-bold text-[#0F172A]">{userLocation}</h1>
             </div>
           </div>
@@ -130,7 +130,7 @@ export function HomeDashboard({
               onClick={() => navigate('/history')}
               className="text-sm font-medium text-[#0891B2] flex items-center gap-1 min-h-[44px]"
             >
-              View all <ChevronRight className="w-4 h-4" />
+              View all <CaretRight className="w-4 h-4" />
             </button>
           </div>
           <div className="bg-white border border-[#F3EFEF] rounded-2xl overflow-hidden">
@@ -152,7 +152,7 @@ export function HomeDashboard({
                       <span className="text-xs text-gray-500">{trip.date}</span>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 shrink-0 ml-2" />
+                  <CaretRight className="w-5 h-5 text-gray-400 shrink-0 ml-2" />
                 </button>
               )
             })}

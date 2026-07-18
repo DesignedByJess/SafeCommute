@@ -4,7 +4,32 @@ import { EncryptionService } from './encryption.service';
 import { auditLog, logger } from './audit.service';
 import { AppError, NotFoundError } from '../utils/errors';
 import { NotificationService } from './notifications/notification.service';
-import { env } from '../utils/config';
+import { deriveTripHmacKey } from '../utils/hmac';
+
+export interface TripCreateResult {
+  id: string;
+  share_token: string;
+  origin_lat: number;
+  origin_lng: number;
+  origin_address: string | null;
+  destination_lat: number;
+  destination_lng: number;
+  destination_address: string;
+  vehicle_plate_encrypted: string;
+  vehicle_plate_data_key_encrypted: string;
+  contact_id: string | null;
+  contact_name: string;
+  contact_phone_encrypted: string;
+  safety_notes: string[] | null;
+  status: string;
+  started_at: Date;
+  ended_at: null;
+  expires_at: Date;
+  created_at: Date;
+  updated_at: Date;
+  rawContactPhone: string;
+  hmacKey: string;
+}
 
 export class TripService {
   private notificationService = new NotificationService();
@@ -25,7 +50,7 @@ export class TripService {
       contact_phone?: string;
       safety_notes?: string[];
     },
-  ) {
+  ): Promise<TripCreateResult> {
     let contactPhone = input.contact_phone;
 
     // If contact_id is provided but no phone, look up the phone from the contact record
@@ -48,9 +73,7 @@ export class TripService {
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     const displayName = userName || userId;
-    const hmacKey = crypto.createHmac('sha256', env.HMAC_SECRET)
-      .update(shareToken)
-      .digest('hex');
+    const hmacKey = deriveTripHmacKey(shareToken);
 
     const trip = await Trip.create({
       user_id: userId,
@@ -81,7 +104,7 @@ export class TripService {
       userName: displayName,
     });
 
-    return { ...trip.toJSON(), rawContactPhone: contactPhone, hmacKey };
+    return { ...trip.toJSON(), id: trip.id!, rawContactPhone: contactPhone, hmacKey } as TripCreateResult;
   }
 
   async listTrips(userId: string) {
@@ -142,6 +165,12 @@ export class TripService {
     // Use tripId directly — avoids trip.id class field access issue
     await TripLocation.destroy({ where: { trip_id: tripId } });
     await auditLog(userId, 'trip_ended', { tripId });
+
+    // In-app notification — fire-and-forget
+    const destination = notification?.destination || trip.destination_address || 'your destination';
+    import('./notification.service').then(({ InboxService }) => {
+      new InboxService().notifyTripCompleted(userId, destination, tripId);
+    }).catch((err) => logger.error('Failed to create trip_completed notification', { error: err }));
 
     // Send arrival notification — fire-and-forget, never blocks the response
     if (notification && trip.contact_phone_encrypted) {

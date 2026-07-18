@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { ChevronLeft, Monitor, Smartphone, Trash2, ShieldCheck } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CaretLeft, Monitor, DeviceMobile, Trash, ShieldCheck } from '@phosphor-icons/react'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { api } from '../../services/api'
 
 interface Device {
   id: string
@@ -12,26 +13,42 @@ interface Device {
   current: boolean
 }
 
-const MOCK_DEVICES: Device[] = [
-  { id: '1', name: 'Chrome on Windows', type: 'desktop', ip: '102.89.22.134', lastActive: 'Now', current: true },
-  { id: '2', name: 'Safari on iPhone', type: 'mobile', ip: '102.89.22.134', lastActive: '2 hours ago', current: false },
-  { id: '3', name: 'Firefox on MacBook', type: 'desktop', ip: '197.210.65.88', lastActive: '3 days ago', current: false },
-]
-
 interface TrustedDevicesScreenProps {
   onBack: () => void
 }
 
 export function TrustedDevicesScreen({ onBack }: TrustedDevicesScreenProps) {
-  // TODO: replace with real GET /api/v1/devices call
-  const [devices, setDevices] = useState<Device[]>(MOCK_DEVICES)
+  const [devices, setDevices] = useState<Device[]>([])
+  const [loading, setLoading] = useState(true)
   const [removeTarget, setRemoveTarget] = useState<Device | null>(null)
+  const [removing, setRemoving] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await api.get('/sessions')
+        setDevices(res.data?.data?.sessions || [])
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   const handleRemove = async () => {
     if (!removeTarget) return
-    // TODO: replace with real DELETE /api/v1/devices/:id call
-    setDevices((prev) => prev.filter((d) => d.id !== removeTarget.id))
-    setRemoveTarget(null)
+    setRemoving(true)
+    try {
+      await api.delete(`/sessions/${removeTarget.id}`)
+      setDevices((prev) => prev.filter((d) => d.id !== removeTarget.id))
+      setRemoveTarget(null)
+    } catch {
+      // silently fail
+    } finally {
+      setRemoving(false)
+    }
   }
 
   return (
@@ -50,7 +67,7 @@ export function TrustedDevicesScreen({ onBack }: TrustedDevicesScreenProps) {
             className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none"
             aria-label="Back"
           >
-            <ChevronLeft className="w-5 h-5 text-[#0F172A]" />
+            <CaretLeft className="w-5 h-5 text-[#0F172A]" />
           </button>
           <h1 className="text-2xl font-bold text-[#0F172A]">Trusted Devices</h1>
         </div>
@@ -60,48 +77,59 @@ export function TrustedDevicesScreen({ onBack }: TrustedDevicesScreenProps) {
       </div>
 
       <div className="px-6 pb-6 space-y-3">
-        {devices.map((device) => {
-          const Icon = device.type === 'mobile' ? Smartphone : Monitor
-          return (
-            <div
-              key={device.id}
-              className="bg-white rounded-2xl border border-[#F3EFEF] p-4 flex items-center gap-3"
-            >
-              <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center shrink-0">
-                <Icon className="w-5 h-5 text-[#0891B2]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-[#0F172A]">{device.name}</p>
-                  {device.current && (
-                    <span className="text-[10px] font-semibold text-[#16A34A] bg-green-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                      <ShieldCheck className="w-3 h-3" /> Current
-                    </span>
-                  )}
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="w-8 h-8 border-3 border-[#0891B2] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : devices.length === 0 ? (
+          <div className="text-center py-8">
+            <Monitor className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">No devices found</p>
+          </div>
+        ) : (
+          devices.map((device) => {
+            const Icon = device.type === 'mobile' ? DeviceMobile : Monitor
+            return (
+              <div
+                key={device.id}
+                className="bg-white rounded-2xl border border-[#F3EFEF] p-4 flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[#E0F2FE] flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-[#0891B2]" />
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  IP {device.ip} · {device.lastActive}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-[#0F172A]">{device.name}</p>
+                    {device.current && (
+                      <span className="text-[10px] font-semibold text-[#16A34A] bg-green-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <ShieldCheck className="w-3 h-3" /> This device
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    IP {device.ip} · {device.lastActive}
+                  </p>
+                </div>
+                {!device.current && (
+                  <button
+                    onClick={() => setRemoveTarget(device)}
+                    className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-red-50 min-h-[44px] min-w-[44px]"
+                    aria-label={`Remove ${device.name}`}
+                  >
+                    <Trash className="w-4 h-4 text-gray-400 hover:text-[#DC2626]" />
+                  </button>
+                )}
               </div>
-              {!device.current && (
-                <button
-                  onClick={() => setRemoveTarget(device)}
-                  className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-red-50 min-h-[44px] min-w-[44px]"
-                  aria-label={`Remove ${device.name}`}
-                >
-                  <Trash2 className="w-4 h-4 text-gray-400 hover:text-[#DC2626]" />
-                </button>
-              )}
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
 
       <ConfirmModal
         open={!!removeTarget}
         title="Remove Device?"
         message={`This will sign out "${removeTarget?.name}" and remove its access.`}
-        confirmLabel="Remove"
+        confirmLabel={removing ? 'Removing...' : 'Remove'}
         cancelLabel="Cancel"
         variant="default"
         onConfirm={handleRemove}

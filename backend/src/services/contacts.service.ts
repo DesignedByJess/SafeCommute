@@ -35,7 +35,7 @@ export class ContactService {
     // In development, include OTP in response for easy testing.
     // Real SMS delivery is always attempted via notificationService above.
     if (env.NODE_ENV !== 'production') {
-      console.log(`[DEV] OTP for ${input.phone}: ${otp}`);
+      logger.info(`[DEV] OTP for new contact (user ${userId}): ${otp}`);
     }
 
     const contact = await Contact.create({
@@ -97,6 +97,36 @@ export class ContactService {
 
     if (!contact) throw new AppError('Contact not found', 404, 'NOT_FOUND');
     return contact;
+  }
+
+  async resendOtp(userId: string, contactId: string): Promise<{ id: string; devOtp?: string }> {
+    const contact = await Contact.findOne({
+      where: { id: contactId, user_id: userId, deleted_at: null },
+    });
+
+    if (!contact) throw new AppError('Contact not found', 404, 'NOT_FOUND');
+    if (contact.verified) throw new AppError('Contact is already verified', 400, 'ALREADY_VERIFIED');
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await contact.update({ otp_code: otp, otp_expires_at: otpExpiresAt });
+
+    await auditLog(userId, 'otp_requested', { contactId: contact.id });
+
+    const otpMessage = `Your SafeCommute verification code is ${otp}. It expires in 10 minutes.`;
+
+    const decryptedPhone = EncryptionService.decryptPhone(contact.phone_number_encrypted);
+    notificationService.sendAfricaTalking(decryptedPhone, otpMessage).catch((err) => {
+      logger.error('Failed to resend OTP SMS', { error: err, contactId });
+    });
+
+    if (env.NODE_ENV !== 'production') {
+      logger.info(`[DEV] Resent OTP for contact ${contactId}: ${otp}`);
+      return { id: contact.id, devOtp: otp };
+    }
+
+    return { id: contact.id };
   }
 
   async deleteContact(userId: string, contactId: string) {

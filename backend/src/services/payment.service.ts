@@ -66,9 +66,11 @@ export class PaymentService {
     return { verified: true };
   }
 
-  async handleWebhook(payload: any): Promise<void> {
+  async handleWebhook(payload: { event?: string; data?: { status?: string; tx_ref?: string; amount?: number; currency?: string } }): Promise<void> {
     if (payload.event === 'charge.completed' && payload.data?.status === 'successful') {
       const { tx_ref, amount, currency } = payload.data;
+
+      if (!tx_ref) return;
 
       const pending = await PendingPayment.findOne({ where: { tx_ref } });
       if (!pending) return;

@@ -116,6 +116,7 @@ export default function ShareTrackingPage() {
   const [currentPos, setCurrentPos] = useState<[number, number] | null>(null)
   const [destCoords, setDestCoords] = useState<[number, number] | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastRecordedRef = useRef<string | null>(null)
 
   // Fetch trip info on mount
   useEffect(() => {
@@ -149,14 +150,19 @@ export default function ShareTrackingPage() {
 
     const fetchLocations = async () => {
       try {
-        const res = await api.get(`/share/${share_token}/locations`)
+        const url = lastRecordedRef.current
+          ? `/share/${share_token}/locations?since=${encodeURIComponent(lastRecordedRef.current)}`
+          : `/share/${share_token}/locations`
+        const res = await api.get(url)
         const data = res.data.data as { locations: LocationPoint[]; status: string }
         if (data.locations && data.locations.length > 0) {
-          const coords: [number, number][] = data.locations.map(
+          const newCoords: [number, number][] = data.locations.map(
             (loc) => [loc.lat, loc.lng] as [number, number],
           )
-          setPath(coords)
-          setCurrentPos(coords[coords.length - 1])
+          setPath((prev) => [...prev, ...newCoords])
+          const lastLoc = data.locations[data.locations.length - 1]
+          setCurrentPos([lastLoc.lat, lastLoc.lng])
+          lastRecordedRef.current = lastLoc.recorded_at
         }
       } catch {
         // silently ignore polling errors
