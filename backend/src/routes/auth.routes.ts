@@ -70,6 +70,7 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
     const data = (await supabaseRes.json()) as SupabaseSignupResponse;
 
     if (!supabaseRes.ok) {
+      console.error('[SIGNUP ERROR] Supabase responded with', supabaseRes.status, JSON.stringify(data));
       logger.error('Supabase signup rejected', { status: supabaseRes.status, body: data });
       return next(new AppError(data.msg || data.error_description || 'Signup failed. Please check your details and try again.', 400, 'SIGNUP_FAILED'));
     }
