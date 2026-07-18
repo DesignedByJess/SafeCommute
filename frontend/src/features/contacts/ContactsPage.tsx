@@ -77,7 +77,7 @@ export default function ContactsPage() {
       const newContact = res.data.data
       if (newContact?.id) {
         navigate(`/contacts/${newContact.id}/verify-otp`, {
-          state: { devOtp: newContact.devOtp },
+          state: { devOtp: newContact.devOtp, contactName: name },
         })
       }
     } catch (err: unknown) {
@@ -104,7 +104,7 @@ export default function ContactsPage() {
       const updated = res.data.data
       if (updated?.phoneChanged && updated?.id) {
         navigate(`/contacts/${updated.id}/verify-otp`, {
-          state: { devOtp: updated.devOtp },
+          state: { devOtp: updated.devOtp, contactName: name },
         })
       }
     } catch {
