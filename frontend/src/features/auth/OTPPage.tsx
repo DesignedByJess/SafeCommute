@@ -68,7 +68,7 @@ export default function OTPPage() {
           <img src="/logo.png" alt="SafeCommute" className="w-12 h-12 mx-auto mb-3 object-contain" />
           <h1 className="text-2xl font-bold text-gray-900">Verify Contact</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Enter the 6-digit code sent to your contact
+            We sent a 6-digit code to your contact's phone. Ask them for the code and enter it below to verify.
           </p>
         </div>
 

@@ -95,7 +95,7 @@ export function HistoryScreen({
   if (trips.length === 0) {
     return (
       <>
-        <div className="bg-[#FAFAFA] px-6 pt-14 pb-28">
+        <div className="min-h-screen bg-[#FAFAFA] px-6 pt-14 pb-28">
           <h1 className="text-2xl font-bold text-[#0F172A] mb-10">Trip History</h1>
 
           <div className="flex flex-col items-center">
