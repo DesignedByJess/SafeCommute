@@ -145,7 +145,7 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
     });
 
     const user: UserResponse = { id: loginData.user.id, email: loginData.user.email, name };
-    sendCreated(res, { user });
+    sendCreated(res, { user, access_token: loginData.access_token });
 
     // Fire-and-forget: create user profile in background.
     // Uses findOrCreate to avoid overwriting onboarding_complete if user
@@ -263,7 +263,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
       onboardingComplete = profile.onboarding_complete;
     }
 
-    sendSuccess(res, { user: { id: data.user.id, email: data.user.email, onboarding_complete: onboardingComplete } });
+    sendSuccess(res, { user: { id: data.user.id, email: data.user.email, onboarding_complete: onboardingComplete }, access_token: data.access_token });
   } catch (err) {
     next(err);
   }

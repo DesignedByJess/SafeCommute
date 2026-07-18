@@ -1,7 +1,7 @@
 import { createContext, useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react'
 import axios from 'axios'
 import localforage from 'localforage'
-import { api, resetCsrfToken } from '../services/api'
+import { api, resetCsrfToken, setAccessToken } from '../services/api'
 
 interface User {
   id: string
@@ -164,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/auth/login', { email, password })
       const serverUser = res.data.data.user
+      setAccessToken(res.data.data.access_token ?? null)
       setUser(serverUser)
       if (serverUser.onboarding_complete !== undefined) {
         setOnboardingComplete(serverUser.onboarding_complete)
@@ -189,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     try {
       const res = await api.post('/auth/signup', { name, email, password })
+      setAccessToken(res.data.data.access_token ?? null)
       setUser(res.data.data.user)
       localStorage.removeItem(ONBOARDING_KEY)
       setOnboardingComplete(false)
@@ -211,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear local state even if server call fails
     }
     resetCsrfToken()
+    setAccessToken(null)
     setUser(null)
   }, [])
 
