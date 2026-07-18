@@ -76,9 +76,15 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/v1/csrf-token', (req, res) => {
-  const secret = req.cookies?.['_csrf'];
+  let secret = req.cookies?.['_csrf'];
   if (!secret) {
-    return res.json({ success: true, data: { csrfToken: null } });
+    secret = tokens.secretSync();
+    res.cookie('_csrf', secret, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      path: '/',
+    });
   }
   const csrfToken = tokens.create(secret);
   res.json({ success: true, data: { csrfToken } });
