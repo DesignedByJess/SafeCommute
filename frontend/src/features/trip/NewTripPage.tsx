@@ -276,7 +276,7 @@ export default function NewTripPage() {
                   className="block w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2.5 text-sm bg-gray-100 transition-colors placeholder:text-gray-400 focus:outline-none focus:border-[#0891B2] focus:bg-white [&:not(:placeholder-shown):not(:focus)]:bg-gray-50 min-h-[44px]"
                 />
               </div>
-              {error && <p className="text-sm text-red-600 mt-1.5">{error}</p>}
+              {error && <p className="text-sm text-red-600 mt-1.5">{String(error)}</p>}
             </div>
           )}
       </form>

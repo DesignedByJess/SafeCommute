@@ -67,7 +67,7 @@ export default function SignupPage() {
         <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-3">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
+              {String(error)}
             </div>
           )}
           <Input

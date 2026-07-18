@@ -41,7 +41,7 @@ export function TripSummaryScreen({
         <div>
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4 text-center">
-              {error}
+              {String(error)}
             </div>
           )}
           <button

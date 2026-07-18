@@ -203,7 +203,7 @@ function Step2AddContact({ onNext, onSkip, onBack }: StepProps) {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-600">{String(error)}</p>}
           </div>
         </div>
 
