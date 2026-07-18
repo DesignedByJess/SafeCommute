@@ -106,14 +106,14 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
     res.cookie('sb-access-token', loginData.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: 60 * 60 * 24 * 7 * 1000,
     });
 
     res.cookie('sb-refresh-token', loginData.refresh_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: 60 * 60 * 24 * 30 * 1000,
     });
 
@@ -217,14 +217,14 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
     res.cookie('sb-access-token', data.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: 60 * 60 * 24 * 7 * 1000,
     });
 
     res.cookie('sb-refresh-token', data.refresh_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: 60 * 60 * 24 * 30 * 1000,
     });
 
@@ -328,21 +328,21 @@ router.post('/logout', authenticate, async (req: Request, res: Response, next: N
     res.clearCookie('sb-access-token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
     });
 
     res.clearCookie('sb-refresh-token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
     });
 
     res.clearCookie('_csrf', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
     });
 

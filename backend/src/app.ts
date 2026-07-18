@@ -8,7 +8,7 @@ import { Server } from 'socket.io';
 
 dotenv.config();
 
-const csrfProtection = require('csurf')({ cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' as const } });
+const csrfProtection = require('csurf')({ cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'none' as const } });
 
 import apiRoutes from './routes';
 import { errorHandler } from './middleware/error-handler';
@@ -18,11 +18,6 @@ import { DataRetentionService } from './services/data-retention.service';
 
 const app = express();
 const httpServer = createServer(app);
-
-app.use((req, res, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.originalUrl} - Origin: ${req.headers.origin}`);
-  next();
-});
 
 const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
 const corsOriginCheck = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
