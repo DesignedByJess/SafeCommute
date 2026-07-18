@@ -13,10 +13,10 @@ export default function ProfilePage() {
   )
 
   useEffect(() => {
-    if (!photoDataUrl) {
-      loadProfilePhoto().then(setPhotoDataUrl)
+    if (!photoDataUrl && user?.id) {
+      loadProfilePhoto(user.id).then(setPhotoDataUrl)
     }
-  }, [photoDataUrl])
+  }, [photoDataUrl, user?.id])
 
   const overrides = loadProfileOverrides()
   const displayName = overrides.name || user?.name || 'Jessica Pinawei'

@@ -356,7 +356,7 @@ export function ActiveTripScreen({
 
   return (
     <ScreenWithBottomAction
-      bgColor="bg-gray-100"
+      bgColor="bg-[#FAFAFA]"
       actions={actions}
     >
       <div className="fixed inset-x-0 top-0 bottom-[140px] z-0">

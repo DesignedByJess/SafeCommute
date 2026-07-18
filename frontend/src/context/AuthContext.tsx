@@ -56,42 +56,50 @@ const photoStore = localforage.createInstance({
   storeName: 'profile_photos',
 })
 
-export async function loadProfilePhoto(): Promise<string | null> {
+function photoStorageKey(userId: string | undefined): string {
+  return userId ? `photo_${userId}` : 'photo'
+}
+
+export async function loadProfilePhoto(userId?: string): Promise<string | null> {
   try {
-    const val = await photoStore.getItem<string>('photo')
+    const val = await photoStore.getItem<string>(photoStorageKey(userId))
     return val ?? null
   } catch {
     return null
   }
 }
 
-export async function saveProfilePhoto(dataUrl: string | null | undefined): Promise<void> {
+export async function saveProfilePhoto(dataUrl: string | null | undefined, userId?: string): Promise<void> {
   try {
     if (dataUrl) {
-      await photoStore.setItem('photo', dataUrl)
+      await photoStore.setItem(photoStorageKey(userId), dataUrl)
     } else {
-      await photoStore.removeItem('photo')
+      await photoStore.removeItem(photoStorageKey(userId))
     }
   } catch {
     /* storage full or unavailable — silently ignore */
   }
 }
 
-export function loadProfilePhotoSync(): string | null {
+function localStoragePhotoKey(userId: string | undefined): string {
+  return userId ? `${PROFILE_PHOTO_KEY}_${userId}` : PROFILE_PHOTO_KEY
+}
+
+export function loadProfilePhotoSync(userId?: string): string | null {
   try {
-    const raw = localStorage.getItem(PROFILE_PHOTO_KEY)
+    const raw = localStorage.getItem(localStoragePhotoKey(userId))
     return raw ?? null
   } catch {
     return null
   }
 }
 
-export function saveProfilePhotoSync(dataUrl: string | null | undefined): void {
+export function saveProfilePhotoSync(dataUrl: string | null | undefined, userId?: string): void {
   try {
     if (dataUrl) {
-      localStorage.setItem(PROFILE_PHOTO_KEY, dataUrl)
+      localStorage.setItem(localStoragePhotoKey(userId), dataUrl)
     } else {
-      localStorage.removeItem(PROFILE_PHOTO_KEY)
+      localStorage.removeItem(localStoragePhotoKey(userId))
     }
   } catch {
     /* storage full — silently ignore */
@@ -111,8 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authCheckStarted = useRef(false)
 
   useEffect(() => {
-    loadProfilePhoto().then(setProfilePhoto)
-
     if (authCheckStarted.current) return
     authCheckStarted.current = true
 
@@ -124,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const serverUser = res.data.data.user
           const overrides = loadProfileOverrides()
           setUser({ ...serverUser, ...overrides })
+          loadProfilePhoto(serverUser.id).then(setProfilePhoto)
           if (serverUser.onboarding_complete !== undefined) {
             setOnboardingComplete(serverUser.onboarding_complete)
             if (serverUser.onboarding_complete) {
@@ -166,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const serverUser = res.data.data.user
       setAccessToken(res.data.data.access_token ?? null)
       setUser(serverUser)
+      loadProfilePhoto(serverUser.id).then(setProfilePhoto)
       if (serverUser.onboarding_complete !== undefined) {
         setOnboardingComplete(serverUser.onboarding_complete)
         if (serverUser.onboarding_complete) {
@@ -190,8 +198,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     try {
       const res = await api.post('/auth/signup', { name, email, password })
+      const serverUser = res.data.data.user
       setAccessToken(res.data.data.access_token ?? null)
-      setUser(res.data.data.user)
+      setUser(serverUser)
+      setProfilePhoto(null)
       localStorage.removeItem(ONBOARDING_KEY)
       setOnboardingComplete(false)
     } catch (err: unknown) {
@@ -215,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetCsrfToken()
     setAccessToken(null)
     setUser(null)
+    setProfilePhoto(null)
   }, [])
 
   const updateUser = useCallback((updates: Partial<User>) => {
@@ -233,7 +244,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfilePhoto = useCallback((dataUrl: string | null) => {
     setProfilePhoto(dataUrl)
-  }, [])
+    saveProfilePhoto(dataUrl, user?.id)
+  }, [user?.id])
 
   const clearSessionExpired = useCallback(() => {
     setSessionExpired(false)

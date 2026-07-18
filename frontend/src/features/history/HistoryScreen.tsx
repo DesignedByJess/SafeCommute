@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { BottomNav } from '../../components/BottomNav'
 import { ConfirmModal } from '../../components/ConfirmModal'
-import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { maskPlate } from '../../utils/format'
 
 interface Trip {
@@ -96,21 +95,10 @@ export function HistoryScreen({
   if (trips.length === 0) {
     return (
       <>
-        <ScreenWithBottomAction
-          actions={
-            <button
-              onClick={onStartTrip ?? (() => navigate('/trip/new'))}
-              className="w-full bg-[#0891B2] text-white font-bold text-base rounded-lg py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
-            >
-              Start a Trip
-            </button>
-          }
-        >
-          <div className="px-6 pt-14 pb-4">
-            <h1 className="text-2xl font-bold text-[#0F172A]">Trip History</h1>
-          </div>
+        <div className="bg-[#FAFAFA] px-6 pt-14 pb-28">
+          <h1 className="text-2xl font-bold text-[#0F172A] mb-10">Trip History</h1>
 
-          <div className="flex flex-col items-center justify-center px-6">
+          <div className="flex flex-col items-center">
             <div className="flex items-center justify-center mb-6">
               <img
                 src="/illustrations/empty-state-illustration.png"
@@ -119,11 +107,17 @@ export function HistoryScreen({
               />
             </div>
             <h2 className="text-xl font-bold text-[#0F172A] mb-1">No trip history yet</h2>
-            <p className="text-sm text-gray-600 text-center max-w-xs">
+            <p className="text-sm text-gray-600 text-center max-w-xs mb-8">
               Trips you complete will show up here for 30 days
             </p>
+            <button
+              onClick={onStartTrip ?? (() => navigate('/trip/new'))}
+              className="w-full max-w-xs bg-[#0891B2] text-white font-bold text-base rounded-lg py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
+            >
+              Start a Trip
+            </button>
           </div>
-        </ScreenWithBottomAction>
+        </div>
         <BottomNav />
       </>
     )
