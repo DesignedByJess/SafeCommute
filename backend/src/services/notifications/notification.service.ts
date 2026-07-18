@@ -122,7 +122,12 @@ export class NotificationService {
       },
     );
 
-    const body = await response.json();
+    const body = (await response.json()) as {
+      SMSMessageData?: {
+        Message?: string;
+        Recipients?: Array<{ number?: string; cost?: string; status?: string; statusCode?: string }>;
+      };
+    };
 
     if (!response.ok) {
       throw new Error(`Africa's Talking API error: ${response.status} ${JSON.stringify(body)}`);

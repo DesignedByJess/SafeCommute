@@ -8,6 +8,5 @@ exports.createContactSchema = zod_1.z.object({
     relationship: zod_1.z.string().max(20).optional(),
 });
 exports.verifyOtpSchema = zod_1.z.object({
-    contactId: zod_1.z.string().uuid(),
     otp: zod_1.z.string().length(6),
 });

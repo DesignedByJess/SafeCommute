@@ -125,7 +125,7 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
     // completes onboarding before this fires (race condition fix).
     UserProfile.findOrCreate({
       where: { user_id: loginData.user.id },
-      defaults: { onboarding_complete: false },
+      defaults: { user_id: loginData.user.id, onboarding_complete: false },
     }).catch((err) => logger.error('Failed to create user profile after signup', { error: err }));
   } catch (err) {
     next(err);

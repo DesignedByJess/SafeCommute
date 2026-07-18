@@ -10,6 +10,8 @@ const encryption_service_1 = require("./encryption.service");
 const audit_service_1 = require("./audit.service");
 const errors_1 = require("../utils/errors");
 const config_1 = require("../utils/config");
+const notification_service_1 = require("./notifications/notification.service");
+const notificationService = new notification_service_1.NotificationService();
 class ContactService {
     async listContacts(userId) {
         return contact_model_1.Contact.findAll({
@@ -29,10 +31,8 @@ class ContactService {
         }
         const otp = crypto_1.default.randomInt(100000, 999999).toString();
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-        // DEV-ONLY: surfaces OTP in console/UI for testing without a live SMS
-        // provider. Must never render or log in production (gated by
-        // NODE_ENV). Real SMS delivery still attempted via smsService in all
-        // environments.
+        // In development, include OTP in response for easy testing.
+        // Real SMS delivery is always attempted via notificationService above.
         if (config_1.env.NODE_ENV !== 'production') {
             console.log(`[DEV] OTP for ${input.phone}: ${otp}`);
         }
@@ -47,6 +47,11 @@ class ContactService {
             otp_expires_at: otpExpiresAt,
         });
         await (0, audit_service_1.auditLog)(userId, 'contact_added', { contactId: contact.id });
+        // Send OTP via SMS in all environments
+        const otpMessage = `Your SafeCommute verification code is ${otp}. It expires in 10 minutes.`;
+        notificationService.sendAfricaTalking(input.phone, otpMessage).catch((err) => {
+            audit_service_1.logger.error('Failed to send OTP SMS', { error: err, phone: input.phone });
+        });
         return {
             ...contact.toJSON(),
             ...(config_1.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),

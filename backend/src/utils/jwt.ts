@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtHeader, SigningKeyCallback, VerifyErrors } from 'jsonwebtoken';
 import { env } from './config';
 import { logger } from '../services/audit.service';
 
@@ -74,7 +74,7 @@ function verifyES256(token: string): Promise<boolean> {
   return new Promise((resolve) => {
     jwt.verify(
       token,
-      (header, callback) => {
+      (header: JwtHeader, callback: SigningKeyCallback) => {
         const kid = header.kid;
         if (!kid) {
           return callback(new Error('No kid in JWT header'));
@@ -101,7 +101,7 @@ function verifyES256(token: string): Promise<boolean> {
           .catch((err) => callback(err));
       },
       { algorithms: ['ES256'] },
-      (err, decoded) => {
+      (err: VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
         resolve(!err && !!decoded);
       },
     );

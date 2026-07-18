@@ -68,6 +68,11 @@ class NotificationService {
         const baseUrl = config_1.env.AFRICA_TALKING_SANDBOX
             ? 'https://api.sandbox.africastalking.com'
             : 'https://api.africastalking.com';
+        const params = {
+            username: config_1.env.AFRICA_TALKING_USERNAME,
+            to: phone,
+            message,
+        };
         const response = await fetch(`${baseUrl}/version1/messaging`, {
             method: 'POST',
             headers: {
@@ -75,17 +80,21 @@ class NotificationService {
                 'ApiKey': config_1.env.AFRICA_TALKING_API_KEY,
                 'Accept': 'application/json',
             },
-            body: new URLSearchParams({
-                username: config_1.env.AFRICA_TALKING_USERNAME,
-                to: phone,
-                message,
-            }),
+            body: new URLSearchParams(params),
         });
+        const body = (await response.json());
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Africa's Talking API error: ${response.status} ${errorText}`);
+            throw new Error(`Africa's Talking API error: ${response.status} ${JSON.stringify(body)}`);
         }
-        audit_service_1.logger.info(`[Africa's Talking] Sent to ${phone}`);
+        audit_service_1.logger.info('[Africa\'s Talking] API response', { body });
+        const statusCode = body?.SMSMessageData?.Recipients?.[0]?.statusCode;
+        if (statusCode && statusCode !== '101') {
+            throw new Error(`Africa's Talking delivery failed: code ${statusCode} - ${body?.SMSMessageData?.Recipients?.[0]?.status ?? 'unknown'}`);
+        }
+        if (!statusCode) {
+            audit_service_1.logger.warn('[Africa\'s Talking] No status code in response', { body });
+        }
+        audit_service_1.logger.info(`[Africa's Talking] Sent to ${phone}`, { statusCode });
     }
     async sendTwilio(phone, message) {
         if (!config_1.env.TWILIO_ACCOUNT_SID || !config_1.env.TWILIO_AUTH_TOKEN || !config_1.env.TWILIO_PHONE_NUMBER) {
