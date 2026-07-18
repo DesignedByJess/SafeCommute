@@ -70,7 +70,8 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
     const data = (await supabaseRes.json()) as SupabaseSignupResponse;
 
     if (!supabaseRes.ok) {
-      return next(new AppError(data.msg || data.error_description || 'Signup failed', 400, 'SIGNUP_FAILED'));
+      logger.error('Supabase signup rejected', { status: supabaseRes.status, body: data });
+      return next(new AppError(data.msg || data.error_description || 'Signup failed. Please check your details and try again.', 400, 'SIGNUP_FAILED'));
     }
 
     const ipAddress = req.ip || req.socket.remoteAddress || null;
