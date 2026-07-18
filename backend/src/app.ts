@@ -19,6 +19,11 @@ import { DataRetentionService } from './services/data-retention.service';
 const app = express();
 const httpServer = createServer(app);
 
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl} - Origin: ${req.headers.origin}`);
+  next();
+});
+
 const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
 const corsOriginCheck = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
   if (!origin) return callback(null, true);
