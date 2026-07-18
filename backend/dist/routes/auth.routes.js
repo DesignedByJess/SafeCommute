@@ -76,13 +76,13 @@ router.post('/signup', rate_limit_1.signupLimiter, (0, validate_1.validate)(auth
         res.cookie('sb-access-token', loginData.access_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             maxAge: 60 * 60 * 24 * 7 * 1000,
         });
         res.cookie('sb-refresh-token', loginData.refresh_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             maxAge: 60 * 60 * 24 * 30 * 1000,
         });
         const user = { id: loginData.user.id, email: loginData.user.email, name };
@@ -175,13 +175,13 @@ router.post('/login', rate_limit_1.loginLimiter, (0, validate_1.validate)(auth_s
         res.cookie('sb-access-token', data.access_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             maxAge: 60 * 60 * 24 * 7 * 1000,
         });
         res.cookie('sb-refresh-token', data.refresh_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             maxAge: 60 * 60 * 24 * 30 * 1000,
         });
         let onboardingComplete = false;
@@ -276,19 +276,19 @@ router.post('/logout', authenticate_1.authenticate, async (req, res, next) => {
         res.clearCookie('sb-access-token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             path: '/',
         });
         res.clearCookie('sb-refresh-token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             path: '/',
         });
         res.clearCookie('_csrf', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             path: '/',
         });
         (0, response_1.sendSuccess)(res, { message: 'Logged out successfully' });

@@ -5,10 +5,11 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import Tokens from 'csrf';
 
 dotenv.config();
 
-const csrfProtection = require('csurf')({ cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'none' as const } });
+const tokens = new Tokens();
 
 import apiRoutes from './routes';
 import { errorHandler } from './middleware/error-handler';
@@ -18,20 +19,6 @@ import { DataRetentionService } from './services/data-retention.service';
 
 const app = express();
 const httpServer = createServer(app);
-
-// csurf v1.11 uses cookie@0.4 which ignores sameSite option, so patch it here
-app.use((_req, res, next) => {
-  const originalSetHeader = res.setHeader.bind(res);
-  res.setHeader = function (name: string, value: string | string[]) {
-    if (name.toLowerCase() === 'set-cookie' && Array.isArray(value)) {
-      value = value.map((cookie) =>
-        cookie.startsWith('_csrf=') ? cookie.replace('SameSite=Strict', 'SameSite=None') : cookie,
-      );
-    }
-    return originalSetHeader(name, value);
-  };
-  next();
-});
 
 const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
 const corsOriginCheck = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
@@ -59,14 +46,41 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/v1/auth/')) {
+  if (req.path.startsWith('/api/v1/auth/') || req.path.startsWith('/health')) {
     return next();
   }
-  return csrfProtection(req, res, next);
+
+  let secret: string | undefined = req.cookies?.['_csrf'];
+
+  if (!secret) {
+    secret = tokens.secretSync();
+    res.cookie('_csrf', secret, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      path: '/',
+    });
+  }
+
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+    return next();
+  }
+
+  const headerToken = req.headers['csrf-token'] as string | undefined;
+  if (!headerToken || !tokens.verify(secret, headerToken)) {
+    return res.status(403).json({ success: false, error: 'Invalid CSRF token' });
+  }
+
+  next();
 });
 
-app.get('/api/v1/csrf-token', (req: any, res) => {
-  res.json({ success: true, data: { csrfToken: req.csrfToken() } });
+app.get('/api/v1/csrf-token', (req, res) => {
+  const secret = req.cookies?.['_csrf'];
+  if (!secret) {
+    return res.json({ success: true, data: { csrfToken: null } });
+  }
+  const csrfToken = tokens.create(secret);
+  res.json({ success: true, data: { csrfToken } });
 });
 
 app.use('/api/v1', apiRoutes);

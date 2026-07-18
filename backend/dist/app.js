@@ -11,8 +11,9 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const http_1 = require("http");
 const socket_io_1 = require("socket.io");
+const csrf_1 = __importDefault(require("csrf"));
 dotenv_1.default.config();
-const csrfProtection = require('csurf')({ cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' } });
+const tokens = new csrf_1.default();
 const routes_1 = __importDefault(require("./routes"));
 const error_handler_1 = require("./middleware/error-handler");
 const audit_service_1 = require("./services/audit.service");
@@ -22,10 +23,19 @@ const app = (0, express_1.default)();
 exports.app = app;
 const httpServer = (0, http_1.createServer)(app);
 exports.httpServer = httpServer;
-const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
+const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
+const corsOriginCheck = (origin, callback) => {
+    if (!origin)
+        return callback(null, true);
+    if (configuredOrigins.includes(origin))
+        return callback(null, true);
+    if (/^https:\/\/.*\.vercel\.app$/.test(origin))
+        return callback(null, true);
+    callback(null, false);
+};
 const io = new socket_io_1.Server(httpServer, {
     cors: {
-        origin: corsOrigins,
+        origin: corsOriginCheck,
         credentials: true,
     },
     transports: ['websocket'],
@@ -33,20 +43,42 @@ const io = new socket_io_1.Server(httpServer, {
 exports.io = io;
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: corsOrigins,
+    origin: corsOriginCheck,
     credentials: true,
 }));
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json({ limit: '10kb' }));
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((req, res, next) => {
-    if (req.path.startsWith('/api/v1/auth/')) {
+    if (req.path.startsWith('/api/v1/auth/') || req.path.startsWith('/health')) {
         return next();
     }
-    return csrfProtection(req, res, next);
+    let secret = req.cookies?.['_csrf'];
+    if (!secret) {
+        secret = tokens.secretSync();
+        res.cookie('_csrf', secret, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+            path: '/',
+        });
+    }
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+        return next();
+    }
+    const headerToken = req.headers['csrf-token'];
+    if (!headerToken || !tokens.verify(secret, headerToken)) {
+        return res.status(403).json({ success: false, error: 'Invalid CSRF token' });
+    }
+    next();
 });
 app.get('/api/v1/csrf-token', (req, res) => {
-    res.json({ success: true, data: { csrfToken: req.csrfToken() } });
+    const secret = req.cookies?.['_csrf'];
+    if (!secret) {
+        return res.json({ success: true, data: { csrfToken: null } });
+    }
+    const csrfToken = tokens.create(secret);
+    res.json({ success: true, data: { csrfToken } });
 });
 app.use('/api/v1', routes_1.default);
 app.get('/health', (_req, res) => {
