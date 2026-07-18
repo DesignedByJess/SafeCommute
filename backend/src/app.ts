@@ -36,6 +36,7 @@ const io = new Server(httpServer, {
   transports: ['websocket'],
 });
 
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({
   origin: corsOriginCheck,
