@@ -35,12 +35,13 @@ export const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const url = config.url ?? ''
-  if (url.includes('/auth/') || url.includes('/csrf-token')) {
-    return config
-  }
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
+  }
+
+  if (url.includes('/auth/') || url.includes('/csrf-token')) {
+    return config
   }
 
   const token = await getCsrfToken()
