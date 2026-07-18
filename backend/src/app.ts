@@ -47,7 +47,7 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/v1/auth/') || req.path.startsWith('/health')) {
+  if (req.path.startsWith('/api/v1/auth/') || req.path.startsWith('/api/v1/csrf-token') || req.path.startsWith('/health')) {
     return next();
   }
 
