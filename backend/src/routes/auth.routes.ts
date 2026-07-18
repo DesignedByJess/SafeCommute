@@ -1,8 +1,13 @@
 interface SupabaseSignupResponse {
-  id: string;
-  email: string;
+  id?: string;
+  email?: string;
   msg?: string;
+  error?: string;
   error_description?: string;
+  message?: string;
+  code?: string;
+  hint?: string;
+  details?: unknown;
 }
 
 interface UserResponse {
@@ -67,18 +72,30 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
       return next(new AppError(message, 503, 'AUTH_SERVICE_UNAVAILABLE'));
     }
 
-    const data = (await supabaseRes.json()) as SupabaseSignupResponse;
+    const rawBody = await supabaseRes.text();
+
+    let data: SupabaseSignupResponse;
+    try {
+      data = JSON.parse(rawBody) as SupabaseSignupResponse;
+    } catch {
+      console.error('[SIGNUP ERROR] Supabase returned non-JSON:', supabaseRes.status, rawBody.slice(0, 500));
+      logger.error('Supabase signup returned non-JSON', { status: supabaseRes.status, body: rawBody.slice(0, 500) });
+      return next(new AppError('Authentication service returned an unexpected response. Please try again.', 502, 'AUTH_SERVICE_BAD_RESPONSE'));
+    }
 
     if (!supabaseRes.ok) {
       console.error('[SIGNUP ERROR] Supabase responded with', supabaseRes.status, JSON.stringify(data));
       logger.error('Supabase signup rejected', { status: supabaseRes.status, body: data });
-      return next(new AppError(data.msg || data.error_description || 'Signup failed. Please check your details and try again.', 400, 'SIGNUP_FAILED'));
+      const supaMsg = data.msg || data.error_description || data.error || data.message;
+      const supaCode = data.code || data.hint;
+      const detail = supaMsg ? `: ${supaMsg}` : supaCode ? ` (code: ${supaCode})` : '';
+      return next(new AppError(`Signup failed${detail}`, 400, 'SIGNUP_FAILED'));
     }
 
     const ipAddress = req.ip || req.socket.remoteAddress || null;
     const userAgent = req.headers['user-agent'] || null;
 
-    await auditLog(data.id, 'signup', { email, name }, ipAddress, userAgent);
+    await auditLog(data.id ?? null, 'signup', { email, name }, ipAddress, userAgent);
 
     let loginRes;
     try {
@@ -99,9 +116,17 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
       return next(new AppError('Account created but could not sign in automatically. Please try logging in.', 200, 'SIGNUP_NO_SESSION'));
     }
 
-    const loginData = (await loginRes.json()) as SupabaseLoginResponse;
+    const loginRaw = await loginRes.text();
+    let loginData: SupabaseLoginResponse;
+    try {
+      loginData = JSON.parse(loginRaw) as SupabaseLoginResponse;
+    } catch {
+      logger.error('Supabase auto-login returned non-JSON', { status: loginRes.status, body: loginRaw.slice(0, 500) });
+      return next(new AppError('Account created but could not sign in automatically. Please try logging in.', 200, 'SIGNUP_NO_SESSION'));
+    }
 
     if (!loginRes.ok) {
+      logger.error('Supabase auto-login rejected', { status: loginRes.status, body: loginData });
       return next(new AppError('Account created but could not sign in automatically. Please try logging in.', 200, 'SIGNUP_NO_SESSION'));
     }
 
@@ -130,6 +155,8 @@ router.post('/signup', signupLimiter, validate(signupSchema), async (req: Reques
       defaults: { user_id: loginData.user.id, onboarding_complete: false },
     }).catch((err) => logger.error('Failed to create user profile after signup', { error: err }));
   } catch (err) {
+    console.error('[SIGNUP ERROR] Unhandled exception:', err);
+    logger.error('Unhandled signup error', { error: err });
     next(err);
   }
 });
