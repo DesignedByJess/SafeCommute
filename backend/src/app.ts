@@ -5,11 +5,9 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import Tokens from 'csrf';
+import crypto from 'crypto';
 
 dotenv.config();
-
-const tokens = new Tokens();
 
 import apiRoutes from './routes';
 import { errorHandler } from './middleware/error-handler';
@@ -46,47 +44,54 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 
+function createCsrfToken(secret: string): string {
+  const ts = Date.now().toString(36);
+  const rand = crypto.randomBytes(16).toString('hex');
+  const payload = `${ts}.${rand}`;
+  const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  return `${payload}.${sig}`;
+}
+
+function verifyCsrfToken(secret: string, token: string, maxAgeMs = 60 * 60 * 1000): boolean {
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  const [ts, rand, sig] = parts;
+  const payload = `${ts}.${rand}`;
+  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return false;
+  const tsNum = parseInt(ts, 36);
+  if (isNaN(tsNum)) return false;
+  return Date.now() - tsNum <= maxAgeMs;
+}
+
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/v1/auth/') || req.path.startsWith('/api/v1/csrf-token') || req.path.startsWith('/health')) {
     return next();
-  }
-
-  let secret: string | undefined = req.cookies?.['_csrf'];
-
-  if (!secret) {
-    secret = tokens.secretSync();
-    res.cookie('_csrf', secret, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
-      path: '/',
-    });
   }
 
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
     return next();
   }
 
+  const secret = process.env.CSRF_SECRET;
+  if (!secret) {
+    return res.status(500).json({ success: false, error: 'Server configuration error' });
+  }
+
   const headerToken = req.headers['csrf-token'] as string | undefined;
-  if (!headerToken || !tokens.verify(secret, headerToken)) {
+  if (!headerToken || !verifyCsrfToken(secret, headerToken)) {
     return res.status(403).json({ success: false, error: 'Invalid CSRF token' });
   }
 
   next();
 });
 
-app.get('/api/v1/csrf-token', (req, res) => {
-  let secret = req.cookies?.['_csrf'];
+app.get('/api/v1/csrf-token', (_req, res) => {
+  const secret = process.env.CSRF_SECRET;
   if (!secret) {
-    secret = tokens.secretSync();
-    res.cookie('_csrf', secret, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
-      path: '/',
-    });
+    return res.status(500).json({ success: false, error: 'Server configuration error' });
   }
-  const csrfToken = tokens.create(secret);
+  const csrfToken = createCsrfToken(secret);
   res.json({ success: true, data: { csrfToken } });
 });
 
