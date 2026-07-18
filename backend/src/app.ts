@@ -19,11 +19,17 @@ import { DataRetentionService } from './services/data-retention.service';
 const app = express();
 const httpServer = createServer(app);
 
-const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
+const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim());
+const corsOriginCheck = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
+  if (!origin) return callback(null, true);
+  if (configuredOrigins.includes(origin)) return callback(null, true);
+  if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return callback(null, true);
+  callback(null, false);
+};
 
 const io = new Server(httpServer, {
   cors: {
-    origin: corsOrigins,
+    origin: corsOriginCheck,
     credentials: true,
   },
   transports: ['websocket'],
@@ -31,7 +37,7 @@ const io = new Server(httpServer, {
 
 app.use(helmet());
 app.use(cors({
-  origin: corsOrigins,
+  origin: corsOriginCheck,
   credentials: true,
 }));
 app.use(cookieParser());
