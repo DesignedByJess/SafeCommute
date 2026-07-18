@@ -31,17 +31,17 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col pb-20">
       <div className="px-6 pt-14 pb-4">
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center justify-center">
           <button
             onClick={() => navigate(-1)}
-            className="min-h-[32px] min-w-[32px] flex items-center justify-center text-[#0F172A]"
+            className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#0F172A]"
             aria-label="Back"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <h1 className="text-2xl font-bold text-[#0F172A]">Privacy & Security</h1>
         </div>
-        <p className="text-base text-gray-500 mt-1 ml-[52px]">How we protect your data</p>
+        <p className="text-sm text-gray-500 text-center mt-1">How we protect your data</p>
       </div>
 
       <div className="flex-1 px-6 space-y-3">
@@ -57,12 +57,10 @@ export default function PrivacyPage() {
           </Card>
         ))}
 
-        <Card className="bg-[#E0F2FE] border-[#0891B2]/20">
-          <p className="text-sm text-gray-700">
-            SafeCommute is compliant with the Nigeria Data Protection Act (NDPA) 2023.
-            For privacy concerns, contact <span className="font-medium">privacy@safecommute.app</span>.
-          </p>
-        </Card>
+        <p className="text-sm text-gray-500 text-center py-4">
+          SafeCommute is compliant with the Nigeria Data Protection Act (NDPA) 2023.
+          For privacy concerns, contact <span className="font-medium">privacy@safecommute.app</span>.
+        </p>
       </div>
 
       <BottomNav />

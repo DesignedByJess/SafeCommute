@@ -116,15 +116,17 @@ export function EditProfileScreen({
         </div>
       }
     >
-      <div className="flex items-center gap-2 px-6 pt-14 pb-4">
-        <button
-          onClick={onCancel}
-          className="min-h-[32px] min-w-[32px] flex items-center justify-center text-[#0F172A]"
-          aria-label="Back"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-2xl font-bold text-[#0F172A]">Edit Profile</h1>
+      <div className="px-6 pt-14 pb-4">
+        <div className="relative flex items-center justify-center">
+          <button
+            onClick={onCancel}
+            className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#0F172A]"
+            aria-label="Back"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Edit Profile</h1>
+        </div>
       </div>
 
       <div className="px-6 space-y-6">
@@ -159,7 +161,7 @@ export function EditProfileScreen({
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
           <Input
             label="Full Name"
             value={name}

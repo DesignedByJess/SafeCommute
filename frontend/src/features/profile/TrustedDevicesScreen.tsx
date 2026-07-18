@@ -44,17 +44,17 @@ export function TrustedDevicesScreen({ onBack }: TrustedDevicesScreenProps) {
       }
     >
       <div className="px-6 pt-14 pb-4">
-        <div className="flex items-center mb-2">
+        <div className="relative flex items-center justify-center">
           <button
             onClick={onBack}
-            className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none"
+            className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none"
             aria-label="Back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+            <ChevronLeft className="w-5 h-5 text-[#0F172A]" />
           </button>
-          <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">Trusted Devices</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Trusted Devices</h1>
         </div>
-        <p className="text-sm text-gray-500 text-center mt-0.5">
+        <p className="text-sm text-gray-500 text-center mt-1">
           Manage devices with access to your account
         </p>
       </div>

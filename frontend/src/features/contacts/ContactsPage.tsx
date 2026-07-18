@@ -128,15 +128,17 @@ export default function ContactsPage() {
     <>
     <div className="h-dvh bg-[#FAFAFA] flex flex-col">
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="flex items-center gap-2 px-6 pt-14 pb-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="min-h-[32px] min-w-[32px] flex items-center justify-center text-[#0F172A]"
-            aria-label="Back"
-          >
+        <div className="px-6 pt-14 pb-4">
+          <div className="relative flex items-center justify-center">
+            <button
+              onClick={() => navigate(-1)}
+              className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-[#0F172A]"
+              aria-label="Back"
+            >
               <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Trusted Contacts</h1>
+            </button>
+            <h1 className="text-2xl font-bold text-[#0F172A]">Trusted Contacts</h1>
+          </div>
         </div>
 
         <div className="px-6">

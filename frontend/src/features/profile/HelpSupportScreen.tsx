@@ -27,25 +27,23 @@ export function HelpSupportScreen({ onBack }: HelpSupportScreenProps) {
       }
     >
       <div className="px-6 pt-14 pb-4">
-        <div className="flex items-center mb-2">
+        <div className="relative flex items-center justify-center">
           <button
             onClick={onBack}
-            className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none"
+            className="absolute left-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none"
             aria-label="Back"
           >
-            <ChevronLeft className="w-6 h-6 text-[#0F172A]" />
+            <ChevronLeft className="w-5 h-5 text-[#0F172A]" />
           </button>
-          <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">Help & Support</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Help & Support</h1>
         </div>
       </div>
 
       <div className="px-6 pb-6 space-y-6">
         {/* Contact section */}
-        <div className="bg-white rounded-2xl border border-[#F3EFEF] overflow-hidden">
-          <div className="px-4 py-3.5 border-b border-[#F3EFEF]">
-            <p className="text-sm font-bold text-[#0F172A]">Contact Us</p>
-          </div>
-          <a href="mailto:support@safecommute.app" className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors min-h-[44px]">
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-[#0F172A] px-1">Contact Us</p>
+          <a href="mailto:support@safecommute.app" className="flex items-center gap-3 bg-white rounded-lg border border-[#F3EFEF] px-4 py-3.5 hover:bg-gray-50 transition-colors min-h-[44px]">
             <div className="w-9 h-9 rounded-lg bg-[#E0F2FE] flex items-center justify-center shrink-0">
               <Mail className="w-4 h-4 text-[#0891B2]" />
             </div>
@@ -58,14 +56,12 @@ export function HelpSupportScreen({ onBack }: HelpSupportScreenProps) {
         </div>
 
         {/* FAQ section */}
-        <div className="bg-white rounded-2xl border border-[#F3EFEF] overflow-hidden">
-          <div className="px-4 py-3.5 border-b border-[#F3EFEF]">
-            <p className="text-sm font-bold text-[#0F172A]">Frequently Asked Questions</p>
-          </div>
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-[#0F172A] px-1">Frequently Asked Questions</p>
           {FAQS.map((faq, i) => {
             const open = expandedIndex === i
             return (
-              <div key={i} className="border-b border-[#F3EFEF] last:border-b-0">
+              <div key={i} className="bg-white rounded-lg border border-[#F3EFEF]">
                 <button
                   onClick={() => setExpandedIndex(open ? null : i)}
                   className="w-full flex items-center justify-between px-4 py-3.5 text-left min-h-[44px] hover:bg-gray-50 transition-colors"
