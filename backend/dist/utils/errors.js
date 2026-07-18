@@ -2,11 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ValidationError = exports.RateLimitError = exports.ShareLinkExpiredError = exports.ForbiddenError = exports.UnauthorizedError = exports.NotFoundError = exports.AppError = void 0;
 class AppError extends Error {
-    constructor(message, statusCode = 400, code = 'BAD_REQUEST') {
+    constructor(message, statusCode = 400, code = 'BAD_REQUEST', details) {
         super(message);
         this.name = 'AppError';
         this.statusCode = statusCode;
         this.code = code;
+        this.details = details;
     }
 }
 exports.AppError = AppError;

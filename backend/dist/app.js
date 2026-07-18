@@ -41,6 +41,7 @@ const io = new socket_io_1.Server(httpServer, {
     transports: ['websocket'],
 });
 exports.io = io;
+app.set('trust proxy', 1);
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: corsOriginCheck,
