@@ -2,12 +2,6 @@ import { useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import './LandingPage.css'
 
-const SHARED_SVG = (
-  <svg viewBox="0 0 24 24" fill="none">
-    <path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5l-8-3Z" fill="#0891B2" />
-  </svg>
-)
-
 export default function LandingPage() {
   const stageRef = useRef<HTMLDivElement>(null)
   const playedRef = useRef(false)
@@ -134,7 +128,7 @@ export default function LandingPage() {
       <header>
         <nav>
           <Link to="/" className="lp-logo">
-            <span className="lp-logo-mark">{SHARED_SVG}</span>
+            <span className="lp-logo-mark"><img src="/logo.png" alt="SafeCommute" /></span>
             SafeCommute
           </Link>
           <div className="lp-nav-links">
@@ -390,7 +384,7 @@ export default function LandingPage() {
         <div className="lp-wrap">
           <div className="lp-foot-top">
             <Link to="/" className="lp-logo" style={{ color: '#fff' }}>
-              <span className="lp-logo-mark">{SHARED_SVG}</span>
+              <span className="lp-logo-mark"><img src="/logo.png" alt="SafeCommute" /></span>
               SafeCommute
             </Link>
             <div className="lp-foot-links">
