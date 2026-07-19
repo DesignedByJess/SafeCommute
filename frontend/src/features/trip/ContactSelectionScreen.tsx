@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { CaretLeft, Plus, ArrowRight } from '@phosphor-icons/react'
+import { useEffect, useState, useCallback } from 'react'
+import { CaretLeft, Plus, ArrowRight, X } from '@phosphor-icons/react'
 import { StepProgress } from '../../components/StepProgress'
 import { api } from '../../services/api'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
+import { OtpVerifyModal } from '../../features/contacts/OtpVerifyModal'
 
 interface Contact {
  id: string
@@ -30,25 +30,36 @@ function getInitials(name: string): string {
 }
 
 export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionScreenProps) {
- const navigate = useNavigate()
  const [contacts, setContacts] = useState<Contact[]>([])
  const [selectedId, setSelectedId] = useState<string | null>(null)
  const [loading, setLoading] = useState(true)
 
- useEffect(() => {
-  const fetch = async () => {
-   try {
-    const res = await api.get('/contacts')
-    const all: Contact[] = res.data?.data ?? []
-    setContacts(all)
-   } catch {
-    setContacts([])
-   } finally {
-    setLoading(false)
-   }
+ // Add contact modal state
+ const [showAddModal, setShowAddModal] = useState(false)
+ const [addName, setAddName] = useState('')
+ const [addPhone, setAddPhone] = useState('')
+ const [addRelationship, setAddRelationship] = useState('')
+ const [addLoading, setAddLoading] = useState(false)
+ const [addError, setAddError] = useState('')
+
+ // OTP verification state
+ const [otpContactId, setOtpContactId] = useState('')
+ const [otpContactName, setOtpContactName] = useState('')
+ const [otpDevOtp, setOtpDevOtp] = useState<string | undefined>(undefined)
+
+ const fetchContacts = useCallback(async () => {
+  try {
+   const res = await api.get('/contacts')
+   const all: Contact[] = res.data?.data ?? []
+   setContacts(all)
+  } catch {
+   setContacts([])
   }
-  fetch()
  }, [])
+
+ useEffect(() => {
+  fetchContacts().finally(() => setLoading(false))
+ }, [fetchContacts])
 
  const selected = contacts.find((c) => c.id === selectedId)
 
@@ -58,32 +69,103 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
   }
  }
 
-  // Get a consistent background color based on name
-  const avatarColor = (): string => {
-    return 'bg-[#E0F2FE]'
+ const avatarColor = (): string => {
+  return 'bg-[#E0F2FE]'
+ }
+
+ const handleAddContact = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setAddError('')
+
+  if (!addName.trim() || !addPhone.trim()) {
+   setAddError('Name and phone are required')
+   return
   }
 
+  setAddLoading(true)
+  try {
+   const res = await api.post('/contacts', {
+    name: addName.trim(),
+    phone: addPhone.trim(),
+    relationship: addRelationship.trim() || undefined,
+   })
+
+   const newContact = res.data?.data
+   setShowAddModal(false)
+   setAddName('')
+   setAddPhone('')
+   setAddRelationship('')
+
+   // Open OTP verification modal
+   setOtpContactId(newContact.id)
+   setOtpContactName(newContact.name)
+   setOtpDevOtp(newContact.devOtp)
+  } catch (err: unknown) {
+   const axiosErr = err as { response?: { data?: { error?: string } } }
+   setAddError(axiosErr?.response?.data?.error || 'Failed to add contact')
+  } finally {
+   setAddLoading(false)
+  }
+ }
+
+ const handleOtpSuccess = async () => {
+  setOtpContactId('')
+  setOtpContactName('')
+  setOtpDevOtp(undefined)
+
+  // Re-fetch contacts and auto-select the newly added one
+  await fetchContacts()
+
+  // The new contact is the most recently added one — find it by matching the OTP contact name
+  // Since we just re-fetched, look for the contact that matches
+  try {
+   const res = await api.get('/contacts')
+   const all: Contact[] = res.data?.data ?? []
+   const newContact = all.find((c) => c.name === otpContactName && c.verified)
+   if (newContact) {
+    setSelectedId(newContact.id)
+   }
+  } catch {
+   // fallback: list was already updated by fetchContacts
+  }
+ }
+
+ const handleOtpClose = () => {
+  setOtpContactId('')
+  setOtpContactName('')
+  setOtpDevOtp(undefined)
+ }
+
+ const resetAddForm = () => {
+  setShowAddModal(false)
+  setAddName('')
+  setAddPhone('')
+  setAddRelationship('')
+  setAddError('')
+ }
+
  return (
+  <>
    <ScreenWithBottomAction
-      hideBorder
-      actions={
-        <div>
-          <button
-            type="button"
-            onClick={handleContinue}
-            disabled={!selected}
-            className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-[#0891B2] flex items-center justify-center gap-2"
-          >
-            Continue
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <p className="text-center text-xs text-gray-400 mt-3">
-            Free tier: 1 contact per trip
-          </p>
-        </div>
-      }
-    >
-      {/* Header */}
+    hideBorder
+    actions={
+     <div>
+      <button
+       type="button"
+       onClick={handleContinue}
+       disabled={!selected}
+       className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-[#0891B2] flex items-center justify-center gap-2"
+      >
+       Continue
+       <ArrowRight className="w-5 h-5" />
+      </button>
+      <p className="text-center text-xs text-gray-400 mt-3">
+       Free tier: 1 contact per trip
+      </p>
+     </div>
+    }
+   >
+    {/* Header */}
    <div className="px-6 pt-14 pb-4">
      <div className="flex items-center mb-2">
       <button
@@ -92,7 +174,7 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
        className="min-h-[32px] min-w-[32px] flex items-center justify-center -ml-2 focus:outline-none focus:ring-1 focus:ring-[#0891B2] rounded-lg"
        aria-label="Go back"
       >
-        <CaretLeft className="w-6 h-6 text-[#0F172A]" />
+       <CaretLeft className="w-6 h-6 text-[#0F172A]" />
       </button>
       <h1 className="flex-1 text-center mr-8 text-[24px] font-bold text-[#0F172A]">Who should we notify?</h1>
      </div>
@@ -126,14 +208,14 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
          onClick={() => setSelectedId(contact.id)}
          className={`w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 text-left min-h-[44px] transition-all ${
           isSelected
-            ? 'border border-[#0891B2]'
-            : 'border border-[#F3EFEF]'
+           ? 'border border-[#0891B2]'
+           : 'border border-[#F3EFEF]'
          }`}
         >
          {/* Avatar with initials */}
           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${avatarColor()}`}>
            <span className="text-sm font-bold text-[#0891B2]">{getInitials(contact.name)}</span>
-         </div>
+          </div>
 
          {/* Name and phone */}
          <div className="flex-1 min-w-0">
@@ -158,17 +240,102 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
      </div>
     )}
 
-    {/* Add new contact link */}
+    {/* Add new contact button */}
     <button
      type="button"
-     onClick={() => navigate('/contacts')}
+     onClick={() => setShowAddModal(true)}
      className="w-full flex items-center justify-center gap-2 py-4 mt-3 text-sm font-medium text-[#0891B2] min-h-[44px]"
     >
      <Plus className="w-4 h-4" />
      Add new contact
     </button>
    </div>
+   </ScreenWithBottomAction>
 
-    </ScreenWithBottomAction>
-  )
+   {/* Add Contact Modal */}
+   {showAddModal && (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
+     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
+      <button
+       onClick={resetAddForm}
+       className="absolute top-4 right-4 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600"
+       aria-label="Close"
+      >
+       <X className="w-5 h-5" />
+      </button>
+
+      <div className="text-center mb-6">
+       <h2 className="text-lg font-semibold text-gray-900">Add Contact</h2>
+       <p className="text-sm text-gray-500 mt-1">
+        Add a trusted contact to track your trip
+       </p>
+      </div>
+
+      {addError && (
+       <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+        {addError}
+       </div>
+      )}
+
+      <form onSubmit={handleAddContact} className="space-y-4">
+       <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <input
+         type="text"
+         value={addName}
+         onChange={(e) => setAddName(e.target.value)}
+         placeholder="Contact name"
+         className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors placeholder:text-gray-400 focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[44px]"
+        />
+       </div>
+       <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+        <input
+         type="tel"
+         value={addPhone}
+         onChange={(e) => setAddPhone(e.target.value)}
+         placeholder="+234..."
+         className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors placeholder:text-gray-400 focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[44px]"
+        />
+       </div>
+       <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+        <select
+         value={addRelationship}
+         onChange={(e) => setAddRelationship(e.target.value)}
+         className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[44px]"
+        >
+         <option value="">Select relationship</option>
+         <option value="spouse">Spouse</option>
+         <option value="parent">Parent</option>
+         <option value="sibling">Sibling</option>
+         <option value="friend">Friend</option>
+         <option value="colleague">Colleague</option>
+         <option value="other">Other</option>
+        </select>
+       </div>
+
+       <button
+        type="submit"
+        disabled={addLoading}
+        className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-3 min-h-[52px] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
+       >
+        {addLoading ? 'Adding...' : 'Add Contact'}
+       </button>
+      </form>
+     </div>
+    </div>
+   )}
+
+   {/* OTP Verification Modal */}
+   <OtpVerifyModal
+    open={otpContactId !== ''}
+    contactId={otpContactId}
+    contactName={otpContactName}
+    devOtp={otpDevOtp}
+    onClose={handleOtpClose}
+    onSuccess={handleOtpSuccess}
+   />
+  </>
+ )
 }
