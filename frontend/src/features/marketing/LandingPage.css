@@ -202,6 +202,7 @@
   font-size: 15.5px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   box-shadow: 0 6px 0 var(--teal-dark);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
