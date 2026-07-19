@@ -268,7 +268,7 @@
 .landing .lp-bracket-br { bottom: 16px; right: 16px; border-width: 0 4px 4px 0; border-bottom-right-radius: 8px; }
 .landing .lp-scan-guide {
   width: 78%;
-  aspect-ratio: 520 / 140;
+  aspect-ratio: 520 / 200;
   border: 2px dashed rgba(8, 145, 178, 0.55);
   border-radius: 10px;
   display: flex;
