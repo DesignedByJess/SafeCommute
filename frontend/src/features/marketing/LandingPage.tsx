@@ -8,7 +8,7 @@ const SHARED_SVG = (
   </svg>
 )
 
-export default function LandingPage(): JSX.Element {
+export default function LandingPage() {
   const stageRef = useRef<HTMLDivElement>(null)
   const playedRef = useRef(false)
 
