@@ -177,6 +177,7 @@ export default function LandingPage() {
               <div className="lp-scan-guide">
                 <div className="lp-scan-line" id="lp-scanLine" />
                 <div className="lp-plate-result" id="lp-plateResult">
+                  <span className="lp-plate-result-strip" />
                   <span className="lp-plate-result-txt">LND 582 FK</span>
                 </div>
               </div>
