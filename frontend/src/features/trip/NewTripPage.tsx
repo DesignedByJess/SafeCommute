@@ -152,7 +152,7 @@ export default function NewTripPage() {
     } finally {
       setLoading(false)
     }
-  }, [form, navigate])
+  }, [form, navigate, setHmacKey])
 
   const steps: Record<Step, { title: string; subtitle: string }> = {
     destination: { title: 'Where are you going?', subtitle: 'Enter your destination address' },

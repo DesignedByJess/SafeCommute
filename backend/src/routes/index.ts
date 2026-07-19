@@ -9,6 +9,7 @@ import ocrRoutes from './ocr.routes';
 import sessionsRoutes from './sessions.routes';
 import notificationsRoutes from './notifications.routes';
 import subscriptionRoutes from './subscription.routes';
+import playgroundRoutes from './playground.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/ocr', ocrRoutes);
 router.use('/sessions', sessionsRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/subscription', subscriptionRoutes);
+router.use('/playground', playgroundRoutes);
 
 export default router;

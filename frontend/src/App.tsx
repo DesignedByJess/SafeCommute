@@ -23,6 +23,7 @@ import TrustedDevicesPage from './features/profile/TrustedDevicesPage'
 import NotificationSettingsPage from './features/profile/NotificationSettingsPage'
 import HelpSupportPage from './features/profile/HelpSupportPage'
 import NotificationsCenterPage from './features/dashboard/NotificationsCenterPage'
+import PlaygroundPage from './features/playground/PlaygroundPage'
 
 function AuthGate({ isReady, children }: { isReady: boolean; children: React.ReactNode }) {
   const { authError, clearAuthError } = useAuth()
@@ -32,10 +33,6 @@ function AuthGate({ isReady, children }: { isReady: boolean; children: React.Rea
     if (isReady) return
     const id = setTimeout(() => setTimedOut(true), 10000)
     return () => clearTimeout(id)
-  }, [isReady])
-
-  useEffect(() => {
-    if (isReady) setTimedOut(false)
   }, [isReady])
 
   if (isReady) return <>{children}</>
@@ -152,6 +149,7 @@ export default function App() {
       <Route path="/contacts/:contactId/verify-otp" element={<ProtectedRoute><OTPPage /></ProtectedRoute>} />
       <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+      <Route path="/playground" element={<ProtectedRoute><PlaygroundPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/signup" replace />} />
     </Routes>
   )

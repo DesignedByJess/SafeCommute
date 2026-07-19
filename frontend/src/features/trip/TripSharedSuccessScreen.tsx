@@ -1,4 +1,4 @@
-import { MapPin, Car, UserCheck, Phone, Check, Wifi } from '@phosphor-icons/react'
+import { MapPin, Car, UserCheck, Phone, Check, WifiHigh } from '@phosphor-icons/react'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 
 interface TripSharedSuccessScreenProps {
@@ -35,7 +35,7 @@ export function TripSharedSuccessScreen({
           </button>
 
           <div className="flex items-center justify-center gap-2 mt-4">
-            <Wifi className="w-4 h-4 text-[#059669]" />
+            <WifiHigh className="w-4 h-4 text-[#059669]" />
             <span className="text-sm font-medium text-[#059669]">Live location sharing is active</span>
           </div>
         </div>

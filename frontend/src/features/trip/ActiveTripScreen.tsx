@@ -237,8 +237,9 @@ export function ActiveTripScreen({
       setShowCodeModal(false)
       clearActiveTrip()
       navigate('/', { replace: true })
-    } catch (err: any) {
-      const msg = err?.response?.data?.error || 'Invalid code. Please try again.'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } }
+      const msg = axiosErr?.response?.data?.error || 'Invalid code. Please try again.'
       setCodeError(msg)
     } finally {
       setCodeLoading(false)

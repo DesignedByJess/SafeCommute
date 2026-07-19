@@ -16,7 +16,7 @@ describe('Input', () => {
   })
 
   it('shows liveError when value is non-empty', () => {
-    render(<Input label="Email" value="test" liveError="Invalid email" onChange={() => {}} />)
+    render(<Input label="Email" value="test" error="Invalid email" onChange={() => {}} />)
     expect(screen.getByText('Invalid email')).toBeDefined()
   })
 

@@ -117,7 +117,12 @@ export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenP
     try {
       await api.patch('/notifications/read-all')
     } catch {
-      fetchNotifications()
+      try {
+        const res = await api.get('/notifications')
+        setNotifications(res.data?.data?.notifications || [])
+      } catch {
+        // silently fail
+      }
     }
   }
 

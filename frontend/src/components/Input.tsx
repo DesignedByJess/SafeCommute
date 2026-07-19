@@ -21,14 +21,12 @@ input:focus {
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
-  liveError?: string
   showPasswordToggle?: boolean
 }
 
 export function Input({
   label,
   error: externalError,
-  liveError,
   showPasswordToggle,
   className = '',
   id,

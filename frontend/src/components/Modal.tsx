@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useRef, useEffect, type ReactNode } from 'react'
 
 interface ModalProps {
   open: boolean
@@ -10,14 +10,15 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children }: ModalProps) {
   const openedAt = useRef(0)
 
-  if (open && openedAt.current === 0) {
-    openedAt.current = Date.now()
-  }
+  useEffect(() => {
+    if (open) {
+      openedAt.current = Date.now()
+    } else {
+      openedAt.current = 0
+    }
+  }, [open])
 
-  if (!open) {
-    if (openedAt.current !== 0) openedAt.current = 0
-    return null
-  }
+  if (!open) return null
 
   const handleClose = () => {
     if (Date.now() - openedAt.current < 300) return
