@@ -315,10 +315,10 @@
 .landing .lp-plate-result .lp-plate-result-txt {
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 700;
-  font-size: clamp(20px, 3.4vw, 28px);
-  letter-spacing: 1.5px;
+  font-size: clamp(18px, 3vw, 26px);
+  letter-spacing: 0;
   color: var(--navy);
-  padding: 10px 18px;
+  padding: 10px 10px;
   white-space: nowrap;
 }
 .landing .lp-scan-status {
