@@ -316,7 +316,7 @@
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 700;
   font-size: clamp(20px, 3.4vw, 28px);
-  letter-spacing: 3px;
+  letter-spacing: 1.5px;
   color: var(--navy);
   padding: 10px 18px;
   white-space: nowrap;
