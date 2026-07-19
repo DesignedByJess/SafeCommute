@@ -24,6 +24,7 @@ import NotificationSettingsPage from './features/profile/NotificationSettingsPag
 import HelpSupportPage from './features/profile/HelpSupportPage'
 import NotificationsCenterPage from './features/dashboard/NotificationsCenterPage'
 import PlaygroundPage from './features/playground/PlaygroundPage'
+import LandingPage from './features/marketing/LandingPage'
 
 function AuthGate({ isReady, children }: { isReady: boolean; children: React.ReactNode }) {
   const { authError, clearAuthError } = useAuth()
@@ -114,6 +115,20 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   )
 }
 
+function RootRoute() {
+  const { user, initialLoading, onboardingComplete } = useAuth()
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    )
+  }
+  if (!user) return <LandingPage />
+  if (!onboardingComplete) return <Navigate to="/onboarding" replace />
+  return <DashboardPage />
+}
+
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, initialLoading, onboardingComplete } = useAuth()
   return (
@@ -134,7 +149,7 @@ export default function App() {
       <Route path="/onboarding" element={<OnboardingGuard><OnboardingPage /></OnboardingGuard>} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/" element={<RootRoute />} />
       <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
       <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
       <Route path="/safety" element={<ProtectedRoute><SafetyCenterPage /></ProtectedRoute>} />
