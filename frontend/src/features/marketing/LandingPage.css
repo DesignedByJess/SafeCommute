@@ -287,7 +287,7 @@
 }
 .landing .lp-plate-result {
   position: relative;
-  width: fit-content;
+  display: inline-block;
   background: #fff;
   border: 2.5px solid var(--navy);
   border-radius: 6px;
