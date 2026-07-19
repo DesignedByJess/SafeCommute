@@ -317,11 +317,8 @@
   font-size: clamp(20px, 3.4vw, 28px);
   letter-spacing: 3px;
   color: var(--navy);
-  padding: 10px 18px;
+  padding: 10px 18px 10px 22px;
   white-space: nowrap;
-  text-align: center;
-  display: flex;
-  justify-content: center;
 }
 .landing .lp-scan-status {
   margin-top: 16px;
