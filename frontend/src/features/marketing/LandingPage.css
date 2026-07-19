@@ -156,7 +156,7 @@
   .landing .lp-hero-h { max-width: none !important; }
   .landing .lp-hero-sub { max-width: none !important; }
   .landing .lp-btn-primary,
-  .landing .lp-btn-ghost { width: 100%; justify-content: center; }
+  .landing .lp-btn-ghost { width: 100%; }
 }
 .landing .lp-eyebrow-row {
   display: flex;
@@ -221,6 +221,7 @@
   font-size: 15.5px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: transparent;
   cursor: pointer;
