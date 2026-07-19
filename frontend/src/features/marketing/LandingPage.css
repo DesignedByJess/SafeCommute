@@ -286,9 +286,7 @@
   opacity: 0;
 }
 .landing .lp-plate-result {
-  display: flex;
-  align-items: stretch;
-  width: 100%;
+  position: relative;
   background: #fff;
   border: 2.5px solid var(--navy);
   border-radius: 6px;
@@ -297,9 +295,12 @@
   transform: scale(0.92);
 }
 .landing .lp-plate-result .lp-plate-result-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: 20px;
   background: var(--green);
-  position: relative;
 }
 .landing .lp-plate-result .lp-plate-result-strip::after {
   content: 'NG';
@@ -321,7 +322,7 @@
   padding: 10px 18px;
   white-space: nowrap;
   text-align: center;
-  flex: 1;
+  position: relative;
 }
 .landing .lp-scan-status {
   margin-top: 16px;
@@ -425,14 +426,14 @@
   align-items: start;
 }
 .landing .lp-stat-plate {
-  margin-top: 34px;
+  margin-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
 }
 .landing .lp-stat-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 14px;
   padding: 14px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -517,6 +518,7 @@
   gap: 16px;
   padding: 22px 0;
   border-bottom: 1px solid var(--line);
+  align-items: flex-start;
 }
 .landing .lp-made-item:last-child { border-bottom: none; }
 .landing .lp-made-item .lp-mk {
@@ -526,7 +528,7 @@
   color: var(--green);
   flex-shrink: 0;
   width: 56px;
-  padding-top: 2px;
+  padding-top: 1px;
 }
 .landing .lp-made-item h4 {
   font-size: 16px;
@@ -588,7 +590,7 @@
 .landing .lp-privacy-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
 }
 .landing .lp-privacy-row {
   display: flex;
