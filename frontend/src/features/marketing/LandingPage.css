@@ -295,25 +295,6 @@
   opacity: 0;
   transform: scale(0.92);
 }
-.landing .lp-plate-result .lp-plate-result-strip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 20px;
-  background: var(--green);
-}
-.landing .lp-plate-result .lp-plate-result-strip::after {
-  content: 'NG';
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 1px;
-}
 .landing .lp-plate-result .lp-plate-result-txt {
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 700;
