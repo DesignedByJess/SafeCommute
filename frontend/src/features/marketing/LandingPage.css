@@ -155,6 +155,8 @@
   .landing .lp-hero { padding: 48px 0 50px; }
   .landing .lp-hero-h { max-width: none !important; }
   .landing .lp-hero-sub { max-width: none !important; }
+  .landing .lp-btn-primary,
+  .landing .lp-btn-ghost { width: 100%; justify-content: center; }
 }
 .landing .lp-eyebrow-row {
   display: flex;
