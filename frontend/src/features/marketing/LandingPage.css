@@ -471,6 +471,8 @@
   border-radius: 16px;
   padding: 26px 22px;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .landing .lp-step .lp-idx {
   font-family: 'IBM Plex Mono', monospace;
@@ -481,7 +483,7 @@
 }
 .landing .lp-step h3 {
   font-size: 17px;
-  margin-top: 14px;
+  margin-top: 6px;
   font-weight: 700;
   color: var(--navy);
 }
