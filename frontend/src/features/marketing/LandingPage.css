@@ -690,7 +690,7 @@
   gap: 9px;
 }
 .landing .lp-price-list li::before {
-  content: '—';
+  content: '\2192';
   color: var(--teal);
   flex-shrink: 0;
 }

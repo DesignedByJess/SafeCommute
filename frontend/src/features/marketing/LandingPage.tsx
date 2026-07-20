@@ -19,7 +19,7 @@ export default function LandingPage() {
       plate.style.opacity = '1'
       plate.style.transform = 'none'
       status.classList.add('lp-ok')
-      statusTxt.textContent = 'Plate detected — LND 582 FK'
+      statusTxt.textContent = 'Plate detected: LND 582 FK'
       trip.style.opacity = '1'
       trip.style.transform = 'none'
       return
@@ -52,7 +52,7 @@ export default function LandingPage() {
       plate.style.opacity = '1'
       plate.style.transform = 'scale(1)'
       status.classList.add('lp-ok')
-      statusTxt.textContent = 'Plate detected \u2014 LND 582 FK'
+      statusTxt.textContent = 'Plate detected: LND 582 FK'
     }, 1700)
 
     setTimeout(() => {
@@ -152,8 +152,8 @@ export default function LandingPage() {
               <span className="lp-eyebrow-label">BUILT FOR PORT HARCOURT ROADS</span>
             </div>
             <h1 className="lp-hero-h">
-              You don&apos;t know the driver.{' '}
-              <span className="lp-hl">We make sure someone else does.</span>
+              You don&apos;t know who&apos;s behind the wheel.{' '}
+              <span className="lp-hl">We make sure the vehicle is on record.</span>
             </h1>
             <p className="lp-hero-sub">
               Scan the plate before you get in. Share your live trip with someone you trust.
@@ -164,7 +164,7 @@ export default function LandingPage() {
               <a href="#how" className="lp-btn-ghost">See how it works</a>
             </div>
             <p className="lp-hero-note">
-              Works with danfo, keke, and cabs &mdash; <b>not just app-hailed rides.</b>
+              Works with bus, keke, and cabs. <b>Not just app-hailed rides.</b>
             </p>
           </div>
 
@@ -203,15 +203,15 @@ export default function LandingPage() {
             <span className="lp-eyebrow-label">THE REAL RIDE</span>
             <h2>You get in. You hope for the best. That&apos;s the whole safety plan, most days.</h2>
             <p>
-              Danfo, keke, cab &mdash; you climb in, and that&apos;s it. If something goes wrong,
-              nobody knows which vehicle you were in, who was driving, or where you were headed.
+              Bus, keke, cab. You climb in, and that&apos;s it. If something goes wrong,
+              nobody has a record of which vehicle you were in, or where you were headed.
               SafeCommute closes that gap, in the ten seconds before you shut the door.
             </p>
           </div>
           <div className="lp-stat-plate">
             <div className="lp-stat-row">
               <span className="lp-num lp-mono">01</span>
-              <span className="lp-lbl">Scan the plate &mdash; it&apos;s logged before the trip starts.</span>
+              <span className="lp-lbl">Scan the plate. It&apos;s logged before the trip starts.</span>
             </div>
             <div className="lp-stat-row">
               <span className="lp-num lp-mono">02</span>
@@ -235,7 +235,7 @@ export default function LandingPage() {
             <div className="lp-step lp-rv">
               <div className="lp-idx">01</div>
               <h3>Scan the plate</h3>
-              <p>Point your camera at the plate. It reads and confirms in seconds &mdash; no typing, no guessing.</p>
+              <p>Point your camera at the plate. It reads and confirms in seconds. No typing, no guessing.</p>
             </div>
             <div className="lp-step lp-rv">
               <div className="lp-idx">02</div>
@@ -245,7 +245,7 @@ export default function LandingPage() {
             <div className="lp-step lp-rv">
               <div className="lp-idx">03</div>
               <h3>Ride, tracked</h3>
-              <p>Your contact sees your route and ETA until you arrive &mdash; nothing more, nothing stored.</p>
+              <p>Your contact sees your route and ETA until you arrive. Nothing stored, nothing kept.</p>
             </div>
             <div className="lp-step lp-rv">
               <div className="lp-idx">04</div>
@@ -264,8 +264,8 @@ export default function LandingPage() {
               <div className="lp-made-item">
                 <span className="lp-mk">01 /</span>
                 <div>
-                  <h4>Danfo, keke, and cabs</h4>
-                  <p>Not just app-hailed rides &mdash; SafeCommute works with whatever you flag down.</p>
+                  <h4>Bus, keke, and cabs</h4>
+                  <p>Not just app-hailed rides. SafeCommute works with whatever you flag down.</p>
                 </div>
               </div>
               <div className="lp-made-item">
