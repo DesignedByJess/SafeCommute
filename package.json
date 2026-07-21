@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n backend,frontend -c blue,green \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
-    "build": "cd backend && npm run build && cd ../frontend && npm run build",
+    "build": "cd backend && npm install --omit=dev && npm run build",
+    "start": "cd backend && node dist/app.js",
     "test": "cd backend && npm test",
     "install:all": "cd backend && npm install && cd ../frontend && npm install"
   },
