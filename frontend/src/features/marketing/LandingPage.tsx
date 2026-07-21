@@ -233,23 +233,31 @@ export default function LandingPage() {
           </div>
           <div className="lp-steps">
             <div className="lp-step lp-rv">
-              <div className="lp-idx">01</div>
-              <h3>Scan the plate</h3>
+              <div className="lp-step-head">
+                <div className="lp-idx">01</div>
+                <h3>Scan the plate</h3>
+              </div>
               <p>Point your camera at the plate. It reads and confirms in seconds. No typing, no guessing.</p>
             </div>
             <div className="lp-step lp-rv">
-              <div className="lp-idx">02</div>
-              <h3>Pick who to tell</h3>
+              <div className="lp-step-head">
+                <div className="lp-idx">02</div>
+                <h3>Pick who to tell</h3>
+              </div>
               <p>Choose a trusted contact. They&apos;ll get your live trip the moment you start moving.</p>
             </div>
             <div className="lp-step lp-rv">
-              <div className="lp-idx">03</div>
-              <h3>Ride, tracked</h3>
+              <div className="lp-step-head">
+                <div className="lp-idx">03</div>
+                <h3>Ride, tracked</h3>
+              </div>
               <p>Your contact sees your route and ETA until you arrive. Nothing stored, nothing kept.</p>
             </div>
             <div className="lp-step lp-rv">
-              <div className="lp-idx">04</div>
-              <h3>One tap for help</h3>
+              <div className="lp-step-head">
+                <div className="lp-idx">04</div>
+                <h3>One tap for help</h3>
+              </div>
               <p>If something feels wrong, one tap sends an alert with your last known location.</p>
             </div>
           </div>
