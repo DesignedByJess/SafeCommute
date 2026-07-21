@@ -1,19 +1,21 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { CaretLeft, CheckCircle } from '@phosphor-icons/react'
-import Tesseract from 'tesseract.js'
+import { createWorker } from 'tesseract.js'
+import type { Worker } from 'tesseract.js'
 import { StepProgress } from '../../components/StepProgress'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { api } from '../../services/api'
 
 const PLATE_REGEX = /^[A-Z]{3}-\d{3}-[A-Z]{2}$/
+const TESSERACT_TIMEOUT_MS = 30_000
 
 interface LicensePlateCaptureScreenProps {
   onBack: () => void
   onConfirm: (plate: string) => void
-  ocrDelayMs?: number
 }
 
 type EntryMode = 'scan' | 'manual' | 'detected'
+type ScanStage = '' | 'Loading OCR engine...' | 'Loading language data...' | 'Recognizing plate...'
 
 function normalizePlate(text: string): string {
   const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
@@ -26,6 +28,16 @@ function normalizePlate(text: string): string {
   return cleaned
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val) },
+      (err) => { clearTimeout(timer); reject(err) },
+    )
+  })
+}
+
 export function LicensePlateCaptureScreen({
   onBack,
   onConfirm,
@@ -34,24 +46,55 @@ export function LicensePlateCaptureScreen({
   const [plateDetected, setPlateDetected] = useState<string | null>(null)
   const [confidence, setConfidence] = useState<number>(0)
   const [isScanning, setIsScanning] = useState<boolean>(false)
+  const [scanStage, setScanStage] = useState<ScanStage>('')
   const [scanError, setScanError] = useState<string>('')
   const [retryCount, setRetryCount] = useState<number>(0)
   const [manualPlate, setManualPlate] = useState<string>('')
   const [manualError, setManualError] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const workerRef = useRef<Worker | null>(null)
+
+  useEffect(() => {
+    return () => {
+      workerRef.current?.terminate().catch(() => {})
+      workerRef.current = null
+    }
+  }, [])
 
   const runOcr = useCallback(async (imageData: string) => {
     setIsScanning(true)
     setScanError('')
+    setScanStage('Loading OCR engine...')
 
+    let worker: Worker | null = null
     try {
-      const result = await Tesseract.recognize(imageData, 'eng', {
-        logger: () => {},
-      })
+      worker = await withTimeout(
+        createWorker('eng', 1, {
+          logger: ({ status, progress }) => {
+            if (status === 'loading tesseract core') {
+              setScanStage('Loading OCR engine...')
+            } else if (status === 'initializing api') {
+              setScanStage('Loading language data...')
+            } else if (status === 'recognizing text') {
+              setScanStage(`Recognizing plate... ${Math.round(progress * 100)}%`)
+            }
+          },
+        }),
+        TESSERACT_TIMEOUT_MS,
+        'Worker creation',
+      )
+      workerRef.current = worker
 
-      const text = result.data.text.trim()
-      const conf = result.data.confidence
+      setScanStage('Recognizing plate...')
+      const { data } = await withTimeout(
+        worker.recognize(imageData),
+        TESSERACT_TIMEOUT_MS,
+        'OCR recognition',
+      )
+
+      const text = data.text.trim()
+      const conf = data.confidence
       const normalized = normalizePlate(text)
 
       if (PLATE_REGEX.test(normalized) && conf >= 80) {
@@ -59,10 +102,11 @@ export function LicensePlateCaptureScreen({
         setConfidence(conf)
         setEntryMode('detected')
         setIsScanning(false)
+        setScanStage('')
         return
       }
 
-      // Client-side OCR confidence < 80% — fall back to Google Vision API
+      // Client OCR failed — try server-side Google Vision API
       try {
         const serverResult = await api.post('/ocr/scan-plate', {
           image: imageData.split(',')[1] || imageData,
@@ -75,13 +119,13 @@ export function LicensePlateCaptureScreen({
           setConfidence(serverConf)
           setEntryMode('detected')
           setIsScanning(false)
+          setScanStage('')
           return
         }
       } catch {
-        // Server OCR failed — continue to retry or manual
+        // Server OCR not available — fall through to retry/manual
       }
 
-      // OCR failed after both attempts
       const nextRetry = retryCount + 1
       setRetryCount(nextRetry)
       if (nextRetry >= 3) {
@@ -90,10 +134,18 @@ export function LicensePlateCaptureScreen({
       } else {
         setScanError(`Could not read plate clearly. Please try again. (Attempt ${nextRetry}/3)`)
         setIsScanning(false)
+        setScanStage('')
       }
-    } catch {
-      setScanError('OCR processing failed. Please try again.')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'OCR processing failed'
+      setScanError(`${msg}. Please try again.`)
       setIsScanning(false)
+      setScanStage('')
+    } finally {
+      try {
+        await worker?.terminate()
+      } catch { /* ignore */ }
+      workerRef.current = null
     }
   }, [retryCount])
 
@@ -260,7 +312,7 @@ export function LicensePlateCaptureScreen({
                         {isScanning && (
                           <div className="flex flex-col items-center gap-2">
                             <div className="w-8 h-8 border-2 border-[#0891B2] border-t-transparent rounded-full animate-spin" />
-                            <p className="text-sm text-gray-500 font-medium">Scanning...</p>
+                            <p className="text-sm text-gray-500 font-medium">{scanStage || 'Scanning...'}</p>
                           </div>
                         )}
                       </div>

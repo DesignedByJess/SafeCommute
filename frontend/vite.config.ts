@@ -32,7 +32,13 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,jpg}'],
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
+        navigateFallback: null,
         runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/tesseract/i,
+            handler: 'NetworkFirst',
+            options: { cacheName: 'tesseract-cdn', expiration: { maxEntries: 10, maxAgeSeconds: 86400 } },
+          },
           {
             urlPattern: /^https?:\/\/.*\/api\/v1\/share\/.*/i,
             handler: 'NetworkFirst',
