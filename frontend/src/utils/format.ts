@@ -8,8 +8,8 @@ export function maskPhone(phone: string): string {
 }
 
 export function maskPlate(plate: string): string {
-  if (plate.length < 5) return plate
-  return `**-${plate.slice(-5)}`
+  if (plate.length < 3) return plate
+  return `**-${plate.slice(-2)}`
 }
 
 export function formatDate(iso: string): string {

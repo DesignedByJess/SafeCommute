@@ -26,6 +26,12 @@ jest.mock('winston', () => {
   };
 });
 
+jest.mock('../services/encryption.service', () => ({
+  EncryptionService: {
+    decryptPlate: jest.fn().mockReturnValue('ABC-123-FK'),
+  },
+}));
+
 import express from 'express';
 import request from 'supertest';
 import shareRouter from './share.routes';

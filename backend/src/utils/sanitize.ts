@@ -6,7 +6,7 @@ export function maskPhone(phone: string | null | undefined): string {
 }
 
 export function maskPlate(plate: string): string {
-  if (plate.length < 5) return plate;
-  const suffix = plate.slice(-5);
+  if (plate.length < 3) return plate;
+  const suffix = plate.slice(-2);
   return `**-${suffix}`;
 }

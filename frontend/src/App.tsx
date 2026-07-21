@@ -145,7 +145,7 @@ export default function App() {
     <Routes>
       <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/share/:share_token" element={<ShareTrackingPage />} />
+      <Route path="/track/:share_token" element={<ShareTrackingPage />} />
       <Route path="/onboarding" element={<OnboardingGuard><OnboardingPage /></OnboardingGuard>} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
