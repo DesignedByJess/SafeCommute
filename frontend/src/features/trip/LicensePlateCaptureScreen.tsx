@@ -15,7 +15,7 @@ interface LicensePlateCaptureScreenProps {
 }
 
 type EntryMode = 'scan' | 'manual' | 'detected'
-type ScanStage = '' | 'Loading OCR engine...' | 'Loading language data...' | 'Recognizing plate...'
+type ScanStage = 'idle' | 'scanning'
 
 function normalizePlate(text: string): string {
   const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
@@ -46,7 +46,8 @@ export function LicensePlateCaptureScreen({
   const [plateDetected, setPlateDetected] = useState<string | null>(null)
   const [confidence, setConfidence] = useState<number>(0)
   const [isScanning, setIsScanning] = useState<boolean>(false)
-  const [scanStage, setScanStage] = useState<ScanStage>('')
+  const [scanStage, setScanStage] = useState<ScanStage>('idle')
+  const [scanProgress, setScanProgress] = useState<string>('')
   const [scanError, setScanError] = useState<string>('')
   const [retryCount, setRetryCount] = useState<number>(0)
   const [manualPlate, setManualPlate] = useState<string>('')
@@ -65,7 +66,8 @@ export function LicensePlateCaptureScreen({
   const runOcr = useCallback(async (imageData: string) => {
     setIsScanning(true)
     setScanError('')
-    setScanStage('Loading OCR engine...')
+    setScanStage('scanning')
+    setScanProgress('Loading OCR engine...')
 
     let worker: Worker | null = null
     try {
@@ -73,11 +75,11 @@ export function LicensePlateCaptureScreen({
         createWorker('eng', 1, {
           logger: ({ status, progress }) => {
             if (status === 'loading tesseract core') {
-              setScanStage('Loading OCR engine...')
+              setScanProgress('Loading OCR engine...')
             } else if (status === 'initializing api') {
-              setScanStage('Loading language data...')
+              setScanProgress('Loading language data...')
             } else if (status === 'recognizing text') {
-              setScanStage(`Recognizing plate... ${Math.round(progress * 100)}%`)
+              setScanProgress(`Recognizing plate... ${Math.round(progress * 100)}%`)
             }
           },
         }),
@@ -86,7 +88,7 @@ export function LicensePlateCaptureScreen({
       )
       workerRef.current = worker
 
-      setScanStage('Recognizing plate...')
+      setScanProgress('Recognizing plate...')
       const { data } = await withTimeout(
         worker.recognize(imageData),
         TESSERACT_TIMEOUT_MS,
@@ -102,7 +104,8 @@ export function LicensePlateCaptureScreen({
         setConfidence(conf)
         setEntryMode('detected')
         setIsScanning(false)
-        setScanStage('')
+        setScanStage('idle')
+        setScanProgress('')
         return
       }
 
@@ -119,7 +122,8 @@ export function LicensePlateCaptureScreen({
           setConfidence(serverConf)
           setEntryMode('detected')
           setIsScanning(false)
-          setScanStage('')
+          setScanStage('idle')
+          setScanProgress('')
           return
         }
       } catch {
@@ -134,13 +138,15 @@ export function LicensePlateCaptureScreen({
       } else {
         setScanError(`Could not read plate clearly. Please try again. (Attempt ${nextRetry}/3)`)
         setIsScanning(false)
-        setScanStage('')
+        setScanStage('idle')
+        setScanProgress('')
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'OCR processing failed'
       setScanError(`${msg}. Please try again.`)
       setIsScanning(false)
-      setScanStage('')
+      setScanStage('idle')
+      setScanProgress('')
     } finally {
       try {
         await worker?.terminate()
@@ -312,7 +318,7 @@ export function LicensePlateCaptureScreen({
                         {isScanning && (
                           <div className="flex flex-col items-center gap-2">
                             <div className="w-8 h-8 border-2 border-[#0891B2] border-t-transparent rounded-full animate-spin" />
-                            <p className="text-sm text-gray-500 font-medium">{scanStage || 'Scanning...'}</p>
+                            <p className="text-sm text-gray-500 font-medium">{scanProgress || 'Scanning...'}</p>
                           </div>
                         )}
                       </div>
