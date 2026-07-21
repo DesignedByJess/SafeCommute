@@ -31,6 +31,7 @@ interface EnvConfig {
   GOOGLE_MAPS_API_KEY: string;
   GOOGLE_VISION_API_KEY: string;
   LOG_LEVEL: string;
+  FRONTEND_URL: string;
 }
 
 function requireEnv(name: string): string {
@@ -73,5 +74,6 @@ export const env: EnvConfig = {
   TWILIO_PHONE_NUMBER: getEnv('TWILIO_PHONE_NUMBER', ''),
   GOOGLE_MAPS_API_KEY: getEnv('GOOGLE_MAPS_API_KEY', ''),
   GOOGLE_VISION_API_KEY: getEnv('GOOGLE_VISION_API_KEY', ''),
+  FRONTEND_URL: getEnv('FRONTEND_URL', 'https://safe-commute-opal.vercel.app'),
   LOG_LEVEL: getEnv('LOG_LEVEL', 'info'),
 };

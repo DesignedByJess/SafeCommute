@@ -18,7 +18,7 @@ interface EmergencyPayload {
 
 export class NotificationService {
   async sendTripStarted(payload: TripStartedPayload): Promise<void> {
-    const message = `${payload.userName} is on a SafeCommute trip. Track live: https://safecommute.app/track/${payload.shareToken}`;
+    const message = `${payload.userName} is on a SafeCommute trip. Track live: ${env.FRONTEND_URL}/track/${payload.shareToken}`;
 
     const results = await Promise.allSettled([
       this.sendWhatsApp(payload.contactPhone, message),
@@ -55,7 +55,7 @@ export class NotificationService {
   }
 
   async sendEmergencyAlert(payload: EmergencyPayload): Promise<void> {
-    const message = `EMERGENCY: ${payload.contactName} triggered an emergency alert on SafeCommute. Location: https://maps.google.com/?q=${payload.lat},${payload.lng}. Track: https://safecommute.app/track/${payload.shareToken}`;
+    const message = `EMERGENCY: ${payload.contactName} triggered an emergency alert on SafeCommute. Location: https://maps.google.com/?q=${payload.lat},${payload.lng}. Track: ${env.FRONTEND_URL}/track/${payload.shareToken}`;
 
     await Promise.allSettled([
       this.sendWhatsApp(payload.contactPhone, message),
