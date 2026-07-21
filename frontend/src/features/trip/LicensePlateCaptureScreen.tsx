@@ -15,7 +15,6 @@ interface LicensePlateCaptureScreenProps {
 }
 
 type EntryMode = 'scan' | 'manual' | 'detected'
-type ScanStage = 'idle' | 'scanning'
 
 function normalizePlate(text: string): string {
   const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
@@ -46,7 +45,6 @@ export function LicensePlateCaptureScreen({
   const [plateDetected, setPlateDetected] = useState<string | null>(null)
   const [confidence, setConfidence] = useState<number>(0)
   const [isScanning, setIsScanning] = useState<boolean>(false)
-  const [scanStage, setScanStage] = useState<ScanStage>('idle')
   const [scanProgress, setScanProgress] = useState<string>('')
   const [scanError, setScanError] = useState<string>('')
   const [retryCount, setRetryCount] = useState<number>(0)
@@ -66,7 +64,7 @@ export function LicensePlateCaptureScreen({
   const runOcr = useCallback(async (imageData: string) => {
     setIsScanning(true)
     setScanError('')
-    setScanStage('scanning')
+
     setScanProgress('Loading OCR engine...')
 
     let worker: Worker | null = null
@@ -104,7 +102,6 @@ export function LicensePlateCaptureScreen({
         setConfidence(conf)
         setEntryMode('detected')
         setIsScanning(false)
-        setScanStage('idle')
         setScanProgress('')
         return
       }
@@ -122,7 +119,6 @@ export function LicensePlateCaptureScreen({
           setConfidence(serverConf)
           setEntryMode('detected')
           setIsScanning(false)
-          setScanStage('idle')
           setScanProgress('')
           return
         }
@@ -138,14 +134,12 @@ export function LicensePlateCaptureScreen({
       } else {
         setScanError(`Could not read plate clearly. Please try again. (Attempt ${nextRetry}/3)`)
         setIsScanning(false)
-        setScanStage('idle')
         setScanProgress('')
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'OCR processing failed'
       setScanError(`${msg}. Please try again.`)
       setIsScanning(false)
-      setScanStage('idle')
       setScanProgress('')
     } finally {
       try {
