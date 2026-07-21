@@ -1,11 +1,11 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd backend && npm ci && npm run build",
+    "buildCommand": "npm ci --prefix backend && npm run build --prefix backend",
     "watchPatterns": ["backend/**"]
   },
   "deploy": {
-    "startCommand": "cd backend && node dist/app.js",
+    "startCommand": "node backend/dist/app.js",
     "healthcheckPath": "/health"
   }
 }
