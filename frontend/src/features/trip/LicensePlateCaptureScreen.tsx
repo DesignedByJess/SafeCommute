@@ -62,16 +62,19 @@ export function LicensePlateCaptureScreen({
   }, [])
 
   const runOcr = useCallback(async (imageData: string) => {
+    console.log('[OCR] runOcr called, imageData length:', imageData.length)
     setIsScanning(true)
     setScanError('')
 
     setScanProgress('Loading OCR engine...')
+    console.log('[OCR] Attempting to create worker...')
 
     let worker: Worker | null = null
     try {
       worker = await withTimeout(
         createWorker('eng', 1, {
           logger: ({ status, progress }) => {
+            console.log('[OCR] logger:', status, progress)
             if (status === 'loading tesseract core') {
               setScanProgress('Loading OCR engine...')
             } else if (status === 'initializing api') {
@@ -85,6 +88,7 @@ export function LicensePlateCaptureScreen({
         'Worker creation',
       )
       workerRef.current = worker
+      console.log('[OCR] Worker created successfully')
 
       setScanProgress('Recognizing plate...')
       const { data } = await withTimeout(
@@ -93,6 +97,7 @@ export function LicensePlateCaptureScreen({
         'OCR recognition',
       )
 
+      console.log('[OCR] Recognition complete. Raw text:', data.text.trim(), 'Confidence:', data.confidence)
       const text = data.text.trim()
       const conf = data.confidence
       const normalized = normalizePlate(text)
@@ -137,6 +142,7 @@ export function LicensePlateCaptureScreen({
         setScanProgress('')
       }
     } catch (err) {
+      console.error('[OCR] Error in runOcr:', err)
       const msg = err instanceof Error ? err.message : 'OCR processing failed'
       setScanError(`${msg}. Please try again.`)
       setIsScanning(false)
@@ -152,6 +158,7 @@ export function LicensePlateCaptureScreen({
   const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0]
     if (!file) return
+    console.log('[OCR] File captured:', file.name, file.type, file.size)
 
     const reader = new FileReader()
     reader.onload = async (event) => {
@@ -318,7 +325,14 @@ export function LicensePlateCaptureScreen({
                       </div>
                     </div>
                     {scanError && (
-                      <p className="text-sm text-red-500 text-center mt-4 font-medium">{scanError}</p>
+                      <div style={{background:'#FEE2E2',border:'3px solid #DC2626',borderRadius:'12px',padding:'16px',margin:'16px 0',textAlign:'center'}}>
+                        <p style={{fontSize:'18px',fontWeight:'bold',color:'#991B1B',margin:0}}>
+                          ⚠️ OCR ERROR ⚠️
+                        </p>
+                        <p style={{fontSize:'14px',fontWeight:'bold',color:'#991B1B',marginTop:'8px',margin:0}}>
+                          {scanError}
+                        </p>
+                      </div>
                     )}
                     <p className="text-center text-gray-500 mt-8 text-base">
                       Can't scan plate?{' '}
