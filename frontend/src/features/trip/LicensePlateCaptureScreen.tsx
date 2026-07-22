@@ -53,14 +53,17 @@ async function preprocessImage(dataUrl: string): Promise<string> {
   const ctx = canvas.getContext('2d')!
   const { width: srcW, height: srcH } = img
 
-  const cropFraction = 0.65
-  const cropW = srcW * cropFraction
-  const cropH = srcH * cropFraction
-  const cropX = (srcW - cropW) / 2
-  const cropY = (srcH - cropH) / 2
+  const cropTop = 0.25
+  const cropBottom = 0.25
+  const cropLeft = 0.05
+  const cropRight = 0.05
+  const cropX = srcW * cropLeft
+  const cropY = srcH * cropTop
+  const cropW = srcW * (1 - cropLeft - cropRight)
+  const cropH = srcH * (1 - cropTop - cropBottom)
 
-  const minDim = 600
-  const scale = Math.max(minDim / cropW, 1)
+  const minW = 800
+  const scale = Math.max(minW / cropW, 1)
   const outW = Math.round(cropW * scale)
   const outH = Math.round(cropH * scale)
 
@@ -71,11 +74,21 @@ async function preprocessImage(dataUrl: string): Promise<string> {
 
   const imageData = ctx.getImageData(0, 0, outW, outH)
   const d = imageData.data
-  const threshold = 140
+  const len = d.length
 
-  for (let i = 0; i < d.length; i += 4) {
-    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
-    const val = gray > threshold ? 255 : 0
+  const gray = new Uint8Array(len / 4)
+  for (let i = 0, gi = 0; i < len; i += 4, gi++) {
+    gray[gi] = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2])
+  }
+
+  const sorted = Uint8Array.from(gray).sort()
+  const p2 = sorted[Math.floor(sorted.length * 0.02)]
+  const p98 = sorted[Math.floor(sorted.length * 0.98)]
+  const range = Math.max(p98 - p2, 1)
+
+  for (let i = 0, gi = 0; i < len; i += 4, gi++) {
+    const normalized = Math.min(255, Math.max(0, ((gray[gi] - p2) / range) * 255))
+    const val = normalized > 128 ? 255 : 0
     d[i] = val
     d[i + 1] = val
     d[i + 2] = val
@@ -334,7 +347,7 @@ export function LicensePlateCaptureScreen({
             </h1>
           </div>
           <p className="text-sm text-gray-500 mt-0.5 font-normal text-center">
-            Position the plate within the frame
+            Hold phone close — fill the frame with the plate
           </p>
         </div>
 

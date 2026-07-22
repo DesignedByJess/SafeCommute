@@ -70,7 +70,7 @@ describe('LicensePlateCaptureScreen', () => {
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={vi.fn()} />
     )
     expect(screen.getByText('Scan License Plate')).toBeDefined()
-    expect(screen.getByText('Position the plate within the frame')).toBeDefined()
+    expect(screen.getByText('Hold phone close — fill the frame with the plate')).toBeDefined()
     expect(screen.getByLabelText('Go back')).toBeDefined()
   })
 
