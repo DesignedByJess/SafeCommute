@@ -34,7 +34,8 @@ class MockImage {
 
 vi.stubGlobal('Image', MockImage)
 
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(HTMLCanvasElement.prototype.getContext as any) = vi.fn(() => ({
   drawImage: vi.fn(),
   getImageData: vi.fn(() => ({
     data: new Uint8ClampedArray(800 * 600 * 4),
@@ -43,13 +44,14 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   })),
   putImageData: vi.fn(),
   canvas: document.createElement('canvas'),
-})) as ReturnType<typeof HTMLCanvasElement.prototype.getContext>
+}))
 
-HTMLCanvasElement.prototype.toBlob = vi.fn((cb: BlobPart | null | undefined) => {
-  cb?.(new Blob([''], { type: 'image/png' }))
-}) as ReturnType<typeof HTMLCanvasElement.prototype.toBlob>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(HTMLCanvasElement.prototype.toBlob as any) = vi.fn((cb: (blob: Blob | null) => void) => {
+  cb(new Blob([''], { type: 'image/png' }))
+})
 
-HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,mockedcanvasdata')
+HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,mockedcanvasdata') as any
 
 vi.mock('../../services/api', () => ({
   api: { post: vi.fn().mockRejectedValue(new Error('Server not available')) },

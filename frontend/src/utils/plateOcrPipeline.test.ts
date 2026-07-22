@@ -30,7 +30,8 @@ class MockImage {
 
 vi.stubGlobal('Image', MockImage)
 
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(HTMLCanvasElement.prototype.getContext as any) = vi.fn(() => ({
   drawImage: vi.fn(),
   getImageData: vi.fn(() => ({
     data: new Uint8ClampedArray(800 * 600 * 4),
@@ -39,9 +40,9 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   })),
   putImageData: vi.fn(),
   canvas: document.createElement('canvas'),
-})) as unknown as typeof HTMLCanvasElement.prototype.getContext
+}))
 
-HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,mockedcanvasdata')
+HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,mockedcanvasdata') as any
 
 describe('plateOcrPipeline', () => {
   beforeEach(() => {
