@@ -49,6 +49,8 @@ HTMLCanvasElement.prototype.toBlob = vi.fn((cb: BlobPart | null | undefined) => 
   cb?.(new Blob([''], { type: 'image/png' }))
 }) as ReturnType<typeof HTMLCanvasElement.prototype.toBlob>
 
+HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,mockedcanvasdata')
+
 vi.mock('../../services/api', () => ({
   api: { post: vi.fn().mockRejectedValue(new Error('Server not available')) },
 }))
@@ -60,7 +62,7 @@ describe('LicensePlateCaptureScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRecognize.mockResolvedValue({
-      data: { text: 'LND-582-FK', confidence: 92 },
+      data: { text: 'LND-582-LA', confidence: 92 },
     })
     mockTerminate.mockResolvedValue(undefined)
   })
@@ -117,7 +119,7 @@ describe('LicensePlateCaptureScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Plate detected!')).toBeDefined()
-      expect(screen.getByText('LND-582-FK')).toBeDefined()
+      expect(screen.getByText('LND 582 LA')).toBeDefined()
     })
   })
 
@@ -153,7 +155,7 @@ describe('LicensePlateCaptureScreen', () => {
     })
 
     await user.click(screen.getByText('Confirm'))
-    expect(onConfirm).toHaveBeenCalledWith('LND-582-FK')
+    expect(onConfirm).toHaveBeenCalledWith('LND 582 LA')
   })
 
   it('transitions to manual entry after 3 failed OCR attempts', async () => {
@@ -217,7 +219,7 @@ describe('LicensePlateCaptureScreen', () => {
     await user.click(screen.getByText('Confirm Plate'))
 
     await waitFor(() => {
-      expect(screen.getByText('Format: ABC-123-XY')).toBeDefined()
+      expect(screen.getByText(/Format: ABC-123-XY or ABC 123 XY/)).toBeDefined()
     })
   })
 
@@ -251,10 +253,10 @@ describe('LicensePlateCaptureScreen', () => {
 
     const input = screen.getByPlaceholderText('e.g. ABC-123-XY')
     await user.clear(input)
-    await user.type(input, 'ABC-123-XY')
+    await user.type(input, 'ABC-123-LA')
     await user.click(screen.getByText('Confirm Plate'))
 
-    expect(onConfirm).toHaveBeenCalledWith('ABC-123-XY')
+    expect(onConfirm).toHaveBeenCalledWith('ABC 123 LA')
   })
 
   it('cleans up worker on unmount', async () => {

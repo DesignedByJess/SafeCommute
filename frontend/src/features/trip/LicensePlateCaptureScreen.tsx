@@ -5,10 +5,17 @@ import type { Worker } from 'tesseract.js'
 import { StepProgress } from '../../components/StepProgress'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { api } from '../../services/api'
+import {
+  PLATE_REGEX,
+  normalizePlate,
+  validatePlateFormat,
+  validateStateCode,
+  calculatePlateConfidence,
+  logOcrAttempt,
+  preprocessPlateImage,
+} from '../../utils/plateOcrPipeline'
 
-const PLATE_REGEX = /^[A-Z]{3}-\d{3}-[A-Z]{2}$/
 const TESSERACT_TIMEOUT_MS = 60_000
-const MIN_CONFIDENCE = 60
 
 interface LicensePlateCaptureScreenProps {
   onBack: () => void
@@ -16,17 +23,6 @@ interface LicensePlateCaptureScreenProps {
 }
 
 type EntryMode = 'scan' | 'manual' | 'detected'
-
-function normalizePlate(text: string): string {
-  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
-  if (cleaned.length >= 8) {
-    const letters1 = cleaned.slice(0, 3)
-    const digits = cleaned.slice(3, 6)
-    const letters2 = cleaned.slice(6, 8)
-    return `${letters1}-${digits}-${letters2}`
-  }
-  return cleaned
-}
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -36,66 +32,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
       (err) => { clearTimeout(timer); reject(err) },
     )
   })
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('Failed to load image'))
-    img.src = src
-  })
-}
-
-async function preprocessImage(dataUrl: string): Promise<string> {
-  const img = await loadImage(dataUrl)
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')!
-  const { width: srcW, height: srcH } = img
-
-  const cropTop = 0.25
-  const cropBottom = 0.25
-  const cropLeft = 0.05
-  const cropRight = 0.05
-  const cropX = srcW * cropLeft
-  const cropY = srcH * cropTop
-  const cropW = srcW * (1 - cropLeft - cropRight)
-  const cropH = srcH * (1 - cropTop - cropBottom)
-
-  const minW = 800
-  const scale = Math.max(minW / cropW, 1)
-  const outW = Math.round(cropW * scale)
-  const outH = Math.round(cropH * scale)
-
-  canvas.width = outW
-  canvas.height = outH
-
-  ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
-
-  const imageData = ctx.getImageData(0, 0, outW, outH)
-  const d = imageData.data
-  const len = d.length
-
-  const gray = new Uint8Array(len / 4)
-  for (let i = 0, gi = 0; i < len; i += 4, gi++) {
-    gray[gi] = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2])
-  }
-
-  const sorted = Uint8Array.from(gray).sort()
-  const p2 = sorted[Math.floor(sorted.length * 0.02)]
-  const p98 = sorted[Math.floor(sorted.length * 0.98)]
-  const range = Math.max(p98 - p2, 1)
-
-  for (let i = 0, gi = 0; i < len; i += 4, gi++) {
-    const normalized = Math.min(255, Math.max(0, ((gray[gi] - p2) / range) * 255))
-    const val = normalized > 128 ? 255 : 0
-    d[i] = val
-    d[i + 1] = val
-    d[i + 2] = val
-  }
-
-  ctx.putImageData(imageData, 0, 0)
-  return canvas.toDataURL('image/png')
 }
 
 export function LicensePlateCaptureScreen({
@@ -130,7 +66,7 @@ export function LicensePlateCaptureScreen({
 
     let preprocessed: string
     try {
-      preprocessed = await preprocessImage(imageData)
+      preprocessed = await preprocessPlateImage(imageData)
     } catch {
       preprocessed = imageData
     }
@@ -156,7 +92,7 @@ export function LicensePlateCaptureScreen({
       workerRef.current = worker
 
       await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -',
       })
 
       setScanProgress('Recognizing plate...')
@@ -167,13 +103,15 @@ export function LicensePlateCaptureScreen({
       )
 
       console.log('[OCR] Raw text:', data.text.trim(), 'Confidence:', data.confidence)
-      const text = data.text.trim()
+      const rawText = data.text.trim()
       const conf = data.confidence
-      const normalized = normalizePlate(text)
 
-      if (PLATE_REGEX.test(normalized) && conf >= MIN_CONFIDENCE) {
-        setPlateDetected(normalized)
-        setConfidence(conf)
+      const evaluation = calculatePlateConfidence(rawText, conf)
+      logOcrAttempt(evaluation, rawText, conf)
+
+      if (evaluation.accepted) {
+        setPlateDetected(evaluation.normalizedPlate)
+        setConfidence(evaluation.compositeConfidence)
         setEntryMode('detected')
         setIsScanning(false)
         setScanProgress('')
@@ -185,15 +123,20 @@ export function LicensePlateCaptureScreen({
           image: imageData.split(',')[1] || imageData,
         })
         const serverPlate: string | null = serverResult.data?.data?.plate
-        const serverConf: number = serverResult.data?.data?.confidence ?? 0
+        const serverConf: number = (serverResult.data?.data?.confidence ?? 0) * 100
 
-        if (serverPlate && PLATE_REGEX.test(serverPlate) && serverConf >= 0.7) {
-          setPlateDetected(serverPlate)
-          setConfidence(serverConf)
-          setEntryMode('detected')
-          setIsScanning(false)
-          setScanProgress('')
-          return
+        if (serverPlate) {
+          const serverEval = calculatePlateConfidence(serverPlate, serverConf)
+          logOcrAttempt(serverEval, serverPlate, serverConf)
+
+          if (serverEval.accepted) {
+            setPlateDetected(serverEval.normalizedPlate)
+            setConfidence(serverEval.compositeConfidence)
+            setEntryMode('detected')
+            setIsScanning(false)
+            setScanProgress('')
+            return
+          }
         }
       } catch {
         // Server OCR not available
@@ -249,23 +192,27 @@ export function LicensePlateCaptureScreen({
 
   const handleConfirm = (): void => {
     if (!plateDetected) return
-    const plate = plateDetected.toUpperCase().trim()
-    if (!PLATE_REGEX.test(plate)) {
+    const normalized = normalizePlate(plateDetected)
+    const parts = normalized.split(/\s+/)
+    const suffix = parts.length === 3 ? parts[2] : normalized.slice(-2)
+    if (!validatePlateFormat(normalized) || !validateStateCode(suffix)) {
       setPlateDetected(null)
       setEntryMode('manual')
       return
     }
-    onConfirm(plate)
+    onConfirm(normalized)
   }
 
   const handleManualSubmit = (): void => {
-    const plate = manualPlate.toUpperCase().trim()
-    if (!PLATE_REGEX.test(plate)) {
-      setManualError('Format: ABC-123-XY')
+    const normalized = normalizePlate(manualPlate)
+    const parts = normalized.split(/\s+/)
+    const suffix = parts.length === 3 ? parts[2] : normalized.slice(-2)
+    if (!validatePlateFormat(normalized) || !validateStateCode(suffix)) {
+      setManualError('Format: ABC-123-XY or ABC 123 XY with valid state code')
       return
     }
     setManualError('')
-    onConfirm(plate)
+    onConfirm(normalized)
   }
 
   const handleManualChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -274,9 +221,15 @@ export function LicensePlateCaptureScreen({
   }
 
   const handleBlur = (): void => {
-    const plate = manualPlate.toUpperCase().trim()
-    if (plate && !PLATE_REGEX.test(plate)) {
-      setManualError('Format: ABC-123-XY')
+    if (!manualPlate.trim()) {
+      setManualError('')
+      return
+    }
+    const normalized = normalizePlate(manualPlate)
+    const parts = normalized.split(/\s+/)
+    const suffix = parts.length === 3 ? parts[2] : normalized.slice(-2)
+    if (!validatePlateFormat(normalized) || !validateStateCode(suffix)) {
+      setManualError('Format: ABC-123-XY or ABC 123 XY with valid state code')
     } else {
       setManualError('')
     }
