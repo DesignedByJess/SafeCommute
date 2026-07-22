@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY backend/package*.json ./backend/
 
-RUN cd backend && npm install --omit=dev
+RUN cd backend && npm install
 
 COPY backend/ ./backend/
 RUN cd backend && npm run build
