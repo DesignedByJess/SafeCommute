@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event'
 
 const mockRecognize = vi.fn()
 const mockTerminate = vi.fn()
-
 const mockSetParameters = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('tesseract.js', () => ({
@@ -34,8 +33,7 @@ class MockImage {
 
 vi.stubGlobal('Image', MockImage)
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-;(HTMLCanvasElement.prototype.getContext as any) = vi.fn(() => ({
+const mockGetContext = vi.fn(() => ({
   drawImage: vi.fn(),
   getImageData: vi.fn(() => ({
     data: new Uint8ClampedArray(800 * 600 * 4),
@@ -45,6 +43,9 @@ vi.stubGlobal('Image', MockImage)
   putImageData: vi.fn(),
   canvas: document.createElement('canvas'),
 }))
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(HTMLCanvasElement.prototype.getContext as any) = mockGetContext
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ;(HTMLCanvasElement.prototype.toBlob as any) = vi.fn((cb: (blob: Blob | null) => void) => {
@@ -57,6 +58,14 @@ vi.mock('../../services/api', () => ({
   api: { post: vi.fn().mockRejectedValue(new Error('Server not available')) },
 }))
 
+const mockGetUserMedia = vi.fn().mockResolvedValue({
+  getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }]),
+})
+Object.defineProperty(navigator, 'mediaDevices', {
+  value: { getUserMedia: mockGetUserMedia },
+  writable: true,
+})
+
 import { LicensePlateCaptureScreen } from './LicensePlateCaptureScreen'
 import { createWorker } from 'tesseract.js'
 
@@ -64,9 +73,12 @@ describe('LicensePlateCaptureScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRecognize.mockResolvedValue({
-      data: { text: 'LND-582-LA', confidence: 92 },
+      data: { text: 'LND 582 LA', confidence: 92 },
     })
     mockTerminate.mockResolvedValue(undefined)
+    mockGetUserMedia.mockResolvedValue({
+      getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }]),
+    })
   })
 
   it('renders header with back button and title', () => {
@@ -102,18 +114,30 @@ describe('LicensePlateCaptureScreen', () => {
     )
     expect(screen.queryByText('Plate detected!')).toBeNull()
     expect(screen.queryByText('Could not read the plate automatically.')).toBeNull()
-    expect(screen.getByText('License plate area')).toBeDefined()
   })
 
-  it('runs OCR and shows detected panel after scan', async () => {
+  it('runs OCR and shows detected panel after scan via file input fallback', async () => {
+    mockGetUserMedia.mockRejectedValue(new Error('Not available'))
+
     const user = userEvent.setup()
     render(
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={vi.fn()} />
     )
 
+    await waitFor(() => {
+      expect(screen.getByText('Tap to open camera')).toBeDefined()
+    })
+
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File([''], 'plate.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(screen.getByText('Adjust Crop')).toBeDefined()
+      expect(screen.getByText('Drag corners to adjust, then tap Scan')).toBeDefined()
+    })
+
+    await user.click(screen.getByText('Scan'))
 
     await waitFor(() => {
       expect(createWorker).toHaveBeenCalledWith('eng', 1, expect.any(Object))
@@ -125,11 +149,17 @@ describe('LicensePlateCaptureScreen', () => {
     })
   })
 
-  it('shows retake and confirm buttons when plate detected', async () => {
+  it('shows crop confirmation with retake and scan buttons', async () => {
+    mockGetUserMedia.mockRejectedValue(new Error('Not available'))
+
     const user = userEvent.setup()
     render(
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={vi.fn()} />
     )
+
+    await waitFor(() => {
+      expect(screen.getByText('Tap to open camera')).toBeDefined()
+    })
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File([''], 'plate.jpg', { type: 'image/jpeg' })
@@ -137,20 +167,31 @@ describe('LicensePlateCaptureScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Retake')).toBeDefined()
-      expect(screen.getByText('Confirm')).toBeDefined()
+      expect(screen.getByText('Scan')).toBeDefined()
     })
   })
 
   it('calls onConfirm with detected plate on confirm', async () => {
+    mockGetUserMedia.mockRejectedValue(new Error('Not available'))
     const onConfirm = vi.fn()
     const user = userEvent.setup()
     render(
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={onConfirm} />
     )
 
+    await waitFor(() => {
+      expect(screen.getByText('Tap to open camera')).toBeDefined()
+    })
+
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File([''], 'plate.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(screen.getByText('Scan')).toBeDefined()
+    })
+
+    await user.click(screen.getByText('Scan'))
 
     await waitFor(() => {
       expect(screen.getByText('Confirm')).toBeDefined()
@@ -164,24 +205,33 @@ describe('LicensePlateCaptureScreen', () => {
     mockRecognize.mockResolvedValue({
       data: { text: 'gibberish', confidence: 30 },
     })
+    mockGetUserMedia.mockRejectedValue(new Error('Not available'))
 
     const user = userEvent.setup()
     render(
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={vi.fn()} />
     )
 
-    const uploadFile = async (): Promise<void> => {
+    await waitFor(() => {
+      expect(screen.getByText('Tap to open camera')).toBeDefined()
+    })
+
+    const uploadAndScan = async (): Promise<void> => {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       const file = new File([''], 'plate.jpg', { type: 'image/jpeg' })
       await user.upload(fileInput, file)
+      await waitFor(() => {
+        expect(screen.getByText('Scan')).toBeDefined()
+      })
+      await user.click(screen.getByText('Scan'))
       await waitFor(() => {
         expect(mockRecognize).toHaveBeenCalled()
       })
     }
 
-    await uploadFile()
-    await uploadFile()
-    await uploadFile()
+    await uploadAndScan()
+    await uploadAndScan()
+    await uploadAndScan()
 
     await waitFor(() => {
       expect(screen.getByText(/Could not read the plate automatically/)).toBeDefined()
@@ -193,24 +243,33 @@ describe('LicensePlateCaptureScreen', () => {
     mockRecognize.mockResolvedValue({
       data: { text: 'gibberish', confidence: 30 },
     })
+    mockGetUserMedia.mockRejectedValue(new Error('Not available'))
 
     const user = userEvent.setup()
     render(
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={vi.fn()} />
     )
 
-    const uploadFile = async (): Promise<void> => {
+    await waitFor(() => {
+      expect(screen.getByText('Tap to open camera')).toBeDefined()
+    })
+
+    const uploadAndScan = async (): Promise<void> => {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       const file = new File([''], 'plate.jpg', { type: 'image/jpeg' })
       await user.upload(fileInput, file)
+      await waitFor(() => {
+        expect(screen.getByText('Scan')).toBeDefined()
+      })
+      await user.click(screen.getByText('Scan'))
       await waitFor(() => {
         expect(mockRecognize).toHaveBeenCalled()
       })
     }
 
-    await uploadFile()
-    await uploadFile()
-    await uploadFile()
+    await uploadAndScan()
+    await uploadAndScan()
+    await uploadAndScan()
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('e.g. ABC-123-XY')).toBeDefined()
@@ -230,24 +289,33 @@ describe('LicensePlateCaptureScreen', () => {
     mockRecognize.mockResolvedValue({
       data: { text: 'gibberish', confidence: 30 },
     })
+    mockGetUserMedia.mockRejectedValue(new Error('Not available'))
 
     const user = userEvent.setup()
     render(
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={onConfirm} />
     )
 
-    const uploadFile = async (): Promise<void> => {
+    await waitFor(() => {
+      expect(screen.getByText('Tap to open camera')).toBeDefined()
+    })
+
+    const uploadAndScan = async (): Promise<void> => {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       const file = new File([''], 'plate.jpg', { type: 'image/jpeg' })
       await user.upload(fileInput, file)
+      await waitFor(() => {
+        expect(screen.getByText('Scan')).toBeDefined()
+      })
+      await user.click(screen.getByText('Scan'))
       await waitFor(() => {
         expect(mockRecognize).toHaveBeenCalled()
       })
     }
 
-    await uploadFile()
-    await uploadFile()
-    await uploadFile()
+    await uploadAndScan()
+    await uploadAndScan()
+    await uploadAndScan()
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('e.g. ABC-123-XY')).toBeDefined()
@@ -262,14 +330,25 @@ describe('LicensePlateCaptureScreen', () => {
   })
 
   it('cleans up worker on unmount', async () => {
+    mockGetUserMedia.mockRejectedValue(new Error('Not available'))
     const user = userEvent.setup()
     render(
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={vi.fn()} />
     )
 
+    await waitFor(() => {
+      expect(screen.getByText('Tap to open camera')).toBeDefined()
+    })
+
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File([''], 'plate.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(screen.getByText('Scan')).toBeDefined()
+    })
+
+    await user.click(screen.getByText('Scan'))
 
     await waitFor(() => {
       expect(createWorker).toHaveBeenCalled()

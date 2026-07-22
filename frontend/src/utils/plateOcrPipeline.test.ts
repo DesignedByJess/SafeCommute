@@ -9,6 +9,8 @@ import {
   calculatePlateConfidence,
   logOcrAttempt,
   preprocessPlateImage,
+  analyzeContrast,
+  cropToRegion,
 } from './plateOcrPipeline'
 
 class MockImage {
@@ -205,6 +207,59 @@ describe('plateOcrPipeline', () => {
 
       expect(preprocessed).toBeDefined()
       expect(typeof preprocessed).toBe('string')
+    })
+  })
+
+  describe('Contrast Analysis', () => {
+    it('returns low score for uniform data', () => {
+      const data = new Uint8ClampedArray(100 * 100 * 4)
+      data.fill(128)
+      const result = analyzeContrast(data, 100, 100, { x: 0, y: 0, width: 1, height: 1 })
+      expect(result.score).toBeLessThan(20)
+      expect(result.feedback).toContain('blurry')
+    })
+
+    it('returns higher score for data with edges', () => {
+      const data = new Uint8ClampedArray(100 * 100 * 4)
+      for (let y = 0; y < 100; y++) {
+        for (let x = 0; x < 100; x++) {
+          const idx = (y * 100 + x) * 4
+          const val = x < 50 ? 0 : 255
+          data[idx] = val
+          data[idx + 1] = val
+          data[idx + 2] = val
+          data[idx + 3] = 255
+        }
+      }
+      const result = analyzeContrast(data, 100, 100, { x: 0, y: 0, width: 1, height: 1 })
+      expect(result.score).toBeGreaterThan(10)
+      expect(result.edgeDensity).toBeGreaterThan(0)
+    })
+
+    it('handles sub-region analysis', () => {
+      const data = new Uint8ClampedArray(100 * 100 * 4)
+      for (let y = 0; y < 100; y++) {
+        for (let x = 0; x < 100; x++) {
+          const idx = (y * 100 + x) * 4
+          const val = (x + y) % 2 === 0 ? 0 : 255
+          data[idx] = val
+          data[idx + 1] = val
+          data[idx + 2] = val
+          data[idx + 3] = 255
+        }
+      }
+      const result = analyzeContrast(data, 100, 100, { x: 0.2, y: 0.2, width: 0.6, height: 0.6 })
+      expect(result.score).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Crop to Region', () => {
+    it('crops image to specified region', async () => {
+      const cropped = await cropToRegion('data:image/png;base64,fake', {
+        x: 0.1, y: 0.2, width: 0.5, height: 0.3,
+      })
+      expect(cropped).toBeDefined()
+      expect(typeof cropped).toBe('string')
     })
   })
 })

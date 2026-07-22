@@ -219,6 +219,103 @@ export function logOcrAttempt(
   return logPayload
 }
 
+export interface CropRegion {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface ContrastAnalysis {
+  score: number
+  feedback: string
+  edgeDensity: number
+}
+
+export function analyzeContrast(
+  data: Uint8ClampedArray,
+  imgWidth: number,
+  imgHeight: number,
+  region: CropRegion
+): ContrastAnalysis {
+  const startX = Math.max(0, Math.floor(region.x * imgWidth))
+  const startY = Math.max(0, Math.floor(region.y * imgHeight))
+  const endX = Math.min(imgWidth, Math.ceil((region.x + region.width) * imgWidth))
+  const endY = Math.min(imgHeight, Math.ceil((region.y + region.height) * imgHeight))
+  const rW = endX - startX
+  const rH = endY - startY
+
+  if (rW <= 2 || rH <= 2) {
+    return { score: 0, feedback: 'Align the plate in the frame', edgeDensity: 0 }
+  }
+
+  const brightness = new Float64Array(rW * rH)
+  let sum = 0
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      const idx = (y * imgWidth + x) * 4
+      const gray = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]
+      const pos = (y - startY) * rW + (x - startX)
+      brightness[pos] = gray
+      sum += gray
+    }
+  }
+
+  const mean = sum / brightness.length
+  let variance = 0
+  for (let i = 0; i < brightness.length; i++) {
+    variance += (brightness[i] - mean) ** 2
+  }
+  const stdDev = Math.sqrt(variance / brightness.length)
+
+  let edgeCount = 0
+  for (let y = 1; y < rH - 1; y++) {
+    for (let x = 1; x < rW - 1; x++) {
+      const gx = -brightness[(y - 1) * rW + (x - 1)] + brightness[(y - 1) * rW + (x + 1)]
+        - 2 * brightness[y * rW + (x - 1)] + 2 * brightness[y * rW + (x + 1)]
+        - brightness[(y + 1) * rW + (x - 1)] + brightness[(y + 1) * rW + (x + 1)]
+      if (Math.abs(gx) > 40) edgeCount++
+    }
+  }
+
+  const totalPixels = rW * rH
+  const edgeDensity = edgeCount / totalPixels
+  const contrastScore = Math.min(100, (stdDev / 70) * 100)
+  const edgeScore = Math.min(100, (edgeDensity / 0.12) * 100)
+  const score = Math.round(contrastScore * 0.5 + edgeScore * 0.5)
+
+  let feedback = ''
+  if (stdDev < 12) feedback = 'Too blurry — move closer'
+  else if (edgeDensity < 0.03) feedback = 'No plate edges — center the plate'
+  else if (score < 35) feedback = 'Align the plate in the frame'
+  else feedback = 'Good — tap to capture'
+
+  return { score, feedback, edgeDensity }
+}
+
+export async function cropToRegion(
+  dataUrl: string,
+  region: CropRegion
+): Promise<string> {
+  const img = await loadImage(dataUrl)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas not available')
+
+  const x = Math.round(region.x * img.naturalWidth)
+  const y = Math.round(region.y * img.naturalHeight)
+  const w = Math.round(region.width * img.naturalWidth)
+  const h = Math.round(region.height * img.naturalHeight)
+
+  canvas.width = w
+  canvas.height = h
+  ctx.drawImage(img, x, y, w, h, 0, 0, w, h)
+
+  console.log(`[OCR] Crop: origin=(${x},${y}) size=${w}x${h} from ${img.naturalWidth}x${img.naturalHeight}`)
+
+  return canvas.toDataURL('image/png')
+}
+
 export interface ImagePreprocessingOptions {
   grayscale?: boolean
   contrastEnhancement?: boolean
