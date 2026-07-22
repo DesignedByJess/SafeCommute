@@ -20,7 +20,6 @@ import type { CropRegion, ContrastAnalysis } from '../../utils/plateOcrPipeline'
 
 const TESSERACT_TIMEOUT_MS = 60_000
 const GUIDE_PADDING_PX = 24
-const VIEWFINDER_HEIGHT_PX = 176
 
 interface LicensePlateCaptureScreenProps {
   onBack: () => void
