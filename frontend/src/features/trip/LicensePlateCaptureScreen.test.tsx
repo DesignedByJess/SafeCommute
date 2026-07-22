@@ -5,14 +5,49 @@ import userEvent from '@testing-library/user-event'
 const mockRecognize = vi.fn()
 const mockTerminate = vi.fn()
 
+const mockSetParameters = vi.fn().mockResolvedValue(undefined)
+
 vi.mock('tesseract.js', () => ({
   createWorker: vi.fn().mockImplementation(() =>
     Promise.resolve({
       recognize: (...args: unknown[]) => mockRecognize(...args),
+      setParameters: (...args: unknown[]) => mockSetParameters(...args),
       terminate: (...args: unknown[]) => mockTerminate(...args),
     })
   ),
 }))
+
+class MockImage {
+  onload: (() => void) | null = null
+  onerror: (() => void) | null = null
+  naturalWidth = 800
+  naturalHeight = 600
+  width = 800
+  height = 600
+  private _src = ''
+  get src() { return this._src }
+  set src(val: string) {
+    this._src = val
+    setTimeout(() => this.onload?.(), 0)
+  }
+}
+
+vi.stubGlobal('Image', MockImage)
+
+HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+  drawImage: vi.fn(),
+  getImageData: vi.fn(() => ({
+    data: new Uint8ClampedArray(800 * 600 * 4),
+    width: 800,
+    height: 600,
+  })),
+  putImageData: vi.fn(),
+  canvas: document.createElement('canvas'),
+})) as ReturnType<typeof HTMLCanvasElement.prototype.getContext>
+
+HTMLCanvasElement.prototype.toBlob = vi.fn((cb: BlobPart | null | undefined) => {
+  cb?.(new Blob([''], { type: 'image/png' }))
+}) as ReturnType<typeof HTMLCanvasElement.prototype.toBlob>
 
 vi.mock('../../services/api', () => ({
   api: { post: vi.fn().mockRejectedValue(new Error('Server not available')) },

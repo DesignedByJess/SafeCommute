@@ -7,7 +7,8 @@ import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { api } from '../../services/api'
 
 const PLATE_REGEX = /^[A-Z]{3}-\d{3}-[A-Z]{2}$/
-const TESSERACT_TIMEOUT_MS = 30_000
+const TESSERACT_TIMEOUT_MS = 60_000
+const MIN_CONFIDENCE = 60
 
 interface LicensePlateCaptureScreenProps {
   onBack: () => void
@@ -37,6 +38,53 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   })
 }
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Failed to load image'))
+    img.src = src
+  })
+}
+
+async function preprocessImage(dataUrl: string): Promise<string> {
+  const img = await loadImage(dataUrl)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')!
+  const { width: srcW, height: srcH } = img
+
+  const cropFraction = 0.65
+  const cropW = srcW * cropFraction
+  const cropH = srcH * cropFraction
+  const cropX = (srcW - cropW) / 2
+  const cropY = (srcH - cropH) / 2
+
+  const minDim = 600
+  const scale = Math.max(minDim / cropW, 1)
+  const outW = Math.round(cropW * scale)
+  const outH = Math.round(cropH * scale)
+
+  canvas.width = outW
+  canvas.height = outH
+
+  ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
+
+  const imageData = ctx.getImageData(0, 0, outW, outH)
+  const d = imageData.data
+  const threshold = 140
+
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
+    const val = gray > threshold ? 255 : 0
+    d[i] = val
+    d[i + 1] = val
+    d[i + 2] = val
+  }
+
+  ctx.putImageData(imageData, 0, 0)
+  return canvas.toDataURL('image/png')
+}
+
 export function LicensePlateCaptureScreen({
   onBack,
   onConfirm,
@@ -62,19 +110,24 @@ export function LicensePlateCaptureScreen({
   }, [])
 
   const runOcr = useCallback(async (imageData: string) => {
-    console.log('[OCR] runOcr called, imageData length:', imageData.length)
     setIsScanning(true)
     setScanError('')
+    setScanProgress('Enhancing image...')
+    console.log('[OCR] Preprocessing image...')
+
+    let preprocessed: string
+    try {
+      preprocessed = await preprocessImage(imageData)
+    } catch {
+      preprocessed = imageData
+    }
 
     setScanProgress('Loading OCR engine...')
-    console.log('[OCR] Attempting to create worker...')
-
     let worker: Worker | null = null
     try {
       worker = await withTimeout(
         createWorker('eng', 1, {
           logger: ({ status, progress }) => {
-            console.log('[OCR] logger:', status, progress)
             if (status === 'loading tesseract core') {
               setScanProgress('Loading OCR engine...')
             } else if (status === 'initializing api') {
@@ -88,21 +141,24 @@ export function LicensePlateCaptureScreen({
         'Worker creation',
       )
       workerRef.current = worker
-      console.log('[OCR] Worker created successfully')
+
+      await worker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+      })
 
       setScanProgress('Recognizing plate...')
       const { data } = await withTimeout(
-        worker.recognize(imageData),
+        worker.recognize(preprocessed),
         TESSERACT_TIMEOUT_MS,
         'OCR recognition',
       )
 
-      console.log('[OCR] Recognition complete. Raw text:', data.text.trim(), 'Confidence:', data.confidence)
+      console.log('[OCR] Raw text:', data.text.trim(), 'Confidence:', data.confidence)
       const text = data.text.trim()
       const conf = data.confidence
       const normalized = normalizePlate(text)
 
-      if (PLATE_REGEX.test(normalized) && conf >= 80) {
+      if (PLATE_REGEX.test(normalized) && conf >= MIN_CONFIDENCE) {
         setPlateDetected(normalized)
         setConfidence(conf)
         setEntryMode('detected')
@@ -111,7 +167,6 @@ export function LicensePlateCaptureScreen({
         return
       }
 
-      // Client OCR failed — try server-side Google Vision API
       try {
         const serverResult = await api.post('/ocr/scan-plate', {
           image: imageData.split(',')[1] || imageData,
@@ -128,7 +183,7 @@ export function LicensePlateCaptureScreen({
           return
         }
       } catch {
-        // Server OCR not available — fall through to retry/manual
+        // Server OCR not available
       }
 
       const nextRetry = retryCount + 1
@@ -142,7 +197,7 @@ export function LicensePlateCaptureScreen({
         setScanProgress('')
       }
     } catch (err) {
-      console.error('[OCR] Error in runOcr:', err)
+      console.error('[OCR] Error:', err)
       const msg = err instanceof Error ? err.message : 'OCR processing failed'
       setScanError(`${msg}. Please try again.`)
       setIsScanning(false)
@@ -158,7 +213,6 @@ export function LicensePlateCaptureScreen({
   const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0]
     if (!file) return
-    console.log('[OCR] File captured:', file.name, file.type, file.size)
 
     const reader = new FileReader()
     reader.onload = async (event) => {
@@ -325,28 +379,41 @@ export function LicensePlateCaptureScreen({
                       </div>
                     </div>
                     {scanError && (
-                      <div style={{background:'#FEE2E2',border:'3px solid #DC2626',borderRadius:'12px',padding:'16px',margin:'16px 0',textAlign:'center'}}>
-                        <p style={{fontSize:'18px',fontWeight:'bold',color:'#991B1B',margin:0}}>
-                          ⚠️ OCR ERROR ⚠️
+                      <div className="mt-4 rounded-2xl border-2 border-[#DC2626] bg-red-50 p-5 text-center">
+                        <p className="text-lg font-bold text-[#991B1B] mb-1">
+                          Could not read plate
                         </p>
-                        <p style={{fontSize:'14px',fontWeight:'bold',color:'#991B1B',marginTop:'8px',margin:0}}>
+                        <p className="text-sm text-[#991B1B] mb-4">
                           {scanError}
                         </p>
+                        <button
+                          type="button"
+                          onClick={(): void => {
+                            setEntryMode('manual')
+                            setScanError('')
+                            setRetryCount(0)
+                          }}
+                          className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-3 min-h-[48px] transition-all hover:bg-[#0E7490] active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-[#0891B2] cursor-pointer"
+                        >
+                          Enter plate manually
+                        </button>
                       </div>
                     )}
-                    <p className="text-center text-gray-500 mt-8 text-base">
-                      Can't scan plate?{' '}
-                      <button
-                        type="button"
-                        onClick={(): void => {
-                          setEntryMode('manual')
-                          setScanError('')
-                        }}
-                        className="underline text-[#0F172A] font-semibold hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
-                      >
-                        Enter manually
-                      </button>
-                    </p>
+                    {!scanError && (
+                      <p className="text-center text-gray-500 mt-8 text-base">
+                        Can't scan plate?{' '}
+                        <button
+                          type="button"
+                          onClick={(): void => {
+                            setEntryMode('manual')
+                            setScanError('')
+                          }}
+                          className="underline text-[#0F172A] font-semibold hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
+                        >
+                          Enter manually
+                        </button>
+                      </p>
+                    )}
                   </div>
                 )
 
