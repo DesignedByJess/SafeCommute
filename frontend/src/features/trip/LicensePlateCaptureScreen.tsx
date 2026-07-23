@@ -55,6 +55,7 @@ export function LicensePlateCaptureScreen({
   const [cropRegion, setCropRegion] = useState<CropRegion>({ x: 0, y: 0, width: 1, height: 1 })
   const [contrastAnalysis, setContrastAnalysis] = useState<ContrastAnalysis | null>(null)
   const [cameraActive, setCameraActive] = useState<boolean>(false)
+  const [videoPlaying, setVideoPlaying] = useState<boolean>(false)
   const [cameraError, setCameraError] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -111,6 +112,7 @@ export function LicensePlateCaptureScreen({
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
       setCameraActive(false)
+      setVideoPlaying(false)
       cancelAnimationFrame(animFrameRef.current)
     }
   }, [entryMode, cameraError])
@@ -570,16 +572,17 @@ export function LicensePlateCaptureScreen({
                         onChange={handleImageCapture}
                         className="hidden"
                       />
-                      {cameraActive && (
+                      {videoPlaying && (
                         <video
                           ref={videoRef}
                           autoPlay
                           playsInline
                           muted
+                          onPlaying={(): void => setVideoPlaying(true)}
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                       )}
-                      {!cameraActive && !cameraError && !isScanning && (
+                      {!videoPlaying && !cameraError && !isScanning && (
                         <div className="flex flex-col items-center gap-2">
                           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           <p className="text-sm text-white font-medium">Starting camera...</p>
