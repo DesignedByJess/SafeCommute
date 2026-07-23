@@ -16,6 +16,7 @@ import {
   cropToRegion,
 } from '../../utils/plateOcrPipeline'
 import type { CropRegion, ContrastAnalysis } from '../../utils/plateOcrPipeline'
+import { detectAndCorrectPlate } from '../../utils/opencvProcessor'
 
 const TESSERACT_TIMEOUT_MS = 60_000
 const GUIDE_PADDING_PX = 24
@@ -116,6 +117,15 @@ export function LicensePlateCaptureScreen({
       cancelAnimationFrame(animFrameRef.current)
     }
   }, [entryMode, cameraError])
+
+  useEffect(() => {
+    if (capturedImage) {
+      const link = document.createElement('link')
+      link.rel = 'preconnect'
+      link.href = 'https://docs.opencv.org'
+      document.head.appendChild(link)
+    }
+  }, [capturedImage])
 
   useEffect(() => {
     if (!cameraActive || entryMode !== 'scan') return
@@ -341,17 +351,27 @@ export function LicensePlateCaptureScreen({
 
   const handleScanFromCrop = useCallback(async (): Promise<void> => {
     if (!capturedImage) return
-    console.log('[OCR] Scanning with crop region:', JSON.stringify(cropRegion))
 
-    let cropped: string
+    setScanProgress('Analyzing plate region...')
+
+    let ocrImage: string
     try {
-      cropped = await cropToRegion(capturedImage, cropRegion)
+      const result = await detectAndCorrectPlate(capturedImage)
+      if (result) {
+        setScanProgress('Deskewing plate...')
+        ocrImage = result.correctedImage
+        console.log('[OpenCV] Plate detected:', result.detectedRegion)
+      } else {
+        setScanProgress('Cropping to guide box...')
+        ocrImage = await cropToRegion(capturedImage, cropRegion)
+      }
     } catch {
-      cropped = capturedImage
+      setScanProgress('Cropping to guide box...')
+      ocrImage = await cropToRegion(capturedImage, cropRegion).catch(() => capturedImage)
     }
 
     setEntryMode('scan')
-    await runOcr(cropped)
+    await runOcr(ocrImage)
   }, [capturedImage, cropRegion, runOcr])
 
   const handleRetake = useCallback((): void => {
