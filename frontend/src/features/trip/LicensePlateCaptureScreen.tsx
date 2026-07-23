@@ -9,7 +9,6 @@ import {
   PLATE_REGEX,
   normalizePlate,
   validatePlateFormat,
-  validateStateCode,
   calculatePlateConfidence,
   logOcrAttempt,
   preprocessPlateImage,
@@ -368,9 +367,7 @@ export function LicensePlateCaptureScreen({
   const handleConfirm = (): void => {
     if (!plateDetected) return
     const normalized = normalizePlate(plateDetected)
-    const parts = normalized.split(/\s+/)
-    const suffix = parts.length === 3 ? parts[2] : normalized.slice(-2)
-    if (!validatePlateFormat(normalized) || !validateStateCode(suffix)) {
+    if (!validatePlateFormat(normalized)) {
       setPlateDetected(null)
       setEntryMode('manual')
       return
@@ -380,10 +377,8 @@ export function LicensePlateCaptureScreen({
 
   const handleManualSubmit = (): void => {
     const normalized = normalizePlate(manualPlate)
-    const parts = normalized.split(/\s+/)
-    const suffix = parts.length === 3 ? parts[2] : normalized.slice(-2)
-    if (!validatePlateFormat(normalized) || !validateStateCode(suffix)) {
-      setManualError('Format: ABC-123-XY or ABC 123 XY with valid state code')
+    if (!validatePlateFormat(normalized)) {
+      setManualError('Format: ABC-123-XY or ABC 123 XY')
       return
     }
     setManualError('')
@@ -401,10 +396,8 @@ export function LicensePlateCaptureScreen({
       return
     }
     const normalized = normalizePlate(manualPlate)
-    const parts = normalized.split(/\s+/)
-    const suffix = parts.length === 3 ? parts[2] : normalized.slice(-2)
-    if (!validatePlateFormat(normalized) || !validateStateCode(suffix)) {
-      setManualError('Format: ABC-123-XY or ABC 123 XY with valid state code')
+    if (!validatePlateFormat(normalized)) {
+      setManualError('Format: ABC-123-XY or ABC 123 XY')
     } else {
       setManualError('')
     }
@@ -565,7 +558,7 @@ export function LicensePlateCaptureScreen({
                     <div
                       ref={containerRef}
                       onClick={handleViewfinderTap}
-                      className={`relative h-44 w-full rounded-2xl border border-gray-200 bg-black overflow-hidden flex items-center justify-center ${
+                      className={`relative h-44 w-full rounded-2xl border border-gray-200 bg-transparent overflow-hidden flex items-center justify-center ${
                          !isScanning ? 'cursor-pointer' : 'cursor-default'
                       }`}
                     >
@@ -586,7 +579,7 @@ export function LicensePlateCaptureScreen({
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                       )}
-                      {!cameraActive && !cameraError && (
+                      {!cameraActive && !cameraError && !isScanning && (
                         <div className="flex flex-col items-center gap-2">
                           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           <p className="text-sm text-white font-medium">Starting camera...</p>
