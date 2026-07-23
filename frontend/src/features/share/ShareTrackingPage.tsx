@@ -108,10 +108,6 @@ function LiveMap({
   )
 }
 
-function elapsedMinutesFrom(startedAt: string): number {
-  return Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000)
-}
-
 export default function ShareTrackingPage() {
   const { share_token } = useParams<{ share_token: string }>()
   const [trip, setTrip] = useState<ShareTripData | null>(null)
@@ -222,7 +218,7 @@ export default function ShareTrackingPage() {
 
   const isActive = trip.status === 'active'
   const isPast = trip.status === 'expired' || trip.status === 'revoked' || trip.status === 'completed'
-  const elapsedMinutes = elapsedMinutesFrom(trip.started_at)
+  const elapsedMinutes = Math.floor((now - new Date(trip.started_at).getTime()) / 60000)
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
