@@ -6,7 +6,7 @@ import { MapPin, Car, Clock, User } from '@phosphor-icons/react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { api } from '../../services/api'
-import { maskPlate, formatDuration } from '../../utils/format'
+import { maskPlate, formatDate, formatDuration } from '../../utils/format'
 import { sanitize } from '../../utils/sanitize'
 import { PH_CENTER } from '../../utils/constants'
 
@@ -150,22 +150,30 @@ export default function ShareTrackingPage() {
 
     const fetchLocations = async () => {
       try {
-        const url = lastRecordedRef.current
-          ? `/share/${share_token}/locations?since=${encodeURIComponent(lastRecordedRef.current)}`
+        const since = lastRecordedRef.current
+        const url = since
+          ? `/share/${share_token}/locations?since=${encodeURIComponent(since)}`
           : `/share/${share_token}/locations`
+        console.log('[SharePoll] Fetching locations — url:', url, 'since:', since)
         const res = await api.get(url)
         const data = res.data.data as { locations: LocationPoint[]; status: string }
-        if (data.locations && data.locations.length > 0) {
+        const locationCount = data.locations?.length ?? 0
+        console.log('[SharePoll] Response — locations:', locationCount, 'status:', data.status)
+        if (locationCount > 0) {
+          const first = data.locations[0]
+          const last = data.locations[locationCount - 1]
+          console.log('[SharePoll] First loc:', first.recorded_at, 'Last loc:', last.recorded_at, 'coords:', last.lat, last.lng)
           const newCoords: [number, number][] = data.locations.map(
             (loc) => [loc.lat, loc.lng] as [number, number],
           )
           setPath((prev) => [...prev, ...newCoords])
-          const lastLoc = data.locations[data.locations.length - 1]
-          setCurrentPos([lastLoc.lat, lastLoc.lng])
-          lastRecordedRef.current = lastLoc.recorded_at
+          setCurrentPos([last.lat, last.lng])
+          lastRecordedRef.current = last.recorded_at
+        } else {
+          console.log('[SharePoll] No new locations since last poll')
         }
-      } catch {
-        // silently ignore polling errors
+      } catch (err) {
+        console.error('[SharePoll] Fetch error:', err instanceof Error ? err.message : err)
       }
 
       setNow(Date.now())
@@ -299,19 +307,28 @@ export default function ShareTrackingPage() {
             </div>
           </div>
 
-          {/* Started / Elapsed time */}
-          <div className="flex items-center gap-3 px-4 py-3.5">
+          {/* Started timestamp — always a fixed date, never a status message */}
+          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100">
             <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
               <Clock className="w-4 h-4 text-gray-500" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Started</p>
+              <p className="text-sm font-bold text-[#0F172A] mt-0.5">{formatDate(trip.started_at)}</p>
+            </div>
+          </div>
+
+          {/* Updates status — independent of Started, reflects live data flow */}
+          <div className="flex items-center gap-3 px-4 py-3.5">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+              <div className={`w-3 h-3 rounded-full ${currentPos ? 'bg-[#0891B2] animate-pulse' : 'bg-gray-300'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Updates</p>
               <p className="text-sm font-bold text-[#0F172A] mt-0.5">
                 {currentPos
-                  ? `${formatDuration(elapsedMinutes)} elapsed`
-                  : isPast
-                    ? formatDuration(elapsedMinutes)
-                    : 'Waiting for location...'}
+                  ? `Live · ${formatDuration(elapsedMinutes)} elapsed`
+                  : 'Waiting for location...'}
               </p>
             </div>
           </div>

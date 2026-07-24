@@ -306,11 +306,18 @@ export function ActiveTripScreen({
 
   // Send location updates via socket whenever GPS coordinates change
   useEffect(() => {
-    if (!liveCoords || !tripId) return
-    if (lastLocationRef.current === liveCoords) return
+    if (!liveCoords || !tripId) {
+      console.log('[ActiveTrip] Skipping send — no liveCoords or tripId:', { hasCoords: !!liveCoords, tripId })
+      return
+    }
+    if (lastLocationRef.current === liveCoords) {
+      console.log('[ActiveTrip] Skipping send — same object reference')
+      return
+    }
     lastLocationRef.current = liveCoords
+    console.log('[ActiveTrip] Sending location — tripId:', tripId, 'lat:', liveCoords.lat, 'lng:', liveCoords.lng, 'accuracy:', liveCoords.accuracy, 'hasHMAC:', !!hmacKey, 'connected:', connected)
     sendLocation(tripId, liveCoords.lat, liveCoords.lng, liveCoords.accuracy ?? undefined, hmacKey)
-  }, [liveCoords, tripId, hmacKey, sendLocation])
+  }, [liveCoords, tripId, hmacKey, sendLocation, connected])
 
   // Intercept back navigation
   useEffect(() => {

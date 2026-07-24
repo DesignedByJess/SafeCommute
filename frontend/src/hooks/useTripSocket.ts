@@ -40,53 +40,86 @@ export function useTripSocket(): UseTripSocketReturn {
   const lastSend = useRef<Record<string, number>>({})
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
+    const socketUrl = SOCKET_URL || window.location.origin
+    console.log('[WS] Initializing socket connection to:', socketUrl)
+
+    const socket = io(socketUrl, {
       transports: ['websocket'],
       withCredentials: true,
     })
 
-    socket.on('connect', () => setConnected(true))
-    socket.on('disconnect', () => setConnected(false))
+    socket.on('connect', () => {
+      console.log('[WS] Connected — socket.id:', socket.id, 'transport:', socket.io.engine.transport.name)
+      setConnected(true)
+    })
+
+    socket.on('disconnect', (reason, details) => {
+      console.log('[WS] Disconnected — reason:', reason, 'details:', details)
+      setConnected(false)
+    })
+
+    socket.on('connect_error', (err: Error) => {
+      console.error('[WS] Connection error — message:', err.message, 'cause:', (err as any).cause)
+    })
+
+    socket.on('reconnect_attempt', (attempt) => {
+      console.log('[WS] Reconnect attempt #', attempt)
+    })
+
+    socket.on('reconnect', (attempt) => {
+      console.log('[WS] Reconnected after', attempt, 'attempts — socket.id:', socket.id)
+    })
 
     socket.on('location:updated', (data: LocationUpdate) => {
+      console.log('[WS] location:updated received —', JSON.stringify(data))
       setLatestLocation(data)
     })
 
     socketRef.current = socket
 
     return () => {
+      console.log('[WS] Cleaning up socket — disconnecting')
       socket.disconnect()
       socketRef.current = null
     }
   }, [])
 
   const joinTrip = useCallback((tripId: string) => {
+    console.log('[WS] Emitting join:trip — tripId:', tripId)
     socketRef.current?.emit('join:trip', tripId)
   }, [])
 
   const leaveTrip = useCallback((tripId: string) => {
+    console.log('[WS] Emitting leave:trip — tripId:', tripId)
     socketRef.current?.emit('leave:trip', tripId)
   }, [])
 
   const sendLocation = useCallback(async (tripId: string, lat: number, lng: number, accuracy?: number, hmacKey?: string) => {
     const now = Date.now()
     const last = lastSend.current[tripId] ?? 0
-    if (now - last < 10000) return
+    if (now - last < 10000) {
+      console.log('[WS] sendLocation THROTTLED — only', now - last, 'ms since last send for trip', tripId)
+      return
+    }
 
     lastSend.current[tripId] = now
 
     const payload = { tripId, lat, lng, accuracy }
+    console.log('[WS] sendLocation — payload:', JSON.stringify(payload), 'hasHMAC:', !!hmacKey)
     let signature = ''
 
     if (hmacKey && window.crypto?.subtle) {
       try {
         signature = await createSignature(payload, hmacKey)
-      } catch {
+        console.log('[WS] sendLocation — HMAC signature computed, length:', signature.length)
+      } catch (err) {
+        console.error('[WS] sendLocation — HMAC signing failed:', err)
         signature = ''
       }
     }
 
-    socketRef.current?.emit('location:update', { ...payload, signature })
+    const emitted = socketRef.current?.emit('location:update', { ...payload, signature })
+    console.log('[WS] sendLocation — emitted:', emitted !== undefined && emitted !== null)
   }, [])
 
   return { connected, latestLocation, joinTrip, leaveTrip, sendLocation }
