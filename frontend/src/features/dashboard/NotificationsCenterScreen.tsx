@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { CaretLeft, Bell, ShieldWarning, MapPin, UserCheck, X } from '@phosphor-icons/react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ScreenWithBottomAction } from '../../components/ScreenWithBottomAction'
 import { api } from '../../services/api'
 
@@ -79,6 +80,7 @@ interface NotificationsCenterScreenProps {
 }
 
 export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenProps) {
+  const queryClient = useQueryClient()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -104,8 +106,8 @@ export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenP
     )
     try {
       await api.patch(`/notifications/${id}/read`)
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
     } catch {
-      // revert on failure
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: false } : n)),
       )
@@ -116,6 +118,7 @@ export function NotificationsCenterScreen({ onBack }: NotificationsCenterScreenP
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
     try {
       await api.patch('/notifications/read-all')
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
     } catch {
       try {
         const res = await api.get('/notifications')
