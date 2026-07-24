@@ -5,6 +5,8 @@ import { sendSuccess } from '../utils/response';
 import { EmergencyService } from '../services/emergency.service';
 import { initiateEmergencySchema, verifyEmergencySchema, retractEmergencySchema } from '../middleware/validate/emergency.schema';
 import { emergencyLimiter, emergencyVerifyLimiter } from '../middleware/rate-limit';
+import { UserProfile } from '../models/user-profile.model';
+import { EncryptionService } from '../services/encryption.service';
 
 const router = Router();
 const emergencyService = new EmergencyService();
@@ -13,9 +15,21 @@ router.use(authenticate);
 
 router.post('/:tripId/initiate', emergencyLimiter, validate(initiateEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    let userPhone: string | undefined;
+    const profile = await UserProfile.findByPk(req.user!.id);
+    if (profile?.phone_encrypted) {
+      try {
+        userPhone = EncryptionService.decryptPhone(profile.phone_encrypted);
+      } catch {
+        userPhone = req.user!.phone || undefined;
+      }
+    } else {
+      userPhone = req.user!.phone || undefined;
+    }
+
     const result = await emergencyService.initiateEmergency(
       req.user!.id, req.params.tripId,
-      { ...req.body, userPhone: req.user!.phone || undefined },
+      { ...req.body, userPhone },
       { ip: req.ip || '', userAgent: req.headers['user-agent'] || '' },
     );
     sendSuccess(res, result);

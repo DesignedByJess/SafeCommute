@@ -26,23 +26,28 @@ interface SupabaseLoginResponse {
   msg?: string;
 }
 
+import crypto from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/authenticate';
 import { validate } from '../middleware/validate';
 import { signupSchema } from '../middleware/validate/auth.schema';
 import { loginSchema } from '../middleware/validate/auth.schema';
+import { updateProfileSchema, verifyPhoneOtpSchema } from '../middleware/validate/profile.schema';
 import { loginLimiter, signupLimiter, forgotPasswordLimiter } from '../middleware/rate-limit';
 import { sendSuccess, sendCreated } from '../utils/response';
 import { env } from '../utils/config';
 import { auditLog, logger } from '../services/audit.service';
 import { AppError } from '../utils/errors';
 import { UserProfile } from '../models/user-profile.model';
+import { EncryptionService } from '../services/encryption.service';
+import { NotificationService } from '../services/notifications/notification.service';
 import { SessionService } from '../services/session.service';
 import { InboxService } from '../services/notification.service';
 
 const router = Router();
 const sessionService = new SessionService();
 const inboxService = new InboxService();
+const notificationService = new NotificationService();
 
 router.post('/signup', signupLimiter, validate(signupSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -393,6 +398,95 @@ router.post('/logout', authenticate, async (req: Request, res: Response, next: N
     });
 
     sendSuccess(res, { message: 'Logged out successfully' });
+  } catch (err) { next(err); }
+});
+
+router.put('/profile', authenticate, validate(updateProfileSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, phone } = req.body;
+    const userId = req.user!.id;
+    const ipAddress = req.ip || req.socket.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
+
+    const updates: Record<string, unknown> = {};
+    if (name !== undefined) updates.name = name;
+
+    if (phone !== undefined) {
+      const encrypted = EncryptionService.encryptPhone(phone);
+      const hash = EncryptionService.hashPhone(phone);
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      updates.phone_encrypted = encrypted;
+      updates.phone_hash = hash;
+      updates.phone_verified = false;
+      updates.phone_otp_code = otp;
+      updates.phone_otp_expires_at = expiresAt;
+      updates.phone_otp_attempts = 0;
+
+      updates.updated_at = new Date();
+
+      await UserProfile.upsert({ user_id: userId, ...updates } as any);
+
+      await auditLog(userId, 'profile_updated', { nameChanged: name !== undefined, phoneChanged: true }, ipAddress, userAgent);
+
+      try {
+        const message = `Your SafeCommute verification code is: ${otp}. It expires in 10 minutes. If you did not request this, please ignore.`;
+        await notificationService.sendAfricaTalking(phone, message);
+      } catch (err) {
+        logger.error('Failed to send phone verification OTP', { error: err });
+      }
+
+      sendSuccess(res, { message: 'Profile updated', devOtp: env.NODE_ENV !== 'production' ? otp : undefined });
+    } else {
+      updates.updated_at = new Date();
+      await UserProfile.upsert({ user_id: userId, ...updates } as any);
+      await auditLog(userId, 'profile_updated', { nameChanged: name !== undefined, phoneChanged: false }, ipAddress, userAgent);
+      sendSuccess(res, { message: 'Profile updated' });
+    }
+  } catch (err) { next(err); }
+});
+
+router.post('/profile/verify-phone-otp', authenticate, validate(verifyPhoneOtpSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { otp } = req.body;
+    const userId = req.user!.id;
+
+    const profile = await UserProfile.findByPk(userId);
+    if (!profile || !profile.phone_otp_code || !profile.phone_otp_expires_at) {
+      return next(new AppError('No pending phone verification. Save your phone number first.', 400, 'NO_PENDING'));
+    }
+
+    if (new Date() > profile.phone_otp_expires_at) {
+      profile.phone_otp_code = null;
+      profile.phone_otp_expires_at = null;
+      profile.phone_otp_attempts = 0;
+      await profile.save();
+      return next(new AppError('Verification code has expired. Save your phone number again.', 400, 'CODE_EXPIRED'));
+    }
+
+    profile.phone_otp_attempts += 1;
+    if (profile.phone_otp_code !== otp) {
+      if (profile.phone_otp_attempts >= 3) {
+        profile.phone_otp_code = null;
+        profile.phone_otp_expires_at = null;
+        profile.phone_otp_attempts = 0;
+        await profile.save();
+        return next(new AppError('Too many incorrect attempts. Save your phone number again.', 400, 'TOO_MANY_ATTEMPTS'));
+      }
+      await profile.save();
+      return next(new AppError('Incorrect code. Please try again.', 400, 'INVALID_CODE'));
+    }
+
+    profile.phone_verified = true;
+    profile.phone_otp_code = null;
+    profile.phone_otp_expires_at = null;
+    profile.phone_otp_attempts = 0;
+    await profile.save();
+
+    await auditLog(userId, 'phone_verified', {}, req.ip || req.socket.remoteAddress || null, req.headers['user-agent'] || null);
+
+    sendSuccess(res, { message: 'Phone number verified' });
   } catch (err) { next(err); }
 });
 
