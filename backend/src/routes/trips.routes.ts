@@ -8,6 +8,7 @@ import { tripCreationLimiter } from '../middleware/rate-limit';
 import { NotFoundError } from '../utils/errors';
 import { maskPlate } from '../utils/sanitize';
 import { EncryptionService } from '../services/encryption.service';
+import { deriveTripHmacKey } from '../utils/hmac';
 
 const router = Router();
 const tripService = new TripService();
@@ -63,6 +64,7 @@ router.get('/active', async (req: Request, res: Response, next: NextFunction) =>
       destination_address: trip.destination_address,
       contact_name: trip.contact_name,
       started_at: trip.started_at, expires_at: trip.expires_at,
+      hmac_key: deriveTripHmacKey(trip.share_token),
     });
   } catch (err) { next(err); }
 });

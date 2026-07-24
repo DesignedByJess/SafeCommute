@@ -10,6 +10,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.get('/trips/active')
       setActiveTrip(res.data.data)
+      if (res.data.data?.hmac_key) {
+        setHmacKey(res.data.data.hmac_key)
+      }
     } catch {
       setActiveTrip(null)
     }
