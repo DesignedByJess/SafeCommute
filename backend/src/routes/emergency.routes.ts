@@ -7,6 +7,7 @@ import { initiateEmergencySchema, verifyEmergencySchema, retractEmergencySchema 
 import { emergencyLimiter, emergencyVerifyLimiter } from '../middleware/rate-limit';
 import { UserProfile } from '../models/user-profile.model';
 import { EncryptionService } from '../services/encryption.service';
+import sequelize from '../database/sequelize';
 
 const router = Router();
 const emergencyService = new EmergencyService();
@@ -16,14 +17,21 @@ router.use(authenticate);
 router.post('/:tripId/initiate', emergencyLimiter, validate(initiateEmergencySchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     let userPhone: string | undefined;
-    const profile = await UserProfile.findByPk(req.user!.id);
-    if (profile?.phone_encrypted) {
-      try {
-        userPhone = EncryptionService.decryptPhone(profile.phone_encrypted);
-      } catch {
+    try {
+      const [row] = await require('../database/sequelize').default.query(
+        'SELECT phone_encrypted FROM user_profiles WHERE user_id = :userId',
+        { replacements: { userId: req.user!.id }, type: 'SELECT' },
+      ) as any[];
+      if (row?.phone_encrypted) {
+        try {
+          userPhone = EncryptionService.decryptPhone(row.phone_encrypted);
+        } catch {
+          userPhone = req.user!.phone || undefined;
+        }
+      } else {
         userPhone = req.user!.phone || undefined;
       }
-    } else {
+    } catch {
       userPhone = req.user!.phone || undefined;
     }
 

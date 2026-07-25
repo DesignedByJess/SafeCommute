@@ -243,10 +243,21 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
       return next(new AppError(message, 503, 'AUTH_SERVICE_UNAVAILABLE'));
     }
 
-    const data = (await loginRes.json()) as SupabaseLoginResponse;
+    let data: SupabaseLoginResponse;
+    try {
+      data = (await loginRes.json()) as SupabaseLoginResponse;
+    } catch {
+      logger.error('Supabase login returned non-JSON', { status: loginRes.status, supabaseUrl: env.SUPABASE_URL });
+      return next(new AppError('Authentication service returned an unexpected response. Please try again.', 502, 'AUTH_SERVICE_BAD_RESPONSE'));
+    }
 
     if (!loginRes.ok) {
       return next(new AppError(data.msg || 'Invalid credentials', 401, 'LOGIN_FAILED'));
+    }
+
+    if (!data.user || !data.user.id || !data.access_token || !data.refresh_token) {
+      logger.error('Supabase login returned incomplete response', { status: loginRes.status, hasUser: !!data.user, hasAccessToken: !!data.access_token });
+      return next(new AppError('Authentication service returned an incomplete response.', 502, 'AUTH_SERVICE_INCOMPLETE_RESPONSE'));
     }
 
     const ipAddress = req.ip || req.socket.remoteAddress || null;
@@ -269,9 +280,13 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
     });
 
     let onboardingComplete = false;
-    const profile = await UserProfile.findByPk(data.user.id);
-    if (profile) {
-      onboardingComplete = profile.onboarding_complete;
+    try {
+      const profile = await UserProfile.findByPk(data.user.id, { attributes: ['user_id', 'onboarding_complete'] });
+      if (profile) {
+        onboardingComplete = profile.onboarding_complete;
+      }
+    } catch (profileErr) {
+      logger.error('Failed to fetch user profile during login', { error: profileErr, userId: data.user.id });
     }
 
     sendSuccess(res, { user: { id: data.user.id, email: data.user.email, onboarding_complete: onboardingComplete }, access_token: data.access_token });
@@ -287,6 +302,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
       return inboxService.notifyNewSession(data.user.id, deviceName, session.id);
     }).catch((err) => logger.error('Failed to create session/notification after login', { error: err }));
   } catch (err) {
+    logger.error('Unhandled login error', { error: (err as Error)?.message, stack: (err as Error)?.stack, name: (err as Error)?.name });
     next(err);
   }
 });
@@ -294,9 +310,13 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req: Request, 
 router.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let onboardingComplete = false;
-    const profile = await UserProfile.findByPk(req.user!.id);
-    if (profile) {
-      onboardingComplete = profile.onboarding_complete;
+    try {
+      const profile = await UserProfile.findByPk(req.user!.id, { attributes: ['user_id', 'onboarding_complete'] });
+      if (profile) {
+        onboardingComplete = profile.onboarding_complete;
+      }
+    } catch (profileErr) {
+      logger.error('Failed to fetch user profile in /me', { error: profileErr, userId: req.user!.id });
     }
 
     sendSuccess(res, {
