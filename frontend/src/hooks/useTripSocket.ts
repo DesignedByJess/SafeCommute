@@ -16,7 +16,8 @@ interface UseTripSocketReturn {
   sendLocation: (tripId: string, lat: number, lng: number, accuracy?: number, hmacKey?: string) => void
 }
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || ''
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '').replace(/\/api\/v1$/, '')
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE_URL || ''
 
 async function createSignature(payload: Record<string, unknown>, key: string): Promise<string> {
   const data = new TextEncoder().encode(JSON.stringify(payload))
