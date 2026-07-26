@@ -742,8 +742,8 @@ export function LicensePlateCaptureScreen({
                   <div>
                     <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 mb-6">
                       <p className="text-center text-sm text-gray-600 mb-4 font-normal">
-                        Tap <strong>Scan</strong> to detect the plate automatically,<br />
-                        or type it in below.
+                        Scan the plate, or type it in below<br />
+                        &mdash; whichever is easier.
                       </p>
                       <div className="flex flex-col">
                         <label
