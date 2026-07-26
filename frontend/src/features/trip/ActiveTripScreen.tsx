@@ -112,10 +112,12 @@ function TripMap({
   destination,
   destCoords,
   liveCoords,
+  path,
 }: {
   destination: string
   destCoords: [number, number] | null
   liveCoords: [number, number] | null
+  path: [number, number][]
 }) {
   const boundsPoints: [number, number][] = useMemo(() => {
     const pts: [number, number][] = []
@@ -144,16 +146,24 @@ function TripMap({
       {boundsPoints.length >= 2 && <FitBounds points={boundsPoints} />}
 
       {isValidCoord(destCoords) && (
-        <>
-          <Marker position={destCoords} icon={DESTINATION_ICON}>
-            <Tooltip permanent direction="right" offset={[10, 0]}>
-              <span style={{ color: '#8b7cf6', fontWeight: 700, fontSize: 13 }}>
-                {destination}
-              </span>
-            </Tooltip>
-          </Marker>
-          {isValidCoord(liveCoords) && <RoutePolyline start={liveCoords} end={destCoords} />}
-        </>
+        <Marker position={destCoords} icon={DESTINATION_ICON}>
+          <Tooltip permanent direction="right" offset={[10, 0]}>
+            <span style={{ color: '#8b7cf6', fontWeight: 700, fontSize: 13 }}>
+              {destination}
+            </span>
+          </Tooltip>
+        </Marker>
+      )}
+
+      {path.length >= 2 && (
+        <Polyline
+          positions={path}
+          pathOptions={{ color: '#0891B2', weight: 5, opacity: 0.8 }}
+        />
+      )}
+
+      {isValidCoord(liveCoords) && destCoords && (
+        <RoutePolyline start={liveCoords} end={destCoords} />
       )}
 
       {isValidCoord(liveCoords) && (
@@ -181,6 +191,8 @@ export function ActiveTripScreen({
   const [codeError, setCodeError] = useState('')
   const [codeLoading, setCodeLoading] = useState(false)
   const [destCoords, setDestCoords] = useState<[number, number] | null>(null)
+  const [tripPath, setTripPath] = useState<[number, number][]>([])
+  const lastPathCoordRef = useRef<[number, number] | null>(null)
   const { coordinates: liveCoords, startWatching, stopWatching } = useLocation()
   const { connected, joinTrip, leaveTrip, sendLocation } = useTripSocket()
   const geocodedRef = useRef(false)
@@ -314,16 +326,30 @@ export function ActiveTripScreen({
     return () => stopWatching()
   }, [startWatching, stopWatching])
 
-  // Send location updates via socket whenever GPS coordinates change
+  // Send location updates via socket and accumulate breadcrumb trail
   useEffect(() => {
-    if (!liveCoords || !tripId) {
-      return
-    }
-    if (lastLocationRef.current === liveCoords) {
-      return
-    }
+    if (!liveCoords || !tripId) return
+    if (lastLocationRef.current === liveCoords) return
     lastLocationRef.current = liveCoords
+
     sendLocation(tripId, liveCoords.lat, liveCoords.lng, liveCoords.accuracy ?? undefined, hmacKey)
+
+    const coord: [number, number] = [liveCoords.lat, liveCoords.lng]
+    const last = lastPathCoordRef.current
+    if (!last) {
+      setTripPath([coord])
+      lastPathCoordRef.current = coord
+      return
+    }
+    const R = 6371000
+    const dLat = (coord[0] - last[0]) * Math.PI / 180
+    const dLng = (coord[1] - last[1]) * Math.PI / 180
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(last[0] * Math.PI / 180) * Math.cos(coord[0] * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    if (dist < 30) return
+
+    setTripPath((prev) => [...prev, coord])
+    lastPathCoordRef.current = coord
   }, [liveCoords, tripId, hmacKey, sendLocation])
 
   // Intercept back navigation
@@ -380,6 +406,7 @@ export function ActiveTripScreen({
           destination={destination}
           destCoords={destCoords}
           liveCoords={currentPos}
+          path={tripPath}
         />
       </div>
 

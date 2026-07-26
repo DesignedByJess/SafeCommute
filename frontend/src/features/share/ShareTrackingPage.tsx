@@ -58,48 +58,6 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null
 }
 
-function RoutePolyline({
-  start,
-  end,
-}: {
-  start: [number, number]
-  end: [number, number]
-}) {
-  const [positions, setPositions] = useState<[number, number][] | null>(null)
-
-  const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
-
-  useEffect(() => {
-    let cancelled = false
-    const fetchRoute = async () => {
-      try {
-        const res = await fetch(osrmUrl)
-        if (!res.ok) throw new Error('OSRM request failed')
-        const data = await res.json() as { routes: { geometry: { coordinates: [number, number][] } }[] }
-        if (!data.routes?.[0]?.geometry?.coordinates) throw new Error('No route data')
-        if (cancelled) return
-        const coords: [number, number][] = data.routes[0].geometry.coordinates.map(
-          (c: [number, number]) => [c[1], c[0]],
-        )
-        setPositions(coords)
-      } catch {
-        if (!cancelled) setPositions([start, end])
-      }
-    }
-    fetchRoute()
-    return () => { cancelled = true }
-  }, [osrmUrl, start, end])
-
-  if (!positions) return null
-
-  return (
-    <Polyline
-      positions={positions}
-      pathOptions={{ color: '#0F172A', weight: 4, opacity: 0.6 }}
-    />
-  )
-}
-
 function LiveMap({
   path,
   currentPos,
@@ -136,12 +94,7 @@ function LiveMap({
         <Marker position={destCoords} icon={DESTINATION_ICON} />
       )}
 
-      {/* Route from current position to destination */}
-      {currentPos && destCoords && (
-        <RoutePolyline start={currentPos} end={destCoords} />
-      )}
-
-      {/* Breadcrumb trail of where the user has been */}
+      {/* Breadcrumb trail — actual GPS-tracked route the user traveled */}
       {path.length >= 2 && (
         <Polyline
           positions={path}
