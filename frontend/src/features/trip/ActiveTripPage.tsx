@@ -72,7 +72,7 @@ export default function ActiveTripPage() {
       )
     }
     update()
-    timerRef.current = setInterval(update, 1000)
+    timerRef.current = setInterval(update, 30000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [trip?.started_at])
 

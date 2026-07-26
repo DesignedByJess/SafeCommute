@@ -191,8 +191,12 @@ export function ActiveTripScreen({
   const lastLocationRef = useRef(liveCoords)
 
   const [endError, setEndError] = useState('')
+  const [endLoading, setEndLoading] = useState(false)
+  const [emergencyLoading, setEmergencyLoading] = useState(false)
 
   const handleEndTrip = async () => {
+    if (endLoading) return
+    setEndLoading(true)
     setEndError('')
     try {
       await api.patch(`/trips/${tripId}/end`, {
@@ -205,10 +209,15 @@ export function ActiveTripScreen({
       navigate('/', { replace: true })
     } catch {
       setEndError('Failed to end trip. Please try again.')
+    } finally {
+      setEndLoading(false)
     }
   }
 
   const handleEmergencyInitiate = async () => {
+    if (emergencyLoading) return
+    setEmergencyLoading(true)
+    setShowEmergencyConfirm(false)
     try {
       const emLat = liveCoords?.lat ?? PH_CENTER_LAT
       const emLng = liveCoords?.lng ?? PH_CENTER_LNG
@@ -217,12 +226,13 @@ export function ActiveTripScreen({
         lng: emLng,
         userName,
       }, { headers: { 'X-Skip-Auth': 'true' } })
-      setShowEmergencyConfirm(false)
       setShowCodeModal(true)
       setEmergencyCode('')
       setCodeError('')
     } catch {
       setCodeError('Failed to initiate emergency alert. Please try again.')
+    } finally {
+      setEmergencyLoading(false)
     }
   }
 
@@ -307,17 +317,14 @@ export function ActiveTripScreen({
   // Send location updates via socket whenever GPS coordinates change
   useEffect(() => {
     if (!liveCoords || !tripId) {
-      console.log('[ActiveTrip] Skipping send — no liveCoords or tripId:', { hasCoords: !!liveCoords, tripId })
       return
     }
     if (lastLocationRef.current === liveCoords) {
-      console.log('[ActiveTrip] Skipping send — same object reference')
       return
     }
     lastLocationRef.current = liveCoords
-    console.log('[ActiveTrip] Sending location — tripId:', tripId, 'lat:', liveCoords.lat, 'lng:', liveCoords.lng, 'accuracy:', liveCoords.accuracy, 'hasHMAC:', !!hmacKey, 'connected:', connected)
     sendLocation(tripId, liveCoords.lat, liveCoords.lng, liveCoords.accuracy ?? undefined, hmacKey)
-  }, [liveCoords, tripId, hmacKey, sendLocation, connected])
+  }, [liveCoords, tripId, hmacKey, sendLocation])
 
   // Intercept back navigation
   useEffect(() => {
@@ -341,7 +348,7 @@ export function ActiveTripScreen({
       <button
         type="button"
         onClick={() => setShowEndConfirm(true)}
-        disabled={loading}
+        disabled={loading || endLoading}
         className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-[#0891B2]"
       >
         End Trip
@@ -350,7 +357,8 @@ export function ActiveTripScreen({
       <button
         type="button"
         onClick={() => setShowEmergencyConfirm(true)}
-        className="w-full flex items-center justify-center gap-2 bg-white border border-[#DC2626] text-[#DC2626] font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#DC2626]"
+        disabled={emergencyLoading}
+        className="w-full flex items-center justify-center gap-2 bg-white border border-[#DC2626] text-[#DC2626] font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all active:scale-95 disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-[#DC2626]"
       >
         <ShieldWarning className="w-5 h-5" />
         Send Emergency Alert

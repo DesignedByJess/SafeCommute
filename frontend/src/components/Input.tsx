@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type InputHTMLAttributes } from 'react'
+import { useState, useRef, useCallback, useInsertionEffect, type InputHTMLAttributes } from 'react'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
 
 const autofillStyles = `
@@ -17,6 +17,16 @@ input:focus {
   box-shadow: none !important;
 }
 `
+
+function AutofillStyleInjector() {
+  useInsertionEffect(() => {
+    const style = document.createElement('style')
+    style.textContent = autofillStyles
+    document.head.appendChild(style)
+    return () => style.remove()
+  }, [])
+  return null
+}
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -67,7 +77,7 @@ export function Input({
 
   return (
     <>
-      <style>{autofillStyles}</style>
+      <AutofillStyleInjector />
       <div className={`w-full ${showPasswordToggle ? '' : className}`}>
       {label && (
         <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
@@ -94,9 +104,10 @@ export function Input({
         {showPasswordToggle && (
           <div className="absolute inset-0 pointer-events-none">
             <span
-              onPointerUp={toggle}
+              onClick={toggle}
               role="button"
-              tabIndex={-1}
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggle() }}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               className="absolute right-1 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 cursor-pointer select-none"
               style={{ pointerEvents: 'auto' }}

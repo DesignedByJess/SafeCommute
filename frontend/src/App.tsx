@@ -1,30 +1,43 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { SignIn } from '@phosphor-icons/react'
 import { useAuth } from './hooks/useAuth'
-import LoginPage from './features/auth/LoginPage'
-import SignupPage from './features/auth/SignupPage'
-import DashboardPage from './features/dashboard/DashboardPage'
-import ContactsPage from './features/contacts/ContactsPage'
-import NewTripPage from './features/trip/NewTripPage'
-import ActiveTripPage from './features/trip/ActiveTripPage'
-import HistoryPage from './features/history/HistoryPage'
-import PrivacyPage from './features/privacy/PrivacyPage'
-import SubscriptionPage from './features/subscription/SubscriptionPage'
-import SafetyCenterPage from './features/safety/SafetyCenterPage'
-import ProfilePage from './features/profile/ProfilePage'
-import ShareTrackingPage from './features/share/ShareTrackingPage'
-import OnboardingPage from './features/auth/OnboardingPage'
-import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
-import ResetPasswordPage from './features/auth/ResetPasswordPage'
-import OTPPage from './features/auth/OTPPage'
-import EditProfilePage from './features/profile/EditProfilePage'
-import TrustedDevicesPage from './features/profile/TrustedDevicesPage'
-import NotificationSettingsPage from './features/profile/NotificationSettingsPage'
-import HelpSupportPage from './features/profile/HelpSupportPage'
-import NotificationsCenterPage from './features/dashboard/NotificationsCenterPage'
-import PlaygroundPage from './features/playground/PlaygroundPage'
-import LandingPage from './features/marketing/LandingPage'
+
+const LoginPage = lazy(() => import('./features/auth/LoginPage'))
+const SignupPage = lazy(() => import('./features/auth/SignupPage'))
+const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'))
+const ContactsPage = lazy(() => import('./features/contacts/ContactsPage'))
+const NewTripPage = lazy(() => import('./features/trip/NewTripPage'))
+const ActiveTripPage = lazy(() => import('./features/trip/ActiveTripPage'))
+const HistoryPage = lazy(() => import('./features/history/HistoryPage'))
+const PrivacyPage = lazy(() => import('./features/privacy/PrivacyPage'))
+const SubscriptionPage = lazy(() => import('./features/subscription/SubscriptionPage'))
+const SafetyCenterPage = lazy(() => import('./features/safety/SafetyCenterPage'))
+const ProfilePage = lazy(() => import('./features/profile/ProfilePage'))
+const ShareTrackingPage = lazy(() => import('./features/share/ShareTrackingPage'))
+const OnboardingPage = lazy(() => import('./features/auth/OnboardingPage'))
+const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./features/auth/ResetPasswordPage'))
+const OTPPage = lazy(() => import('./features/auth/OTPPage'))
+const EditProfilePage = lazy(() => import('./features/profile/EditProfilePage'))
+const TrustedDevicesPage = lazy(() => import('./features/profile/TrustedDevicesPage'))
+const NotificationSettingsPage = lazy(() => import('./features/profile/NotificationSettingsPage'))
+const HelpSupportPage = lazy(() => import('./features/profile/HelpSupportPage'))
+const NotificationsCenterPage = lazy(() => import('./features/dashboard/NotificationsCenterPage'))
+const PlaygroundPage = lazy(() => import('./features/playground/PlaygroundPage'))
+const LandingPage = lazy(() => import('./features/marketing/LandingPage'))
+
+function PageSuspense({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-10 h-10 border-4 border-[#0891B2] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      {children}
+    </Suspense>
+  )
+}
 
 function AuthGate({ isReady, children }: { isReady: boolean; children: React.ReactNode }) {
   const { authError, clearAuthError } = useAuth()
@@ -143,28 +156,28 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
-      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/track/:share_token" element={<ShareTrackingPage />} />
-      <Route path="/onboarding" element={<OnboardingGuard><OnboardingPage /></OnboardingGuard>} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/" element={<RootRoute />} />
-      <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-      <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
-      <Route path="/safety" element={<ProtectedRoute><SafetyCenterPage /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
-      <Route path="/profile/devices" element={<ProtectedRoute><TrustedDevicesPage /></ProtectedRoute>} />
-      <Route path="/profile/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
-      <Route path="/profile/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
-      <Route path="/activity" element={<ProtectedRoute><NotificationsCenterPage /></ProtectedRoute>} />
-      <Route path="/trip/new" element={<ProtectedRoute><NewTripPage /></ProtectedRoute>} />
-      <Route path="/trip/active" element={<ProtectedRoute><ActiveTripPage /></ProtectedRoute>} />
-      <Route path="/contacts/:contactId/verify-otp" element={<ProtectedRoute><OTPPage /></ProtectedRoute>} />
-      <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
-      <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-      <Route path="/playground" element={<ProtectedRoute><PlaygroundPage /></ProtectedRoute>} />
+      <Route path="/signup" element={<PageSuspense><PublicRoute><SignupPage /></PublicRoute></PageSuspense>} />
+      <Route path="/login" element={<PageSuspense><PublicRoute><LoginPage /></PublicRoute></PageSuspense>} />
+      <Route path="/track/:share_token" element={<PageSuspense><ShareTrackingPage /></PageSuspense>} />
+      <Route path="/onboarding" element={<PageSuspense><OnboardingGuard><OnboardingPage /></OnboardingGuard></PageSuspense>} />
+      <Route path="/forgot-password" element={<PageSuspense><ForgotPasswordPage /></PageSuspense>} />
+      <Route path="/reset-password" element={<PageSuspense><ResetPasswordPage /></PageSuspense>} />
+      <Route path="/" element={<PageSuspense><RootRoute /></PageSuspense>} />
+      <Route path="/history" element={<PageSuspense><ProtectedRoute><HistoryPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/privacy" element={<PageSuspense><ProtectedRoute><PrivacyPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/safety" element={<PageSuspense><ProtectedRoute><SafetyCenterPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/profile" element={<PageSuspense><ProtectedRoute><ProfilePage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/profile/edit" element={<PageSuspense><ProtectedRoute><EditProfilePage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/profile/devices" element={<PageSuspense><ProtectedRoute><TrustedDevicesPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/profile/notifications" element={<PageSuspense><ProtectedRoute><NotificationSettingsPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/profile/help" element={<PageSuspense><ProtectedRoute><HelpSupportPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/activity" element={<PageSuspense><ProtectedRoute><NotificationsCenterPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/trip/new" element={<PageSuspense><ProtectedRoute><NewTripPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/trip/active" element={<PageSuspense><ProtectedRoute><ActiveTripPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/contacts/:contactId/verify-otp" element={<PageSuspense><ProtectedRoute><OTPPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/contacts" element={<PageSuspense><ProtectedRoute><ContactsPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/subscription" element={<PageSuspense><ProtectedRoute><SubscriptionPage /></ProtectedRoute></PageSuspense>} />
+      <Route path="/playground" element={<PageSuspense><ProtectedRoute><PlaygroundPage /></ProtectedRoute></PageSuspense>} />
       <Route path="*" element={<Navigate to="/signup" replace />} />
     </Routes>
   )

@@ -47,13 +47,15 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
  const [otpContactName, setOtpContactName] = useState('')
  const [otpDevOtp, setOtpDevOtp] = useState<string | undefined>(undefined)
 
- const fetchContacts = useCallback(async () => {
+ const fetchContacts = useCallback(async (): Promise<Contact[]> => {
   try {
    const res = await api.get('/contacts')
    const all: Contact[] = res.data?.data ?? []
    setContacts(all)
+   return all
   } catch {
    setContacts([])
+   return []
   }
  }, [])
 
@@ -113,20 +115,10 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
   setOtpContactName('')
   setOtpDevOtp(undefined)
 
-  // Re-fetch contacts and auto-select the newly added one
-  await fetchContacts()
-
-  // The new contact is the most recently added one — find it by matching the OTP contact name
-  // Since we just re-fetched, look for the contact that matches
-  try {
-   const res = await api.get('/contacts')
-   const all: Contact[] = res.data?.data ?? []
-   const newContact = all.find((c) => c.name === otpContactName && c.verified)
-   if (newContact) {
-    setSelectedId(newContact.id)
-   }
-  } catch {
-   // fallback: list was already updated by fetchContacts
+  const all = await fetchContacts()
+  const newContact = all.find((c) => c.name === otpContactName && c.verified)
+  if (newContact) {
+   setSelectedId(newContact.id)
   }
  }
 
