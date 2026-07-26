@@ -46,7 +46,7 @@ export default function PrivacyPage() {
 
       <div className="flex-1 px-6 space-y-3">
         {policies.map((item) => (
-          <Card key={item.title}>
+          <Card key={item.title} className="shadow-none">
             <div className="flex gap-3">
               <item.icon className="w-6 h-6 text-[#0891B2] shrink-0 mt-0.5" />
               <div>
