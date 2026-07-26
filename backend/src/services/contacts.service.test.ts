@@ -94,7 +94,7 @@ describe('ContactService', () => {
       });
     });
 
-    it('includes devOtp in non-production', async () => {
+    it('includes devOtp in the response', async () => {
       ContactFindOne.mockResolvedValue(null);
       const result = await service.sendOtp(userId, input);
       expect(result.devOtp).toBeDefined();

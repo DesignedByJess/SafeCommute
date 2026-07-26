@@ -81,6 +81,8 @@ describe('Contacts Routes', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.verification_token).toBeDefined();
       expect(res.body.data.verification_token).toHaveLength(64);
+      expect(res.body.data.devOtp).toBeDefined();
+      expect(res.body.data.devOtp).toMatch(/^\d{6}$/);
     });
 
     it('returns 400 for invalid phone number', async () => {
