@@ -104,15 +104,14 @@ export default function ContactsPage() {
     if (!editingContact) return
     const contactName = name
     try {
-      const res = await api.put(`/contacts/${editingContact.id}`, { name, phone, relationship: relationship || undefined })
+      const res = await api.post('/contacts/send-otp', { name, phone: formatPhone(phone), relationship: relationship || undefined })
       setEditingContact(null)
       resetForm()
-      fetchContacts()
-      const updated = res.data.data
-      if (updated?.phoneChanged && updated?.id) {
-        setOtpContactId(updated.id)
+      const data = res.data.data
+      if (data?.verification_token) {
+        setVerificationToken(data.verification_token)
         setOtpContactName(contactName)
-        setOtpDevOtp(updated.devOtp)
+        setOtpDevOtp(data.devOtp)
       }
     } catch {
       /* handle error */
