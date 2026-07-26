@@ -484,28 +484,30 @@ export function LicensePlateCaptureScreen({
             Confirm Plate
           </button>
         ) : entryMode === 'crop' ? (
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleRetake}
-              className="flex-1 bg-white border border-gray-300 text-[#0F172A] font-semibold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-gray-50 active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2] cursor-pointer"
-            >
-              Retake
-            </button>
+          <div className="flex flex-col gap-2">
             <button
               type="button"
               onClick={(): void => { handleScanFromCrop() }}
-              className="flex-1 bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-[#0E7490] active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2] cursor-pointer"
+              className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-[#0E7490] active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2] cursor-pointer"
             >
               Scan
             </button>
-            <button
-              type="button"
-              onClick={(): void => { setEntryMode('manual') }}
-              className="flex-1 bg-white border border-gray-300 text-[#0F172A] font-semibold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-gray-50 active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2] cursor-pointer"
-            >
-              Type it in
-            </button>
+            <div className="flex items-center justify-center gap-6">
+              <button
+                type="button"
+                onClick={handleRetake}
+                className="text-sm text-gray-500 underline hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center cursor-pointer"
+              >
+                Retake photo
+              </button>
+              <button
+                type="button"
+                onClick={(): void => { setEntryMode('manual') }}
+                className="text-sm text-gray-500 underline hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center cursor-pointer"
+              >
+                Type it in instead
+              </button>
+            </div>
           </div>
         ) : entryMode === 'detected' ? (
           <div className="flex gap-3">
