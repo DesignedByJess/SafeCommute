@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
+const rawUrl = import.meta.env.VITE_API_URL || ''
+const apiBase = rawUrl.replace(/\/+$/, '')
+const BASE_URL = apiBase ? `${apiBase}${apiBase.endsWith('/api/v1') ? '' : '/api/v1'}` : '/api/v1'
 
 let csrfTokenPromise: Promise<string | null> | null = null
 let accessToken: string | null = null
