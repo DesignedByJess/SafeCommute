@@ -313,7 +313,8 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
          <option value="friend">Friend</option>
          <option value="colleague">Colleague</option>
          <option value="other">Other</option>
-        </select>
+         </select>
+        </div>
        </div>
 
        <button
