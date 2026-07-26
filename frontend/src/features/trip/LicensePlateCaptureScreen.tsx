@@ -238,6 +238,7 @@ export function LicensePlateCaptureScreen({
       logOcrAttempt(evaluation, rawText, conf)
 
       if (evaluation.accepted) {
+        console.log('[OCR] SUCCESS — accepted plate:', evaluation.normalizedPlate, 'confidence:', evaluation.compositeConfidence)
         setPlateDetected(evaluation.normalizedPlate)
         setConfidence(evaluation.compositeConfidence)
         setEntryMode('detected')
@@ -245,6 +246,7 @@ export function LicensePlateCaptureScreen({
         setScanProgress('')
         return
       }
+      console.log('[OCR] Client OCR rejected — raw:', rawText, 'conf:', conf)
 
       try {
         const serverResult = await api.post('/ocr/scan-plate', {
@@ -258,6 +260,7 @@ export function LicensePlateCaptureScreen({
           logOcrAttempt(serverEval, serverPlate, serverConf)
 
           if (serverEval.accepted) {
+            console.log('[OCR] Server SUCCESS — accepted plate:', serverEval.normalizedPlate)
             setPlateDetected(serverEval.normalizedPlate)
             setConfidence(serverEval.compositeConfidence)
             setEntryMode('detected')
@@ -265,16 +268,20 @@ export function LicensePlateCaptureScreen({
             setScanProgress('')
             return
           }
+          console.log('[OCR] Server rejected — plate:', serverPlate, 'conf:', serverConf)
+        } else {
+          console.log('[OCR] Server returned no plate')
         }
       } catch {
-        // Server OCR not available
+        console.log('[OCR] Server endpoint not available')
       }
 
+      console.log('[OCR] Both client and server OCR failed — routing to manual entry')
       setIsScanning(false)
       setScanProgress('')
       setEntryMode('manual')
     } catch (err) {
-      console.error('[OCR] Error:', err)
+      console.log('[OCR] THREW error:', err)
       setIsScanning(false)
       setScanProgress('')
       setEntryMode('manual')
