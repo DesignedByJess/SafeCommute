@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { getAccessToken } from '../services/api'
 
 interface LocationUpdate {
   lat: number
@@ -47,6 +48,7 @@ export function useTripSocket(): UseTripSocketReturn {
     const socket = io(socketUrl, {
       transports: ['websocket'],
       withCredentials: true,
+      auth: { token: getAccessToken() },
     })
 
     socket.on('connect', () => {

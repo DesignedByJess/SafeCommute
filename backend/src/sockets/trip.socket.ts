@@ -16,10 +16,11 @@ export function registerTripSocketHandlers(io: Server): void {
   io.on('connection', async (socket: Socket) => {
     logger.info(`Socket connected: ${socket.id}`);
 
+    const authToken = socket.handshake.auth?.token as string | undefined;
     const cookieHeader = socket.handshake.headers.cookie;
-    const token = parseAccessToken(cookieHeader);
+    const token = authToken || parseAccessToken(cookieHeader);
     if (!token) {
-      logger.warn(`Socket ${socket.id} rejected — no auth token in cookie`);
+      logger.warn(`Socket ${socket.id} rejected — no auth token`);
       socket.disconnect();
       return;
     }
