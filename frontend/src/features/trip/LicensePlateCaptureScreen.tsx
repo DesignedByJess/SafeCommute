@@ -47,7 +47,6 @@ export function LicensePlateCaptureScreen({
   const [confidence, setConfidence] = useState<number>(0)
   const [isScanning, setIsScanning] = useState<boolean>(false)
   const [scanProgress, setScanProgress] = useState<string>('')
-  const [scanError, setScanError] = useState<string>('')
   const [manualPlate, setManualPlate] = useState<string>('')
   const [manualError, setManualError] = useState<string>('')
 
@@ -191,7 +190,6 @@ export function LicensePlateCaptureScreen({
 
   const runOcr = useCallback(async (imageData: string) => {
     setIsScanning(true)
-    setScanError('')
     setScanProgress('Enhancing image...')
 
     let preprocessed: string
@@ -367,7 +365,6 @@ export function LicensePlateCaptureScreen({
   const handleRetake = useCallback((): void => {
     setPlateDetected(null)
     setConfidence(0)
-    setScanError('')
     setCapturedImage(null)
     setEntryMode('scan')
   }, [])
