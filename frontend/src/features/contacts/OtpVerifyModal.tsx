@@ -124,21 +124,21 @@ export function OtpVerifyModal({ open, verificationToken, contactName, devOtp, o
           </div>
         )}
 
-        {currentDevOtp && showDevBanner && (
+        {import.meta.env.DEV && currentDevOtp && showDevBanner && (
           <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 mb-4">
             <div className="flex items-center gap-2 text-sm">
               <span className="font-mono font-bold text-amber-800 text-xs uppercase tracking-wider bg-amber-100 px-1.5 py-0.5 rounded">
-                OTP
+                DEV
               </span>
               <span className="text-amber-900">
-                Code: <code className="font-mono font-bold text-amber-950">{currentDevOtp}</code>
+                OTP: <code className="font-mono font-bold text-amber-950">{currentDevOtp}</code>
               </span>
             </div>
             <button
               type="button"
               onClick={() => setShowDevBanner(false)}
               className="min-h-[44px] min-w-[44px] flex items-center justify-center text-amber-500 hover:text-amber-700"
-              aria-label="Dismiss banner"
+              aria-label="Dismiss dev banner"
             >
               <X className="w-4 h-4" />
             </button>

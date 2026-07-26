@@ -94,7 +94,7 @@ export class ContactService {
 
     return {
       verification_token: token,
-      devOtp: otp,
+      ...(env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
     };
   }
 
@@ -160,8 +160,12 @@ export class ContactService {
       }
     });
 
-    logger.info(`[DEV] Resent OTP for token ${token}: ${otp}`);
-    return { verification_token: token, devOtp: otp };
+    if (env.NODE_ENV !== 'production') {
+      logger.info(`[DEV] Resent OTP for token ${token}: ${otp}`);
+      return { verification_token: token, devOtp: otp };
+    }
+
+    return { verification_token: token };
   }
 
   async getContact(userId: string, contactId: string) {
