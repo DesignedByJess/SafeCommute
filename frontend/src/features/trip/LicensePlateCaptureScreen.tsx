@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { CaretLeft, CheckCircle } from '@phosphor-icons/react'
+import { CaretLeft, CheckCircle, WarningCircle } from '@phosphor-icons/react'
 import { createWorker } from 'tesseract.js'
 import type { Worker } from 'tesseract.js'
 import { StepProgress } from '../../components/StepProgress'
@@ -27,6 +27,8 @@ interface LicensePlateCaptureScreenProps {
 }
 
 type EntryMode = 'scan' | 'crop' | 'manual' | 'detected'
+
+type OcrStatus = 'idle' | 'scanning' | 'success' | 'failed'
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -56,6 +58,7 @@ export function LicensePlateCaptureScreen({
   const [cameraActive, setCameraActive] = useState<boolean>(false)
   const [videoPlaying, setVideoPlaying] = useState<boolean>(false)
   const [cameraError, setCameraError] = useState<boolean>(false)
+  const [ocrStatus, setOcrStatus] = useState<OcrStatus>('idle')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const workerRef = useRef<Worker | null>(null)
@@ -190,6 +193,7 @@ export function LicensePlateCaptureScreen({
 
   const runOcr = useCallback(async (imageData: string) => {
     setIsScanning(true)
+    setOcrStatus('scanning')
     setScanProgress('Enhancing image...')
 
     let preprocessed: string
@@ -230,7 +234,6 @@ export function LicensePlateCaptureScreen({
         'OCR recognition',
       )
 
-      console.log('[OCR] Raw text:', data.text.trim(), 'Confidence:', data.confidence)
       const rawText = data.text.trim()
       const conf = data.confidence
 
@@ -238,15 +241,14 @@ export function LicensePlateCaptureScreen({
       logOcrAttempt(evaluation, rawText, conf)
 
       if (evaluation.accepted) {
-        console.log('[OCR] SUCCESS — accepted plate:', evaluation.normalizedPlate, 'confidence:', evaluation.compositeConfidence)
         setPlateDetected(evaluation.normalizedPlate)
         setConfidence(evaluation.compositeConfidence)
+        setOcrStatus('success')
         setEntryMode('detected')
         setIsScanning(false)
         setScanProgress('')
         return
       }
-      console.log('[OCR] Client OCR rejected — raw:', rawText, 'conf:', conf)
 
       try {
         const serverResult = await api.post('/ocr/scan-plate', {
@@ -260,28 +262,25 @@ export function LicensePlateCaptureScreen({
           logOcrAttempt(serverEval, serverPlate, serverConf)
 
           if (serverEval.accepted) {
-            console.log('[OCR] Server SUCCESS — accepted plate:', serverEval.normalizedPlate)
             setPlateDetected(serverEval.normalizedPlate)
             setConfidence(serverEval.compositeConfidence)
+            setOcrStatus('success')
             setEntryMode('detected')
             setIsScanning(false)
             setScanProgress('')
             return
           }
-          console.log('[OCR] Server rejected — plate:', serverPlate, 'conf:', serverConf)
-        } else {
-          console.log('[OCR] Server returned no plate')
         }
       } catch {
-        console.log('[OCR] Server endpoint not available')
+        /** Server endpoint unavailable — fall through to manual entry */
       }
 
-      console.log('[OCR] Both client and server OCR failed — routing to manual entry')
+      setOcrStatus('failed')
       setIsScanning(false)
       setScanProgress('')
       setEntryMode('manual')
     } catch (err) {
-      console.log('[OCR] THREW error:', err)
+      setOcrStatus('failed')
       setIsScanning(false)
       setScanProgress('')
       setEntryMode('manual')
@@ -373,6 +372,7 @@ export function LicensePlateCaptureScreen({
     setPlateDetected(null)
     setConfidence(0)
     setCapturedImage(null)
+    setOcrStatus('idle')
     setEntryMode('scan')
   }, [])
 
@@ -509,7 +509,7 @@ export function LicensePlateCaptureScreen({
               </button>
               <button
                 type="button"
-                onClick={(): void => { setEntryMode('manual') }}
+                onClick={(): void => { setOcrStatus('idle'); setEntryMode('manual') }}
                 className="text-sm text-gray-500 underline hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center cursor-pointer"
               >
                 Type it in instead
@@ -650,6 +650,7 @@ export function LicensePlateCaptureScreen({
                         <button
                           type="button"
                           onClick={(): void => {
+                            setOcrStatus('idle')
                             setEntryMode('manual')
                           }}
                           className="underline text-[#0F172A] font-semibold hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
@@ -747,10 +748,24 @@ export function LicensePlateCaptureScreen({
               case 'manual':
                 return (
                   <div>
+                    {ocrStatus === 'failed' && (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-4 flex items-start gap-3">
+                        <WarningCircle className="w-5 h-5 text-[#D97706] mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-[#D97706]">
+                            Could not read the plate
+                          </p>
+                          <p className="text-sm text-amber-700 mt-0.5">
+                            The camera couldn't capture a clear plate image. Type the number below instead.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 mb-6">
                       <p className="text-center text-sm text-gray-600 mb-4 font-normal">
-                        Scan the plate, or type it in below<br />
-                        &mdash; whichever is easier.
+                        {ocrStatus === 'failed'
+                          ? 'Enter the plate number shown on the vehicle.'
+                          : 'Scan the plate, or type it in below'}
                       </p>
                       <div className="flex flex-col">
                         <label
@@ -784,6 +799,7 @@ export function LicensePlateCaptureScreen({
                       <button
                         type="button"
                         onClick={(): void => {
+                          setOcrStatus('idle')
                           setEntryMode('scan')
                           setManualError('')
                         }}

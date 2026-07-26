@@ -113,7 +113,7 @@ describe('LicensePlateCaptureScreen', () => {
       <LicensePlateCaptureScreen onBack={vi.fn()} onConfirm={vi.fn()} />
     )
     expect(screen.queryByText('Plate detected!')).toBeNull()
-    expect(screen.queryByText('Could not read the plate automatically.')).toBeNull()
+    expect(screen.queryByText('Could not read the plate')).toBeNull()
   })
 
   it('runs OCR and shows detected panel after scan via file input fallback', async () => {
@@ -234,7 +234,7 @@ describe('LicensePlateCaptureScreen', () => {
     await uploadAndScan()
 
     await waitFor(() => {
-      expect(screen.getByText(/Could not read the plate automatically/)).toBeDefined()
+      expect(screen.getByText('Could not read the plate')).toBeDefined()
       expect(screen.getByPlaceholderText('e.g. ABC-123-XY')).toBeDefined()
     })
   })
