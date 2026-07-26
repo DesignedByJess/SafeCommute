@@ -56,7 +56,7 @@ export function useTripSocket(): UseTripSocketReturn {
       setConnected(true)
     })
 
-    socket.on('disconnect', (reason, details) => {
+    socket.on('disconnect', (reason) => {
       console.log('[WS] Disconnected — reason:', reason)
       setConnected(false)
     })
