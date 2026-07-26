@@ -74,6 +74,8 @@ export function LicensePlateCaptureScreen({
     startY: number
     startCrop: CropRegion
   }>({ active: false, corner: null, startX: 0, startY: 0, startCrop: { x: 0, y: 0, width: 1, height: 1 } })
+  const capturedImageRef = useRef<string | null>(null)
+  const cropRegionRef = useRef<CropRegion>({ x: 0, y: 0, width: 1, height: 1 })
 
   useEffect(() => {
     return () => {
@@ -343,30 +345,39 @@ export function LicensePlateCaptureScreen({
     e.target.value = ''
   }, [computeGuideBoxRegion])
 
+  useEffect(() => {
+    capturedImageRef.current = capturedImage
+  }, [capturedImage])
+
+  useEffect(() => {
+    cropRegionRef.current = cropRegion
+  }, [cropRegion])
+
   const handleScanFromCrop = useCallback(async (): Promise<void> => {
-    if (!capturedImage) return
+    const img = capturedImageRef.current
+    const region = cropRegionRef.current
+    if (!img) return
 
     setScanProgress('Analyzing plate region...')
 
     let ocrImage: string
     try {
-      const result = await detectAndCorrectPlate(capturedImage)
+      const result = await detectAndCorrectPlate(img)
       if (result) {
         setScanProgress('Deskewing plate...')
         ocrImage = result.correctedImage
-        console.log('[OpenCV] Plate detected:', result.detectedRegion)
       } else {
         setScanProgress('Cropping to guide box...')
-        ocrImage = await cropToRegion(capturedImage, cropRegion)
+        ocrImage = await cropToRegion(img, region)
       }
     } catch {
       setScanProgress('Cropping to guide box...')
-      ocrImage = await cropToRegion(capturedImage, cropRegion).catch(() => capturedImage)
+      ocrImage = await cropToRegion(img, region).catch(() => img)
     }
 
     setEntryMode('scan')
     await runOcr(ocrImage)
-  }, [capturedImage, cropRegion, runOcr])
+  }, [runOcr])
 
   const handleRetake = useCallback((): void => {
     setPlateDetected(null)
@@ -749,14 +760,15 @@ export function LicensePlateCaptureScreen({
                 return (
                   <div>
                     {ocrStatus === 'failed' && (
-                      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-4 flex items-start gap-3">
-                        <WarningCircle className="w-5 h-5 text-[#D97706] mt-0.5 shrink-0" />
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 mb-3 flex items-start gap-2.5">
+                        <WarningCircle className="w-4 h-4 text-[#D97706] mt-0.5 shrink-0" />
                         <div>
-                          <p className="text-sm font-semibold text-[#D97706]">
-                            Could not read the plate
+                          <p className="text-sm font-semibold text-[#D97706] leading-tight">
+                            Couldn't read the plate
                           </p>
-                          <p className="text-sm text-amber-700 mt-0.5">
-                            The camera couldn't capture a clear plate image. Type the number below instead.
+                          <p className="text-xs text-amber-700 mt-0.5 leading-snug">
+                            Camera couldn't capture a clear plate.<br />
+                            Type the number below.
                           </p>
                         </div>
                       </div>
