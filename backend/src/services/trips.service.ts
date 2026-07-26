@@ -153,10 +153,11 @@ export class TripService {
     if (!trip) throw new AppError('Active trip not found', 404, 'NOT_FOUND');
 
     // Use static update — bypasses model instance class field issues entirely
+    const endedAt = new Date();
     await Trip.update(
       {
         status: 'completed',
-        ended_at: new Date(),
+        ended_at: endedAt,
         share_link_expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000),
       },
       { where: { id: tripId, user_id: userId, status: ['active', 'emergency'] } },
@@ -181,6 +182,7 @@ export class TripService {
           contactPhone,
           userName: notification.userName,
           destination: notification.destination,
+          endedAt,
         }).catch((err) => logger.error('Trip-end notification failed', { error: err }));
       } catch (err) {
         logger.error('Failed to decrypt contact phone for trip-end notification', { error: err });

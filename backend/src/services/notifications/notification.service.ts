@@ -37,9 +37,10 @@ export class NotificationService {
     contactPhone: string;
     userName: string;
     destination: string;
+    endedAt?: Date;
   }): Promise<void> {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const now = payload.endedAt || new Date();
+    const timeStr = now.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Africa/Lagos' });
     const message = `${payload.userName} arrived safely at ${payload.destination} around ${timeStr}. — SafeCommute`;
 
     const results = await Promise.allSettled([
