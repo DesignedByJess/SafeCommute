@@ -106,7 +106,7 @@ export class NotificationService {
 
     const params: Record<string, string> = {
       username: env.AFRICA_TALKING_USERNAME,
-      to: phone,
+      to: phone.replace(/^\+/, ''),
       message,
       from: env.AFRICA_TALKING_SENDER_ID,
     };
