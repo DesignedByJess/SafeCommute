@@ -79,13 +79,13 @@ export function SafetyConcernsScreen({ onBack, onContinue, onSkip }: SafetyConce
               <button
                 key={concern}
                 onClick={() => toggleConcern(concern)}
-                className={`flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium leading-tight transition-all min-h-[48px] w-[calc(50%-6px)] focus:outline-none ${
+                className={`flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap overflow-hidden transition-all min-h-[48px] w-[calc(50%-6px)] focus:outline-none ${
                   selected
                     ? 'bg-[#0F172A] text-white'
                     : 'bg-white text-[#0F172A] border border-gray-400'
                 }`}
               >
-                <span className="break-words">{concern}</span>
+                <span className="truncate">{concern}</span>
                 {selected && (
                   <X className="w-3.5 h-3.5 flex-shrink-0 text-white/70" strokeWidth={3} />
                 )}
