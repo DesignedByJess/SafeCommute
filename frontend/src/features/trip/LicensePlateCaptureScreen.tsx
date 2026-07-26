@@ -48,7 +48,6 @@ export function LicensePlateCaptureScreen({
   const [isScanning, setIsScanning] = useState<boolean>(false)
   const [scanProgress, setScanProgress] = useState<string>('')
   const [scanError, setScanError] = useState<string>('')
-  const [retryCount, setRetryCount] = useState<number>(0)
   const [manualPlate, setManualPlate] = useState<string>('')
   const [manualError, setManualError] = useState<string>('')
 
@@ -273,29 +272,20 @@ export function LicensePlateCaptureScreen({
         // Server OCR not available
       }
 
-      const nextRetry = retryCount + 1
-      setRetryCount(nextRetry)
-      if (nextRetry >= 3) {
-        setScanError('Could not read plate after multiple attempts.')
-        setEntryMode('manual')
-      } else {
-        setScanError(`Could not read plate clearly. Please try again. (Attempt ${nextRetry}/3)`)
-        setIsScanning(false)
-        setScanProgress('')
-      }
-    } catch (err) {
-      console.error('[OCR] Error:', err)
-      const msg = err instanceof Error ? err.message : 'OCR processing failed'
-      setScanError(`${msg}. Please try again.`)
       setIsScanning(false)
       setScanProgress('')
-    } finally {
+      setEntryMode('manual')
+    } catch (err) {
+      console.error('[OCR] Error:', err)
+      setIsScanning(false)
+      setScanProgress('')
+      setEntryMode('manual')
       try {
         await worker?.terminate()
       } catch { /* ignore */ }
       workerRef.current = null
     }
-  }, [retryCount])
+  }, [])
 
   const computeGuideBoxRegion = useCallback((): CropRegion => {
     const container = containerRef.current
@@ -379,12 +369,8 @@ export function LicensePlateCaptureScreen({
     setConfidence(0)
     setScanError('')
     setCapturedImage(null)
-    if (retryCount >= 3) {
-      setEntryMode('manual')
-    } else {
-      setEntryMode('scan')
-    }
-  }, [retryCount])
+    setEntryMode('scan')
+  }, [])
 
   const handleConfirm = (): void => {
     if (!plateDetected) return
@@ -516,6 +502,13 @@ export function LicensePlateCaptureScreen({
             >
               Scan
             </button>
+            <button
+              type="button"
+              onClick={(): void => { setEntryMode('manual') }}
+              className="flex-1 bg-white border border-gray-300 text-[#0F172A] font-semibold text-base rounded-2xl py-4 min-h-[56px] transition-all hover:bg-gray-50 active:scale-95 focus:outline-none focus:ring-1 focus:ring-[#0891B2] cursor-pointer"
+            >
+              Type it in
+            </button>
           </div>
         ) : entryMode === 'detected' ? (
           <div className="flex gap-3">
@@ -646,39 +639,16 @@ export function LicensePlateCaptureScreen({
                       </div>
                     )}
                     <canvas ref={analysisCanvasRef} className="hidden" />
-                    {scanError && (
-                      <div className="mt-4 rounded-2xl border-2 border-[#DC2626] bg-red-50 p-5 text-center">
-                        <p className="text-lg font-bold text-[#991B1B] mb-1">
-                          Could not read plate
-                        </p>
-                        <p className="text-sm text-[#991B1B] mb-4">
-                          {scanError}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={(): void => {
-                            setEntryMode('manual')
-                            setScanError('')
-                            setRetryCount(0)
-                          }}
-                          className="w-full bg-[#0891B2] text-white font-bold text-base rounded-2xl py-3 min-h-[48px] transition-all hover:bg-[#0E7490] active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-[#0891B2] cursor-pointer"
-                        >
-                          Enter plate manually
-                        </button>
-                      </div>
-                    )}
-                    {!scanError && (
+                    {!isScanning && (
                       <p className="text-center text-gray-500 mt-8 text-base">
-                        Can't scan plate?{' '}
                         <button
                           type="button"
                           onClick={(): void => {
                             setEntryMode('manual')
-                            setScanError('')
                           }}
                           className="underline text-[#0F172A] font-semibold hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
                         >
-                          Enter manually
+                          Type it in instead
                         </button>
                       </p>
                     )}
@@ -773,8 +743,8 @@ export function LicensePlateCaptureScreen({
                   <div>
                     <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 mb-6">
                       <p className="text-center text-sm text-gray-600 mb-4 font-normal">
-                        Could not read the plate automatically.<br />
-                        Please type it below.
+                        Tap <strong>Scan</strong> to detect the plate automatically,<br />
+                        or type it in below.
                       </p>
                       <div className="flex flex-col">
                         <label
