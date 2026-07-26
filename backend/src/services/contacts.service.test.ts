@@ -29,12 +29,21 @@ jest.mock('winston', () => {
   };
 });
 
-import { ContactService } from './contacts.service';
+jest.mock('./notifications/notification.service', () => ({
+  NotificationService: jest.fn().mockImplementation(() => ({
+    sendAfricaTalking: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+import crypto from 'crypto';
+import { ContactService, pendingStore } from './contacts.service';
 import { Contact } from '../models/contact.model';
 
 const ContactFindAll = Contact.findAll as jest.Mock;
 const ContactFindOne = Contact.findOne as jest.Mock;
 const ContactCreate = Contact.create as jest.Mock;
+
+const mockToken = crypto.randomBytes(32).toString('hex');
 
 describe('ContactService', () => {
   let service: ContactService;
@@ -42,19 +51,23 @@ describe('ContactService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    pendingStore.clear();
     service = new ContactService();
   });
 
+  afterAll(() => {
+    pendingStore.clear();
+  });
+
   describe('listContacts', () => {
-    it('returns contacts excluding otp fields', async () => {
+    it('returns only verified contacts excluding otp fields', async () => {
       const mockContacts = [
         { id: '1', name: 'Alice', phone_number_encrypted: 'enc123', verified: true, created_at: new Date(), toJSON: () => ({}) },
-        { id: '2', name: 'Bob', phone_number_encrypted: 'enc456', verified: false, created_at: new Date(), toJSON: () => ({}) },
       ];
       ContactFindAll.mockResolvedValue(mockContacts);
       const result = await service.listContacts(userId);
       expect(ContactFindAll).toHaveBeenCalledWith({
-        where: { user_id: userId, deleted_at: null },
+        where: { user_id: userId, deleted_at: null, verified: true },
         attributes: { exclude: ['otp_code', 'otp_expires_at'] },
         order: [['created_at', 'DESC']],
       });
@@ -62,98 +75,86 @@ describe('ContactService', () => {
     });
   });
 
-  describe('addContact', () => {
+  describe('sendOtp', () => {
     const input = { name: 'Alice', phone: '+2348012345678', relationship: 'sister' };
 
-    it('creates a contact with encrypted phone and OTP', async () => {
+    it('stores OTP in memory and returns verification token', async () => {
       ContactFindOne.mockResolvedValue(null);
-      ContactCreate.mockImplementationOnce((data: any) => Promise.resolve({
-        id: 'contact-uuid',
-        ...data,
-        created_at: new Date(),
-        toJSON() { return { ...this }; },
-      }));
-      const result = await service.addContact(userId, input);
-      expect(ContactCreate).toHaveBeenCalled();
-      expect(result.otp_code).toMatch(/^\d{6}$/);
+      const result = await service.sendOtp(userId, input);
+      expect(result.verification_token).toBeDefined();
+      expect(result.verification_token).toHaveLength(64);
+      expect(ContactCreate).not.toHaveBeenCalled();
     });
 
     it('throws 409 when contact already exists', async () => {
       ContactFindOne.mockResolvedValue({ id: 'existing' });
-      await expect(service.addContact(userId, input)).rejects.toMatchObject({
+      await expect(service.sendOtp(userId, input)).rejects.toMatchObject({
         statusCode: 409,
         code: 'CONTACT_EXISTS',
       });
     });
+
+    it('includes devOtp in non-production', async () => {
+      ContactFindOne.mockResolvedValue(null);
+      const result = await service.sendOtp(userId, input);
+      expect(result.devOtp).toBeDefined();
+      expect(result.devOtp).toMatch(/^\d{6}$/);
+    });
   });
 
   describe('verifyOtp', () => {
-    const contactId = 'contact-uuid';
-    const futureDate = new Date(Date.now() + 60 * 60 * 1000);
+    const input = { name: 'Bob', phone: '+2348012345678', relationship: 'friend' };
 
-    it('verifies OTP successfully', async () => {
-      const mockContact = {
-        id: contactId,
-        user_id: userId,
-        verified: false,
-        otp_code: '123456',
-        otp_expires_at: futureDate,
-        save: jest.fn().mockResolvedValue(undefined),
-      };
-      ContactFindOne.mockResolvedValue(mockContact);
-      const result = await service.verifyOtp(userId, contactId, '123456');
-      expect(mockContact.verified).toBe(true);
-      expect(mockContact.otp_code).toBeNull();
-      expect(mockContact.save).toHaveBeenCalled();
-      expect(result).toEqual({ id: contactId, verified: true });
-    });
-
-    it('throws 404 when contact not found', async () => {
+    it('creates contact and returns id on valid OTP', async () => {
       ContactFindOne.mockResolvedValue(null);
-      await expect(service.verifyOtp(userId, contactId, '123456')).rejects.toMatchObject({
+      const sendResult = await service.sendOtp(userId, input);
+      ContactCreate.mockResolvedValue({
+        id: 'new-contact-uuid',
+        user_id: userId,
+        name: input.name,
+        phone_number_encrypted: expect.any(String),
+        phone_number_hash: expect.any(String),
+        relationship: input.relationship,
+        verified: true,
+      });
+      const result = await service.verifyOtp(userId, sendResult.verification_token, sendResult.devOtp!);
+      expect(ContactCreate).toHaveBeenCalled();
+      expect(result.verified).toBe(true);
+    });
+
+    it('throws 404 on unknown token', async () => {
+      await expect(service.verifyOtp(userId, 'nonexistent-token', '123456')).rejects.toMatchObject({
         statusCode: 404,
-        code: 'NOT_FOUND',
+        code: 'VERIFICATION_NOT_FOUND',
       });
     });
 
-    it('throws 400 when already verified', async () => {
-      ContactFindOne.mockResolvedValue({
-        id: contactId,
-        user_id: userId,
-        verified: true,
-        otp_code: '123456',
-        otp_expires_at: futureDate,
-      });
-      await expect(service.verifyOtp(userId, contactId, '123456')).rejects.toMatchObject({
-        statusCode: 400,
-        code: 'ALREADY_VERIFIED',
+    it('throws 403 on wrong user', async () => {
+      ContactFindOne.mockResolvedValue(null);
+      const sendResult = await service.sendOtp(userId, input);
+      await expect(service.verifyOtp('other-user', sendResult.verification_token, sendResult.devOtp!)).rejects.toMatchObject({
+        statusCode: 403,
+        code: 'FORBIDDEN',
       });
     });
 
     it('throws 400 on wrong OTP', async () => {
-      ContactFindOne.mockResolvedValue({
-        id: contactId,
-        user_id: userId,
-        verified: false,
-        otp_code: '999999',
-        otp_expires_at: futureDate,
-      });
-      await expect(service.verifyOtp(userId, contactId, '123456')).rejects.toMatchObject({
+      ContactFindOne.mockResolvedValue(null);
+      const sendResult = await service.sendOtp(userId, input);
+      await expect(service.verifyOtp(userId, sendResult.verification_token, '000000')).rejects.toMatchObject({
         statusCode: 400,
         code: 'INVALID_OTP',
       });
     });
 
     it('throws 400 on expired OTP', async () => {
-      const pastDate = new Date(Date.now() - 60 * 1000);
-      ContactFindOne.mockResolvedValue({
-        id: contactId,
-        user_id: userId,
-        verified: false,
-        otp_code: '123456',
-        otp_expires_at: pastDate,
-      });
-      await expect(service.verifyOtp(userId, contactId, '123456')).rejects.toMatchObject({
+      ContactFindOne.mockResolvedValue(null);
+      const sendResult = await service.sendOtp(userId, input);
+      const pending = pendingStore.get(sendResult.verification_token);
+      if (pending) {
+        pending.expiresAt = Date.now() - 1;
+      }
+      await expect(service.verifyOtp(userId, sendResult.verification_token, sendResult.devOtp!)).rejects.toMatchObject({
         statusCode: 400,
         code: 'OTP_EXPIRED',
       });

@@ -5,14 +5,14 @@ import { api } from '../../services/api'
 
 interface OtpVerifyModalProps {
   open: boolean
-  contactId: string
+  verificationToken: string
   contactName: string
   devOtp?: string
   onClose: () => void
   onSuccess: () => void
 }
 
-export function OtpVerifyModal({ open, contactId, contactName, devOtp, onClose, onSuccess }: OtpVerifyModalProps) {
+export function OtpVerifyModal({ open, verificationToken, contactName, devOtp, onClose, onSuccess }: OtpVerifyModalProps) {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -70,7 +70,7 @@ export function OtpVerifyModal({ open, contactId, contactName, devOtp, onClose, 
     setLoading(true)
     setError('')
     try {
-      const res = await api.post(`/contacts/${contactId}/verify-otp`, { otp: code })
+      const res = await api.post('/contacts/verify', { token: verificationToken, otp: code })
       if (res.data.data?.verified) {
         onSuccess()
       }
@@ -87,7 +87,7 @@ export function OtpVerifyModal({ open, contactId, contactName, devOtp, onClose, 
     setResending(true)
     setError('')
     try {
-      const res = await api.post(`/contacts/${contactId}/resend-otp`)
+      const res = await api.post('/contacts/resend-otp', { token: verificationToken })
       setResendTimer(60)
       setCurrentDevOtp(res.data.data?.devOtp)
       setShowDevBanner(true)

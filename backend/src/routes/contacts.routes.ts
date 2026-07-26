@@ -4,7 +4,7 @@ import { validate } from '../middleware/validate';
 import { sendSuccess, sendCreated, sendNoContent } from '../utils/response';
 import { ContactService } from '../services/contacts.service';
 import { EncryptionService } from '../services/encryption.service';
-import { createContactSchema, verifyOtpSchema } from '../middleware/validate/contact.schema';
+import { sendOtpSchema, verifyOtpSchema, resendOtpSchema } from '../middleware/validate/contact.schema';
 import { otpLimiter } from '../middleware/rate-limit';
 import { maskPhone } from '../utils/sanitize';
 
@@ -31,34 +31,23 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   } catch (err) { next(err); }
 });
 
-router.post('/', validate(createContactSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/send-otp', otpLimiter, validate(sendOtpSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await contactService.addContact(req.user!.id, req.body);
-    let displayPhone = result.phone_number_encrypted;
-    try {
-      const decrypted = EncryptionService.decryptPhone(result.phone_number_encrypted);
-      displayPhone = maskPhone(decrypted);
-    } catch {
-      displayPhone = maskPhone(result.phone_number_encrypted);
-    }
-    const payload: Record<string, unknown> = {
-      id: result.id,
-      name: result.name,
-      phone_number_encrypted: displayPhone,
-      relationship: result.relationship,
-      verified: result.verified,
-      created_at: result.created_at,
-    };
-    if (result.devOtp) {
-      payload.devOtp = result.devOtp;
-    }
-    sendCreated(res, payload);
+    const result = await contactService.sendOtp(req.user!.id, req.body);
+    sendCreated(res, result);
   } catch (err) { next(err); }
 });
 
-router.post('/:id/verify-otp', otpLimiter, validate(verifyOtpSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/verify', otpLimiter, validate(verifyOtpSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await contactService.verifyOtp(req.user!.id, req.params.id, req.body.otp);
+    const result = await contactService.verifyOtp(req.user!.id, req.body.token, req.body.otp);
+    sendSuccess(res, result);
+  } catch (err) { next(err); }
+});
+
+router.post('/resend-otp', otpLimiter, validate(resendOtpSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await contactService.resendOtp(req.user!.id, req.body.token);
     sendSuccess(res, result);
   } catch (err) { next(err); }
 });
@@ -74,13 +63,6 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       data.phone_number_encrypted = maskPhone(data.phone_number_encrypted);
     }
     sendSuccess(res, data);
-  } catch (err) { next(err); }
-});
-
-router.post('/:id/resend-otp', otpLimiter, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const result = await contactService.resendOtp(req.user!.id, req.params.id);
-    sendSuccess(res, result);
   } catch (err) { next(err); }
 });
 

@@ -36,7 +36,7 @@ export default function ContactsPage() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
 
-  const [otpContactId, setOtpContactId] = useState('')
+  const [verificationToken, setVerificationToken] = useState('')
   const [otpContactName, setOtpContactName] = useState('')
   const [otpDevOtp, setOtpDevOtp] = useState<string | undefined>()
 
@@ -77,18 +77,18 @@ export default function ContactsPage() {
     setFormError('')
     const contactName = name
     try {
-      const res = await api.post('/contacts', { name, phone: formatPhone(phone), relationship: relationship || undefined })
+      const res = await api.post('/contacts/send-otp', { name, phone: formatPhone(phone), relationship: relationship || undefined })
       resetForm()
       setShowAddModal(false)
-      const newContact = res.data.data
-      if (newContact?.id) {
-        setOtpContactId(newContact.id)
+      const data = res.data.data
+      if (data?.verification_token) {
+        setVerificationToken(data.verification_token)
         setOtpContactName(contactName)
-        setOtpDevOtp(newContact.devOtp)
+        setOtpDevOtp(data.devOtp)
       }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } }
-      setFormError(axiosErr?.response?.data?.error || 'Could not save contact')
+      setFormError(axiosErr?.response?.data?.error || 'Could not send verification code')
     }
   }
 
@@ -132,14 +132,14 @@ export default function ContactsPage() {
   }
 
   const handleOtpSuccess = () => {
-    setOtpContactId('')
+    setVerificationToken('')
     setOtpContactName('')
     setOtpDevOtp(undefined)
     fetchContacts()
   }
 
   const handleOtpClose = () => {
-    setOtpContactId('')
+    setVerificationToken('')
     setOtpContactName('')
     setOtpDevOtp(undefined)
   }
@@ -270,9 +270,9 @@ export default function ContactsPage() {
       />
 
       <OtpVerifyModal
-        key={otpContactId}
-        open={otpContactId !== ''}
-        contactId={otpContactId}
+        key={verificationToken}
+        open={verificationToken !== ''}
+        verificationToken={verificationToken}
         contactName={otpContactName}
         devOtp={otpDevOtp}
         onClose={handleOtpClose}

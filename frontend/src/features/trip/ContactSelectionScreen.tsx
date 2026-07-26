@@ -43,7 +43,7 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
  const [addError, setAddError] = useState('')
 
  // OTP verification state
- const [otpContactId, setOtpContactId] = useState('')
+ const [verificationToken, setVerificationToken] = useState('')
  const [otpContactName, setOtpContactName] = useState('')
  const [otpDevOtp, setOtpDevOtp] = useState<string | undefined>(undefined)
 
@@ -93,44 +93,45 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
 
    setAddLoading(true)
    try {
-    const res = await api.post('/contacts', {
+    const res = await api.post('/contacts/send-otp', {
      name: addName.trim(),
      phone: formatPhone(addPhone.trim()),
      relationship: addRelationship.trim() || undefined,
     })
 
-   const newContact = res.data?.data
+   const data = res.data?.data
    setShowAddModal(false)
    setAddName('')
    setAddPhone('')
    setAddRelationship('')
 
    // Open OTP verification modal
-   setOtpContactId(newContact.id)
-   setOtpContactName(newContact.name)
-   setOtpDevOtp(newContact.devOtp)
+   setVerificationToken(data.verification_token)
+   setOtpContactName(addName.trim())
+   setOtpDevOtp(data.devOtp)
   } catch (err: unknown) {
    const axiosErr = err as { response?: { data?: { error?: string } } }
-   setAddError(axiosErr?.response?.data?.error || 'Failed to add contact')
+   setAddError(axiosErr?.response?.data?.error || 'Failed to send verification code')
   } finally {
    setAddLoading(false)
   }
  }
 
  const handleOtpSuccess = async () => {
-  setOtpContactId('')
+  const name = otpContactName
+  setVerificationToken('')
   setOtpContactName('')
   setOtpDevOtp(undefined)
 
   const all = await fetchContacts()
-  const newContact = all.find((c) => c.name === otpContactName && c.verified)
+  const newContact = all.find((c) => c.name === name && c.verified)
   if (newContact) {
    setSelectedId(newContact.id)
   }
  }
 
  const handleOtpClose = () => {
-  setOtpContactId('')
+  setVerificationToken('')
   setOtpContactName('')
   setOtpDevOtp(undefined)
  }
@@ -328,8 +329,8 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
 
    {/* OTP Verification Modal */}
    <OtpVerifyModal
-    open={otpContactId !== ''}
-    contactId={otpContactId}
+    open={verificationToken !== ''}
+    verificationToken={verificationToken}
     contactName={otpContactName}
     devOtp={otpDevOtp}
     onClose={handleOtpClose}

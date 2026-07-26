@@ -66,30 +66,21 @@ describe('Contacts Routes', () => {
     jest.resetAllMocks();
   });
 
-  describe('POST /api/v1/contacts', () => {
-    it('returns 201 with created contact for valid input', async () => {
+  describe('POST /api/v1/contacts/send-otp', () => {
+    it('returns 201 with verification token for valid input', async () => {
       ContactFindOne.mockResolvedValue(null);
-      ContactCreate.mockResolvedValue({
-        id: 'new-uuid',
-        name: 'Alice',
-        phone_number_encrypted: 'iv:tag:encrypted',
-        relationship: 'sister',
-        verified: false,
-        created_at: new Date('2025-01-01'),
-        toJSON() { return { ...this }; },
-      });
       const app = createApp();
       const agent = request.agent(app);
       const csrfRes = await agent.get('/csrf-token');
       const csrfToken = csrfRes.body.data.csrfToken;
       const res = await agent
-        .post('/api/v1/contacts')
+        .post('/api/v1/contacts/send-otp')
         .set('x-csrf-token', csrfToken)
         .send({ name: 'Alice', phone: '+2348012345678', relationship: 'sister' });
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.id).toBe('new-uuid');
-      expect(res.body.data.name).toBe('Alice');
+      expect(res.body.data.verification_token).toBeDefined();
+      expect(res.body.data.verification_token).toHaveLength(64);
     });
 
     it('returns 400 for invalid phone number', async () => {
@@ -98,7 +89,7 @@ describe('Contacts Routes', () => {
       const csrfRes = await agent.get('/csrf-token');
       const csrfToken = csrfRes.body.data.csrfToken;
       const res = await agent
-        .post('/api/v1/contacts')
+        .post('/api/v1/contacts/send-otp')
         .set('x-csrf-token', csrfToken)
         .send({ name: 'Alice', phone: '12345' });
       expect(res.status).toBe(400);
@@ -107,7 +98,7 @@ describe('Contacts Routes', () => {
     it('returns 403 when CSRF token is missing', async () => {
       const app = createApp();
       const res = await request(app)
-        .post('/api/v1/contacts')
+        .post('/api/v1/contacts/send-otp')
         .send({ name: 'Alice', phone: '+2348012345678' });
       expect(res.status).toBe(403);
     });
@@ -151,48 +142,45 @@ describe('Contacts Routes', () => {
     });
   });
 
-  describe('POST /api/v1/contacts/:id/verify-otp', () => {
-    const uuid = '123e4567-e89b-12d3-a456-426614174000';
-    it('verifies OTP successfully', async () => {
-      const futureDate = new Date(Date.now() + 60 * 60 * 1000);
-      ContactFindOne.mockResolvedValue({
-        id: uuid,
-        user_id: 'test-user-id',
-        verified: false,
-        otp_code: '123456',
-        otp_expires_at: futureDate,
-        save: jest.fn().mockResolvedValue(undefined),
-      });
+  describe('POST /api/v1/contacts/verify', () => {
+    it('verifies OTP successfully and creates contact', async () => {
+      ContactFindOne.mockResolvedValue(null);
+      ContactCreate.mockImplementationOnce((data: any) => Promise.resolve({
+        id: 'new-uuid',
+        ...data,
+        created_at: new Date(),
+        toJSON() { return { ...this }; },
+      }));
       const app = createApp();
       const agent = request.agent(app);
       const csrfRes = await agent.get('/csrf-token');
       const csrfToken = csrfRes.body.data.csrfToken;
-      const res = await agent
-        .post(`/api/v1/contacts/${uuid}/verify-otp`)
+      // First send OTP
+      const sendRes = await agent
+        .post('/api/v1/contacts/send-otp')
         .set('x-csrf-token', csrfToken)
-        .send({ contactId: uuid, otp: '123456' });
+        .send({ name: 'Alice', phone: '+2348012345678' });
+      const { verification_token, devOtp } = sendRes.body.data;
+      // Then verify
+      const res = await agent
+        .post('/api/v1/contacts/verify')
+        .set('x-csrf-token', csrfToken)
+        .send({ token: verification_token, otp: devOtp });
       expect(res.status).toBe(200);
       expect(res.body.data.verified).toBe(true);
+      expect(res.body.data.id).toBe('new-uuid');
     });
 
-    it('returns 400 for invalid OTP', async () => {
-      const futureDate = new Date(Date.now() + 60 * 60 * 1000);
-      ContactFindOne.mockResolvedValue({
-        id: uuid,
-        user_id: 'test-user-id',
-        verified: false,
-        otp_code: '999999',
-        otp_expires_at: futureDate,
-      });
+    it('returns 404 for unknown token', async () => {
       const app = createApp();
       const agent = request.agent(app);
       const csrfRes = await agent.get('/csrf-token');
       const csrfToken = csrfRes.body.data.csrfToken;
       const res = await agent
-        .post(`/api/v1/contacts/${uuid}/verify-otp`)
+        .post('/api/v1/contacts/verify')
         .set('x-csrf-token', csrfToken)
-        .send({ contactId: uuid, otp: '123456' });
-      expect(res.status).toBe(400);
+        .send({ token: 'a'.repeat(64), otp: '123456' });
+      expect(res.status).toBe(404);
     });
   });
 });
