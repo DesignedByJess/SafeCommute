@@ -277,7 +277,7 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
        </div>
       )}
 
-      <form onSubmit={handleAddContact} className="space-y-4">
+      <form onSubmit={handleAddContact} className="space-y-5">
        <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
         <input
