@@ -782,7 +782,7 @@ export function LicensePlateCaptureScreen({
                         }}
                         className="underline text-[#0F172A] font-semibold hover:text-[#0891B2] transition-colors min-h-[44px] inline-flex items-center px-1 cursor-pointer"
                       >
-                        Back to camera
+                        Scan with camera
                       </button>
                     </p>
                   </div>
