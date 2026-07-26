@@ -75,22 +75,29 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
   return 'bg-[#E0F2FE]'
  }
 
- const handleAddContact = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setAddError('')
-
-  if (!addName.trim() || !addPhone.trim()) {
-   setAddError('Name and phone are required')
-   return
+  const formatPhone = (raw: string) => {
+   const digits = raw.replace(/\D/g, '')
+   if (digits.startsWith('234')) return '+' + digits
+   if (digits.startsWith('0')) return '+234' + digits.slice(1)
+   return '+' + digits
   }
 
-  setAddLoading(true)
-  try {
-   const res = await api.post('/contacts', {
-    name: addName.trim(),
-    phone: addPhone.trim(),
-    relationship: addRelationship.trim() || undefined,
-   })
+  const handleAddContact = async (e: React.FormEvent) => {
+   e.preventDefault()
+   setAddError('')
+
+   if (!addName.trim() || !addPhone.trim()) {
+    setAddError('Name and phone are required')
+    return
+   }
+
+   setAddLoading(true)
+   try {
+    const res = await api.post('/contacts', {
+     name: addName.trim(),
+     phone: formatPhone(addPhone.trim()),
+     relationship: addRelationship.trim() || undefined,
+    })
 
    const newContact = res.data?.data
    setShowAddModal(false)
@@ -282,13 +289,13 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
        </div>
        <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-        <input
-         type="tel"
-         value={addPhone}
-         onChange={(e) => setAddPhone(e.target.value)}
-         placeholder="+234..."
-         className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors placeholder:text-gray-400 focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[44px]"
-        />
+         <input
+          type="tel"
+          value={addPhone}
+          onChange={(e) => setAddPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+          placeholder="08012345678"
+          className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors placeholder:text-gray-400 focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[56px] font-mono text-base tracking-wider"
+         />
        </div>
        <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
