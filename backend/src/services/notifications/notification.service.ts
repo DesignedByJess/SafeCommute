@@ -65,7 +65,7 @@ export class NotificationService {
     ]);
   }
 
-  private async sendWhatsApp(phone: string, message: string): Promise<void> {
+  async sendWhatsApp(phone: string, message: string): Promise<void> {
     if (!env.WHATSAPP_API_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID) {
       throw new Error('WHATSAPP_API_TOKEN or WHATSAPP_PHONE_NUMBER_ID not configured');
     }
@@ -108,6 +108,7 @@ export class NotificationService {
       username: env.AFRICA_TALKING_USERNAME,
       to: phone,
       message,
+      from: env.AFRICA_TALKING_SENDER_ID,
     };
 
     const response = await fetch(

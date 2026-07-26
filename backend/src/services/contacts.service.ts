@@ -78,11 +78,19 @@ export class ContactService {
     await auditLog(userId, 'otp_requested', { phone_hash: hash });
 
     const otpMessage = `Your SafeCommute verification code is ${otp}. It expires in 10 minutes.`;
-    try {
-      await notificationService.sendAfricaTalking(input.phone, otpMessage);
-    } catch (err) {
-      logger.error('Failed to send OTP SMS', { error: err, phone: input.phone });
-    }
+
+    // Try WhatsApp first (higher open rate), fall back to Africa's Talking
+    const results = await Promise.allSettled([
+      notificationService.sendWhatsApp(input.phone, otpMessage),
+      notificationService.sendAfricaTalking(input.phone, otpMessage),
+    ]);
+
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        const channel = i === 0 ? 'WhatsApp' : "Africa's Talking";
+        logger.error(`Failed to send OTP via ${channel}`, { error: r.reason, phone: input.phone });
+      }
+    });
 
     return {
       verification_token: token,
@@ -139,11 +147,18 @@ export class ContactService {
     await auditLog(userId, 'otp_requested', { phone_hash: pending.hash });
 
     const otpMessage = `Your SafeCommute verification code is ${otp}. It expires in 10 minutes.`;
-    try {
-      await notificationService.sendAfricaTalking(pending.phone, otpMessage);
-    } catch (err) {
-      logger.error('Failed to resend OTP SMS', { error: err, token });
-    }
+
+    const results = await Promise.allSettled([
+      notificationService.sendWhatsApp(pending.phone, otpMessage),
+      notificationService.sendAfricaTalking(pending.phone, otpMessage),
+    ]);
+
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        const channel = i === 0 ? 'WhatsApp' : "Africa's Talking";
+        logger.error(`Failed to resend OTP via ${channel}`, { error: r.reason, token });
+      }
+    });
 
     if (env.NODE_ENV !== 'production') {
       logger.info(`[DEV] Resent OTP for token ${token}: ${otp}`);
