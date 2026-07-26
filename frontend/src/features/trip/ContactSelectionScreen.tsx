@@ -298,15 +298,16 @@ export function ContactSelectionScreen({ onBack, onContinue }: ContactSelectionS
           className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors placeholder:text-gray-400 focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[44px]"
          />
        </div>
-       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
-        <select
-         value={addRelationship}
-         onChange={(e) => setAddRelationship(e.target.value)}
-         className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[44px]"
-        >
-         <option value="">Select relationship</option>
-         <option value="spouse">Spouse</option>
+         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+          <div className="relative">
+           <select
+            value={addRelationship}
+            onChange={(e) => setAddRelationship(e.target.value)}
+            className="block w-full px-3 py-2.5 text-sm bg-gray-100 rounded-lg border border-gray-300 transition-colors focus:bg-white focus:border-[#0891B2] focus:outline-none min-h-[44px] appearance-none"
+           >
+            <option value="">Select relationship</option>
+            <option value="spouse">Spouse</option>
          <option value="parent">Parent</option>
          <option value="sibling">Sibling</option>
          <option value="friend">Friend</option>
