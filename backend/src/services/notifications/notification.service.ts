@@ -142,6 +142,12 @@ export class NotificationService {
 
     logger.info('[Africa\'s Talking] API response', { body });
 
+    // Check for API-level error messages (e.g. InvalidSenderId)
+    const apiMessage = body?.SMSMessageData?.Message;
+    if (apiMessage && apiMessage !== 'Sent' && apiMessage !== 'Success') {
+      throw new Error(`Africa's Talking API rejected request: ${apiMessage}`);
+    }
+
     const statusCode = body?.SMSMessageData?.Recipients?.[0]?.statusCode;
     if (statusCode && statusCode !== '101') {
       throw new Error(`Africa's Talking delivery failed: code ${statusCode} - ${body?.SMSMessageData?.Recipients?.[0]?.status ?? 'unknown'}`);
