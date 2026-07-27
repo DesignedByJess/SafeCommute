@@ -142,19 +142,23 @@ export class NotificationService {
 
     logger.info('[Africa\'s Talking] API response', { body });
 
+    const recipients = body?.SMSMessageData?.Recipients;
+
     // Check for API-level error messages (e.g. InvalidSenderId)
     const apiMessage = body?.SMSMessageData?.Message;
-    if (apiMessage && apiMessage !== 'Sent' && apiMessage !== 'Success') {
-      throw new Error(`Africa's Talking API rejected request: ${apiMessage}`);
+    if (apiMessage && !['Sent', 'Success'].includes(apiMessage)) {
+      throw new Error(`Africa's Talking rejected: ${apiMessage}`);
     }
 
-    const statusCode = body?.SMSMessageData?.Recipients?.[0]?.statusCode;
+    // Empty recipients means the message was never queued
+    if (!recipients || recipients.length === 0) {
+      throw new Error(`Africa's Talking returned no recipients: message body: ${body?.SMSMessageData?.Message || 'unknown'}`);
+    }
+
+    // Check per-recipient delivery status
+    const statusCode = recipients[0].statusCode;
     if (statusCode && statusCode !== '101') {
-      throw new Error(`Africa's Talking delivery failed: code ${statusCode} - ${body?.SMSMessageData?.Recipients?.[0]?.status ?? 'unknown'}`);
-    }
-
-    if (!statusCode) {
-      logger.warn('[Africa\'s Talking] No status code in response', { body });
+      throw new Error(`Africa's Talking delivery failed: code ${statusCode} — ${recipients[0].status ?? 'unknown'}`);
     }
 
     logger.info(`[Africa's Talking] Sent to ${phone}`, { statusCode });
