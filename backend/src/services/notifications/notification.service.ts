@@ -108,8 +108,13 @@ export class NotificationService {
       username: env.AFRICA_TALKING_USERNAME,
       to: phone.replace(/^\+/, ''),
       message,
-      from: env.AFRICA_TALKING_SENDER_ID,
     };
+
+    // Only include sender ID if explicitly configured
+    const rawSenderId = process.env.AFRICA_TALKING_SENDER_ID;
+    if (rawSenderId && rawSenderId.trim().length > 0) {
+      params.from = rawSenderId.trim();
+    }
 
     const response = await fetch(
       `${baseUrl}/version1/messaging`,
